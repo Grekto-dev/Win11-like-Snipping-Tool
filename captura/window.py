@@ -7,7 +7,7 @@ gi.require_version("Gdk", "3.0")
 import cairo
 from gi.repository import Gtk, Gdk, GLib, GdkPixbuf
 
-from . import APP_NAME, annot, chrome, icons, metrics as M, services, theme
+from . import APP_NAME, annot, chrome, icons, menus, metrics as M, services, theme
 from .canvas import Canvas
 from .config import settings
 from .flyouts import ToolFlyout, ShapeFlyout
@@ -128,6 +128,9 @@ class EditorWindow(Gtk.ApplicationWindow):
         self._toast_id = 0
         main.pack_start(self.toast_overlay, True, True, 0)
         self.canvas = Canvas()
+        for name in ("pen", "hl", "shape"):
+            self.canvas.opts[name] = (settings[f"{name}_color"], settings[f"{name}_size"])
+        self.canvas.opts["shape_kind"] = settings["shape_kind"]
         self.canvas.opts["shape_fill"] = settings["shape_fill"]
         self.canvas.connect("changed", self.on_canvas_changed)
         self.canvas_stack.add_named(self.canvas, "canvas")
@@ -359,9 +362,6 @@ class EditorWindow(Gtk.ApplicationWindow):
             self.canvas.queue_draw()
         self.refresh_tool_icons()
 
-    def popup_eraser_menu(self, b):
-        make_menu(b, [("trash", "Apagar todas as marcações", None, self.canvas.clear_markup, bool(self.canvas.items))]).popup()
-
     def toggle_crop(self, on, apply=False):
         if on:
             for tb in self.tool_btns.values():
@@ -378,75 +378,79 @@ class EditorWindow(Gtk.ApplicationWindow):
         self.canvas.queue_draw()
 
     # --------------------------------------------------------------- menus
+    def _menu(self, items, style, left=None, right=None, top=None):
+        """Abre o menu com o canto superior esquerdo da caixa em (left, top) relativos à janela (conteúdo)."""
+        old = getattr(self, "_cur_menu", None)
+        if old is not None:
+            old.close_popup()
+        m = menus.Menu(items, style)
+        self._cur_menu = m
+        if right is not None:
+            # `right` uses reference-window coordinates; follow the real right edge.
+            right += self.toolbar.get_allocated_width() - M.W
+            left = right - (style["width"] + 2)
+        ox, oy = menus.anchor_origin(self.toolbar)
+        # a faixa começa em y=32 da janela; `top` é dado em coordenadas da janela
+        m.open_at(ox + left, oy + (top - M.TB_Y))
+        return m
+
     def popup_shape_menu(self, b):
-        items = [(i, l, None, (lambda k=k: self.set_shape(k))) for k, i, l in SHAPES]
-        make_menu(b, items, 180).popup()
+        cur = settings["shape"]
+        items = [(i, l, None, (lambda k=k: self.set_shape(k)), True, False, k == cur) for k, i, l in SHAPES]
+        idx = [k for k, _, _ in SHAPES].index(cur)
+        left, _ = b.translate_coordinates(self.toolbar, 0, 0)
+        self._menu(items, menus.SHAPE, left=left - 5, top=32 - idx * menus.SHAPE["row_h"])
 
     def set_shape(self, k):
         settings["shape"] = k
         self.refresh_capture_icons()
 
     def popup_delay_menu(self, b):
-        items = [(i, l, None, (lambda d=d: self.set_delay(d))) for d, i, l in DELAYS]
-        make_menu(b, items, 200).popup()
+        cur = settings["delay"]
+        items = [(i, l, None, (lambda d=d: self.set_delay(d)), True, False, d == cur) for d, i, l in DELAYS]
+        idx = [d for d, _, _ in DELAYS].index(cur)
+        left, _ = b.translate_coordinates(self.toolbar, 0, 0)
+        self._menu(items, menus.CHOICE, left=left - 4, top=32 - idx * menus.CHOICE["row_h"])
 
     def set_delay(self, d):
         settings["delay"] = d
         self.refresh_capture_icons()
 
     def popup_share(self, b):
-        make_menu(b, [("share_mail", "Enviar por e-mail", None, self.share_mail),
-                      ("copytext", "Copiar caminho do arquivo", None, self.copy_path),
-                      ("openwith", "Abrir com…", None, self.open_with)], 240).popup()
+        self._menu([("share_mail", "Enviar por e-mail", None, self.share_mail),
+                    ("copytext", "Copiar caminho do arquivo", None, self.copy_path),
+                    ("openwith", "Abrir com…", None, self.open_with)], menus.MORE, right=M.W, top=78)
+
+    def popup_eraser_menu(self, b):
+        self._menu([("trash", "Apagar todas as marcações", None, self.canvas.clear_markup)],
+                   menus.SINGLE, left=337, top=80)
 
     def popup_more(self, b):
-        pop = Gtk.Popover.new(b)
-        pop.get_style_context().add_class("cap-pop")
-        pop.set_position(Gtk.PositionType.BOTTOM)
-        stack = Gtk.Stack()
-        stack.set_transition_type(Gtk.StackTransitionType.SLIDE_LEFT_RIGHT)
-
-        def row(icon, label, accel, cb, chevron=False, enabled=True):
-            r = Gtk.Button()
-            r.get_style_context().add_class("tbtn")
-            r.get_style_context().add_class("menuitem")
-            hb = Gtk.Box(spacing=12)
-            hb.pack_start(icons.image(icon, 18, theme.icon_color()) if icon else Gtk.Box(), False, False, 0)
-            hb.pack_start(Gtk.Label(label=label, xalign=0), True, True, 0)
-            if accel:
-                a = Gtk.Label(label=accel)
-                a.get_style_context().add_class("subtle")
-                hb.pack_end(a, False, False, 0)
-            if chevron:
-                hb.pack_end(icons.image("chevron_right", 12, theme.icon_color()), False, False, 0)
-            hb.set_size_request(280, -1)
-            r.add(hb)
-            r.set_sensitive(enabled)
-            r.connect("clicked", cb)
-            return r
         has = self.canvas.base is not None
-        p1 = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=1)
-        p1.pack_start(row("zoom", "Zoom", None, lambda *_: stack.set_visible_child_name("zoom"), True, has), False, False, 0)
-        p1.pack_start(row("openwith", "Abrir arquivo", "Ctrl+O", lambda *_: (pop.popdown(), GLib.idle_add(self.open_dialog))), False, False, 0)
-        p1.pack_start(row("folder", "Abrir a pasta de capturas de tela", None, lambda *_: (pop.popdown(), self.open_folder())), False, False, 0)
-        p1.pack_start(row("print", "Imprimir", "Ctrl+P", lambda *_: (pop.popdown(), GLib.idle_add(self.print_image)), False, has), False, False, 0)
-        p1.pack_start(row("gear", "Configurações", None, lambda *_: (pop.popdown(), self.show_page("settings"))), False, False, 0)
-        p2 = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=1)
-        p2.pack_start(row("back", "Zoom", None, lambda *_: stack.set_visible_child_name("main")), False, False, 0)
-        p2.pack_start(row("zoom", "Aumentar zoom", "Ctrl++", lambda *_: self.canvas.zoom_by(1.25)), False, False, 0)
-        p2.pack_start(row(None, "Diminuir zoom", "Ctrl+-", lambda *_: self.canvas.zoom_by(0.8)), False, False, 0)
-        p2.pack_start(row(None, "Ajustar à janela", "Ctrl+0", lambda *_: self.canvas.set_zoom(1.0, fit=True) or self.canvas.update_scale()), False, False, 0)
-        p2.pack_start(row(None, "Tamanho real (100%)", None, lambda *_: self.canvas.set_zoom(1.0)), False, False, 0)
-        stack.add_named(p1, "main")
-        stack.add_named(p2, "zoom")
-        wrap = Gtk.Box()
-        for m in (wrap.set_margin_top, wrap.set_margin_bottom, wrap.set_margin_start, wrap.set_margin_end):
-            m(4)
-        wrap.add(stack)
-        pop.add(wrap)
-        wrap.show_all()
-        stack.set_visible_child_name("main")
-        pop.popup()
+        items = [
+            ("zoom", "Zoom", None, self.popup_zoom, has, True),
+            ("ruler", "Mostrar régua", "Ctrl+R", self.toggle_ruler, has),
+            ("visualsearch", "Pesquisa visual com o Bing", None, self.visual_search, has),
+            ("folder_open", "Abrir arquivo", "Ctrl+O", self.open_dialog),
+            ("folder_shots", "Abrir a pasta de capturas de tela", None, self.open_folder),
+            ("print", "Imprimir", "Ctrl+P", self.print_image, has),
+            ("gear", "Configurações", None, lambda: self.show_page("settings")),
+        ]
+        self._menu(items, menus.MORE, right=M.W, top=78)
+
+    def popup_zoom(self):
+        items = [("zoom", "Aumentar zoom", "Ctrl++", lambda: self.canvas.zoom_by(1.25)),
+                 (None, "Diminuir zoom", "Ctrl+-", lambda: self.canvas.zoom_by(0.8)),
+                 (None, "Ajustar à janela", "Ctrl+0", lambda: (self.canvas.set_zoom(1.0, fit=True), self.canvas.update_scale())),
+                 (None, "Tamanho real (100%)", None, lambda: self.canvas.set_zoom(1.0))]
+        GLib.idle_add(lambda: (self._menu(items, menus.MORE, right=M.W, top=78), False)[1])
+
+    def toggle_ruler(self):
+        self.canvas.show_ruler = not getattr(self.canvas, "show_ruler", False)
+        self.canvas.queue_draw()
+
+    def visual_search(self):
+        self.app.msg(self, "Pesquisa visual", "A pesquisa visual envia a imagem a um serviço da web. Salve a captura e use o serviço de sua escolha.")
 
     # --------------------------------------------------------------- ações
     def current_surface(self):
@@ -460,34 +464,42 @@ class EditorWindow(Gtk.ApplicationWindow):
             self.app.toast_in_window("Copiado para a área de transferência")
 
     def save_as(self):
+        """Return True only after a successful write; cancellation must not discard edits."""
         s = self.current_surface()
         if s is None:
-            return
-        dlg = Gtk.FileChooserDialog(title="Salvar como", parent=self, action=Gtk.FileChooserAction.SAVE)
-        dlg.add_buttons("Cancelar", Gtk.ResponseType.CANCEL, "Salvar", Gtk.ResponseType.OK)
-        dlg.set_do_overwrite_confirmation(True)
-        d = settings.shot_directory
-        os.makedirs(d, exist_ok=True)
-        dlg.set_current_folder(d)
-        dlg.set_current_name(services.timestamp_name())
-        for label, pats in (("PNG (*.png)", ["*.png"]), ("JPEG (*.jpg, *.jpeg)", ["*.jpg", "*.jpeg"]), ("BMP (*.bmp)", ["*.bmp"])):
-            f = Gtk.FileFilter()
-            f.set_name(label)
-            for p in pats:
-                f.add_pattern(p)
-            dlg.add_filter(f)
-        if dlg.run() == Gtk.ResponseType.OK:
+            return False
+        dlg = Gtk.FileChooserDialog(title="Salvar como", transient_for=self, action=Gtk.FileChooserAction.SAVE)
+        saved = False
+        try:
+            dlg.add_buttons("Cancelar", Gtk.ResponseType.CANCEL, "Salvar", Gtk.ResponseType.OK)
+            dlg.set_do_overwrite_confirmation(True)
+            d = settings.shot_directory
+            os.makedirs(d, exist_ok=True)
+            dlg.set_current_folder(d)
+            dlg.set_current_name(services.timestamp_name())
+            for label, pats in (("PNG (*.png)", ["*.png"]), ("JPEG (*.jpg, *.jpeg)", ["*.jpg", "*.jpeg"]), ("BMP (*.bmp)", ["*.bmp"])):
+                f = Gtk.FileFilter()
+                f.set_name(label)
+                for pattern in pats:
+                    f.add_pattern(pattern)
+                dlg.add_filter(f)
+            if dlg.run() != Gtk.ResponseType.OK:
+                return False
             path = dlg.get_filename()
+            if not path:
+                return False
             if not os.path.splitext(path)[1]:
                 path += ".png"
-            try:
-                services.save_surface(s, path)
-                self.saved_path = path
-                self.canvas.dirty = False
-                self.app.toast_in_window("Salvo em " + path)
-            except Exception as e:
-                self.error_dialog("Não foi possível salvar", str(e))
-        dlg.destroy()
+            services.save_surface(s, path)
+            self.saved_path = path
+            self.canvas.dirty = False
+            saved = True
+            self.app.toast_in_window("Salvo em " + path)
+        except Exception as e:
+            self.error_dialog("Não foi possível salvar", str(e))
+        finally:
+            dlg.destroy()
+        return saved
 
     def ensure_file(self):
         """Arquivo temporário/salvo com a versão atual (para e-mail, abrir com…)."""
@@ -614,7 +626,7 @@ class EditorWindow(Gtk.ApplicationWindow):
 
     def on_delete(self, w, ev):
         if self.canvas.base is not None and self.canvas.dirty and settings["shot_ask_save_edited"]:
-            d = Gtk.MessageDialog(parent=self, flags=0, message_type=Gtk.MessageType.QUESTION, text="Salvar alterações na captura de tela?")
+            d = Gtk.MessageDialog(transient_for=self, flags=0, message_type=Gtk.MessageType.QUESTION, text="Salvar alterações na captura de tela?")
             d.format_secondary_text("Suas edições serão perdidas se você não salvar.")
             d.add_buttons("Não salvar", Gtk.ResponseType.NO, "Cancelar", Gtk.ResponseType.CANCEL, "Salvar", Gtk.ResponseType.YES)
             r = d.run()
@@ -622,5 +634,5 @@ class EditorWindow(Gtk.ApplicationWindow):
             if r == Gtk.ResponseType.CANCEL or r == Gtk.ResponseType.DELETE_EVENT:
                 return True
             if r == Gtk.ResponseType.YES:
-                self.save_as()
+                return not self.save_as()
         return False

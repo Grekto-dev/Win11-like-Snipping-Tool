@@ -76,6 +76,9 @@ _DATA = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "icons"
 
 # nome usado pelo app -> ("f", arquivo Fluent) | ("c", arquivo próprio)
 _NEW = {
+    "menu_zoom": ("c", "menu_zoom"), "menu_open": ("c", "menu_open"),
+    "menu_folder": ("c", "menu_folder"), "menu_window": ("c", "menu_window"),
+    "menu_fullscreen": ("c", "menu_fullscreen"), "menu_freeform": ("c", "menu_freeform"),
     "camera": ("f", "camera"), "video": ("c", "video"), "rect": ("c", "shape"), "window": ("f", "window"),
     "fullscreen": ("f", "desktop"), "freeform": ("f", "lasso"), "timer0": ("f", "timer_off"), "timer3": ("f", "timer_3"),
     "timer10": ("f", "timer_10"), "eraser": ("f", "eraser"), "shapes": ("f", "shapes"), "crop": ("f", "crop"),
@@ -83,12 +86,12 @@ _NEW = {
     "share": ("c", "share"), "more": ("c", "more"), "close": ("f", "dismiss"), "plus": ("c", "plus"),
     "chevron_down": ("f", "chevron_down"), "chevron_up": ("f", "chevron_up"), "chevron_right": ("f", "chevron_right"),
     "eyedropper": ("f", "eyedropper"), "gear": ("f", "settings"), "folder": ("f", "folder_open"), "print": ("f", "print"),
-    "zoom": ("f", "zoom_in"), "back": ("f", "arrow_left"), "trash": ("f", "delete"), "info": ("f", "info"),
+    "zoom": ("f", "zoom_in"), "folder_shots": ("f", "folder_open"), "back": ("f", "arrow_left"), "trash": ("f", "delete"), "info": ("f", "info"),
     "mic": ("f", "mic"), "speaker": ("f", "speaker_2"), "record": ("f", "record"), "stop": ("f", "stop"),
     "line": ("f", "line"), "arrow": ("f", "arrow_up_right"), "ellipse": ("f", "circle"), "square": ("f", "square"),
     "share_mail": ("f", "mail"), "openwith": ("f", "open"), "check": ("f", "checkmark"), "edit": ("f", "edit"),
     "markup": ("f", "image_edit"), "markup_img": ("f", "image_edit"),
-    "chev": ("c", "chev"), "pen": ("c", "pen"), "hl": ("c", "hl"), "paint": ("f", "paint_brush"), "info15": ("c", "info15"),
+    "chev": ("c", "chev"), "folder_open": ("f", "folder_open"), "ruler": ("f", "ruler"), "visualsearch": ("f", "search_visual"), "timer5": ("f", "timer_5"), "pen": ("c", "pen"), "hl": ("c", "hl"), "paint": ("f", "paint_brush"), "info15": ("c", "info15"),
 }
 
 

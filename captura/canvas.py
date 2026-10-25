@@ -7,6 +7,7 @@ import cairo
 from gi.repository import Gtk, Gdk, GObject
 
 from . import annot, theme
+from .ruler import Ruler
 
 HANDLE_R = 5.5
 
@@ -35,6 +36,9 @@ class Canvas(Gtk.DrawingArea):
         self.cur_stroke = None
         self.drag = None
         self.cursor_pos = None
+        self.show_ruler = False
+        self.ruler = None
+        self.ruler_drag = None
         self.opts = {"pen": ("#e61b1b", 4), "hl": ("#ffe600", 12), "shape": ("#e61b1b", 3), "shape_kind": "rect"}
         self.crop_rect = None            # (x0, y0, x1, y1) em px da imagem
         self.crop_drag = None
@@ -193,6 +197,10 @@ class Canvas(Gtk.DrawingArea):
         if self.tool == "crop" and self.crop_rect:
             self.draw_crop(cr)
         cr.restore()
+        if self.show_ruler:
+            if self.ruler is None:
+                self.ruler = Ruler(a.width/2, a.height/2 + 60)
+            self.ruler.draw(cr, a.width, a.height)
         if self.tool == "eraser" and self.cursor_pos and self.base is not None:
             x, y = self.cursor_pos
             cr.set_line_width(1.5)
@@ -318,6 +326,9 @@ class Canvas(Gtk.DrawingArea):
         self.grab_focus()
         if self.base is None or ev.button != 1:
             return False
+        if self.show_ruler and self.ruler and self.ruler.contains(ev.x, ev.y, inset=3):
+            self.ruler_drag = (ev.x, ev.y, self.ruler.x, self.ruler.y)
+            return True
         ix, iy = self.to_img(ev.x, ev.y)
         t = self.tool
         if t in ("pen", "hl"):
@@ -361,6 +372,11 @@ class Canvas(Gtk.DrawingArea):
         return True
 
     def on_motion(self, w, ev):
+        if self.ruler_drag and self.ruler:
+            sx, sy, rx, ry = self.ruler_drag
+            self.ruler.x, self.ruler.y = rx + ev.x - sx, ry + ev.y - sy
+            self.queue_draw()
+            return True
         self.cursor_pos = (ev.x, ev.y)
         if self.base is None:
             return False
@@ -416,6 +432,9 @@ class Canvas(Gtk.DrawingArea):
     def on_release(self, w, ev):
         if ev.button != 1:
             return False
+        if self.ruler_drag:
+            self.ruler_drag = None
+            return True
         if self.cur_stroke:
             self.push_undo()
             self.items.append(self.cur_stroke)
@@ -446,6 +465,19 @@ class Canvas(Gtk.DrawingArea):
                 return
 
     def on_scroll(self, w, ev):
+        if (self.show_ruler and self.ruler and self.ruler.contains(ev.x, ev.y)
+                and not ev.state & Gdk.ModifierType.CONTROL_MASK):
+            if ev.direction == Gdk.ScrollDirection.UP:
+                delta = 1
+            elif ev.direction == Gdk.ScrollDirection.DOWN:
+                delta = -1
+            elif ev.direction == Gdk.ScrollDirection.SMOOTH:
+                delta = -ev.delta_y
+            else:
+                return False
+            self.ruler.angle = (self.ruler.angle + delta) % 360
+            self.queue_draw()
+            return True
         if ev.state & Gdk.ModifierType.CONTROL_MASK:
             if ev.direction == Gdk.ScrollDirection.UP:
                 self.zoom_by(1.1)

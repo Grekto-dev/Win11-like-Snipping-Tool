@@ -161,6 +161,8 @@ class CapturaApp(Gtk.Application):
         self.rec_bar = None
         self.rec_outline = None
         self.rec_dest = None
+        self._rec_begin_id = 0
+        self._rec_check_id = 0
         self.capturing = False
         self.add_main_option("snip", ord("s"), 0, 0, "Abre a sobreposição de captura", None)
         self.add_main_option("ocr", 0, 0, 0, "Extrator de texto", None)
@@ -378,6 +380,7 @@ class CapturaApp(Gtk.Application):
     # ------------------------------------------------------------ gravação
     def start_recording(self, rect):
         if not services.ffmpeg_path():
+            self._release()
             self.msg(None, "FFmpeg não encontrado", "A gravação de tela precisa do FFmpeg.\n\nInstale com:\n  sudo apt install ffmpeg")
             return
         d = settings.rec_directory
@@ -387,22 +390,39 @@ class CapturaApp(Gtk.Application):
         self.rec_rect = rect
         self.rec_outline = OutlineWindow(rect)
         self.rec_bar = RecordingBar(self.stop_recording, lambda: self.stop_recording(discard=True), rect)
-        GLib.timeout_add(350, self._begin_rec)
+        self._rec_begin_id = GLib.timeout_add(350, self._begin_rec)
 
     def _begin_rec(self):
-        self.recorder.start()
-        GLib.timeout_add(1200, self._check_rec)
+        self._rec_begin_id = 0
+        if self.recorder is None:
+            return False
+        try:
+            self.recorder.start()
+        except Exception as error:
+            try:
+                self.recorder.stop()
+            finally:
+                self._teardown_rec(release_delay=0)
+            self.msg(None, "A gravação falhou", str(error))
+            return False
+        self._rec_check_id = GLib.timeout_add(1200, self._check_rec)
         return False
 
     def _check_rec(self):
+        self._rec_check_id = 0
         if self.recorder is not None and not self.recorder.alive():
             err = self.recorder.error_text()
             self._teardown_rec()
             self.msg(None, "A gravação falhou", err[-600:] or "O FFmpeg encerrou inesperadamente.")
         return False
 
-    def _teardown_rec(self):
-        self._release(60000)
+    def _teardown_rec(self, release_delay=60000):
+        for attr in ("_rec_begin_id", "_rec_check_id"):
+            source_id = getattr(self, attr, 0)
+            if source_id:
+                GLib.source_remove(source_id)
+                setattr(self, attr, 0)
+        self._release(release_delay)
         if self.rec_bar:
             self.rec_bar.close_bar()
         if self.rec_outline:

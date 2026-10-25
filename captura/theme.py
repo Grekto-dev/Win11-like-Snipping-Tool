@@ -13,6 +13,7 @@ LIGHT = dict(
     border="#e0e0e0", border2="#d1d1d1", hover="rgba(0,0,0,0.055)", press="rgba(0,0,0,0.085)", card="#fdfdfd",
     accent="#0067c0", accent_hover="#1975c5", accent_text="#ffffff", infobar="#ffffff", flyout="#fcfcfc",
     shadow="rgba(0,0,0,0.28)", bar="#e9e9e9", crop_bg="#666666", toast_bg="#ffffff", link="#003e92", segbg="#ececec",
+    menu_bg="#f9f9f9", menu_border="#dbdbdb", menu_top="#c0c0c0", menu_sel="#eaeaea", menu_sep="#e5e5e5",
 )
 DARK = dict(
     dark=True, bg0="#202020", surface="#2b2b2b", canvas="#1c1c1c", text="#ffffff", subtle="#c8c8c8", disabled="#6f6f6f",
@@ -20,6 +21,7 @@ DARK = dict(
     border="#333333", border2="#454545", hover="rgba(255,255,255,0.07)", press="rgba(255,255,255,0.05)", card="#2b2b2b",
     accent="#60cdff", accent_hover="#7ad6ff", accent_text="#000000", infobar="#2b2b2b", flyout="#2c2c2c",
     shadow="rgba(0,0,0,0.6)", bar="#2c2c2c", crop_bg="#1a1a1a", toast_bg="#2b2b2b", link="#99ebff", segbg="#2d2d2d",
+    menu_bg="#2c2c2c", menu_border="#383838", menu_top="#454545", menu_sel="#383838", menu_sep="#414141",
 )
 
 CSS = string.Template(r"""
@@ -114,6 +116,25 @@ button.caption:hover { background: rgba(0,0,0,0.0373); }
 button.caption-close:hover { background: #c42b1c; }
 .ind-bar { background: $accent; border-radius: 2px; min-width: 16px; min-height: 3px; }
 .cap-toolbar { background: $bg0; }
+/* ---- menus ---- */
+window.popup-root, .popup-root { background: transparent; }
+.wmenu, .wflyout { background: $menu_bg; border: 1px solid $menu_border; border-top-color: $menu_top; border-radius: 8px; box-shadow: none; }
+button.wmi { background: transparent; background-image: none; border: 0; border-radius: 4px; padding: 0; margin: 0; box-shadow: none; min-width: 0; min-height: 0; text-shadow: none; outline: none; }
+button.wmi:hover { background: $hover; }
+.wmenu-selection { background: $menu_sel; border-radius: 4px; }
+.wmenu label, .wflyout label { color: $text; }
+button.wmi:disabled label { color: $disabled_icon; }
+.wmenu-bar { background: $accent; border-radius: 2px; }
+.wmenu label.wmenu-accel { color: $subtle; font-size: 12px; }
+.wmenu-sep { background: $menu_sep; min-height: 1px; margin: 3px 0; }
+/* measured tool palettes */
+.wflyout { border-color: #c4c4c4; border-radius: 4px; }
+button.palette-swatch { background: transparent; background-image: none; border: 0; border-radius: 20px; padding: 0; margin: 0; min-width: 0; min-height: 0; box-shadow: none; outline: none; }
+button.palette-swatch:hover { background: $hover; }
+scale.palette-size { padding: 0; margin: 0; }
+scale.palette-size trough { background: #8a8a8a; min-height: 4px; border: 0; border-radius: 2px; }
+scale.palette-size highlight { background: $accent; min-height: 4px; border-radius: 2px; }
+scale.palette-size slider { background: $accent; background-image: none; border: 5px solid #ffffff; border-radius: 99px; min-width: 10px; min-height: 10px; margin: -8px; box-shadow: 0 0 0 1px rgba(0,0,0,0.04); }
 /* Overlay de captura */
 .snip-toolbar { background: $bar; border: 1px solid $border; border-radius: 12px; padding: 3px 8px; box-shadow: 0 6px 24px $shadow; }
 .snip-toolbar .seg { background: transparent; border: none; }
