@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" fill="none"><defs>
+<linearGradient id="pb" x1="0.15" y1="0" x2="0.85" y2="1"><stop offset="0" stop-color="#6ae3f6"/><stop offset="0.35" stop-color="#2fb9ed"/><stop offset="1" stop-color="#0b7fcc"/></linearGradient>
+<linearGradient id="br" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e8c894"/><stop offset="0.35" stop-color="#a87a44"/><stop offset="1" stop-color="#7f4f15"/></linearGradient></defs>
+<path d="M9.6 2.1C13.2 2.2 17.1 4.6 17.4 8.6C17.6 11.2 15.6 13.1 13.2 13.3C11.4 13.5 10.6 14.6 10.8 16C10.9 17.3 9.3 17.9 7.6 17.4C4.4 16.4 2.2 13.6 2.1 10.4C2 6.2 5.4 2.1 9.6 2.1Z" fill="url(#pb)"/>
+<circle cx="6.1" cy="7.2" r="1.7" fill="#2e950f"/><circle cx="6.0" cy="6.8" r="0.8" fill="#4ac27e" opacity=".8"/>
+<circle cx="10.6" cy="5.6" r="1.4" fill="#f9b504"/><circle cx="4.6" cy="9.8" r="1.4" fill="#d4440e"/>
+<circle cx="8.4" cy="10.6" r="1" fill="#f3f3f3"/><circle cx="5.6" cy="13.4" r="0.9" fill="#f3f3f3"/>
+<path d="M13 7H15.3L14.9 17.5H13.4Z" fill="url(#br)"/><path d="M13 7H15.3" stroke="#e8c894" stroke-width="0.8"/>
+</svg>

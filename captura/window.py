@@ -7,7 +7,7 @@ gi.require_version("Gdk", "3.0")
 import cairo
 from gi.repository import Gtk, Gdk, GLib, GdkPixbuf
 
-from . import APP_NAME, annot, icons, services, theme
+from . import APP_NAME, annot, chrome, icons, metrics as M, services, theme
 from .canvas import Canvas
 from .config import settings
 from .flyouts import ToolFlyout, ShapeFlyout
@@ -80,7 +80,7 @@ class EditorWindow(Gtk.ApplicationWindow):
     def __init__(self, app):
         super().__init__(application=app)
         self.app = app
-        self.set_default_size(1000, 691)
+        self.set_default_size(M.W, M.H - M.TITLE_H)
         self.set_icon_name("captura")
         self.get_style_context().add_class("cap-window")
         self.saved_path = None
@@ -89,18 +89,7 @@ class EditorWindow(Gtk.ApplicationWindow):
         self.tool = None
         self.is_new_capture = False
 
-        hb = Gtk.HeaderBar()
-        hb.get_style_context().add_class("cap-header")
-        hb.set_show_close_button(True)
-        title = Gtk.Box(spacing=8)
-        title.pack_start(Gtk.Image.new_from_icon_name("captura", Gtk.IconSize.MENU), False, False, 0)
-        self.title_label = Gtk.Label(label=APP_NAME)
-        self.title_label.get_style_context().add_class("cap-title")
-        title.pack_start(self.title_label, False, False, 0)
-        hb.set_custom_title(Gtk.Box())      # evita o título centralizado padrão
-        hb.pack_start(title)
-        self.set_titlebar(hb)
-        hb.show_all()
+        self.set_titlebar(chrome.build_header(self))
 
         root = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.add(root)
@@ -115,11 +104,15 @@ class EditorWindow(Gtk.ApplicationWindow):
         self.stack.add_named(self.settings_page, "settings")
 
         main.pack_start(self.build_toolbar(), False, False, 0)
+        line = Gtk.Box()
+        line.get_style_context().add_class("tbline")
+        line.set_size_request(-1, 1)
+        main.pack_start(line, False, False, 0)
         self.infobar = self.build_infobar()
-        main.pack_start(self.infobar, False, False, 0)
         self.canvas_stack = Gtk.Stack()
         self.toast_overlay = Gtk.Overlay()
         self.toast_overlay.add(self.canvas_stack)
+        self.toast_overlay.add_overlay(self.infobar)
         self.toast_rev = Gtk.Revealer()
         self.toast_rev.set_transition_type(Gtk.RevealerTransitionType.SLIDE_UP)
         self.toast_rev.set_halign(Gtk.Align.CENTER)
@@ -150,214 +143,26 @@ class EditorWindow(Gtk.ApplicationWindow):
         self.canvas_stack.set_visible_child_name("empty")
         self.update_edit_group()
         self.set_title(APP_NAME)
-        self.resize(1000, 691)
+        self.resize(M.W, M.H - M.TITLE_H)
 
     # --------------------------------------------------------------- UI
-    def _indicated(self, b, image, kind):
-        """Botão com indicador sob o ícone quando ativo: barra azul (segmentado) ou chevron (ferramenta)."""
-        v = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=1)
-        v.set_halign(Gtk.Align.CENTER)
-        v.pack_start(image, False, False, 0)
-        if kind == "bar":
-            ind = Gtk.Box()
-            ind.get_style_context().add_class("ind-bar")
-            ind.set_halign(Gtk.Align.CENTER)
-        else:
-            ind = icons.image("chevron_down", 8, theme.icon_color())
-        ind.set_opacity(1.0 if b.get_active() else 0.0)
-        v.pack_start(ind, False, False, 0)
-        b.add(v)
-        b.connect("toggled", lambda x: ind.set_opacity(1.0 if x.get_active() else 0.0))
-        return b
-
     def build_toolbar(self):
-        col = theme.icon_color()
-        bar = Gtk.Box()
-        bar.set_margin_start(8)
-        bar.set_margin_end(8)
-        bar.set_margin_top(6)
-        bar.set_margin_bottom(6)
-        bar.get_style_context().add_class("cap-toolbar")
-
-        # ---- esquerda
-        left = Gtk.Box(spacing=4)
-        self.btn_new = Gtk.Button()
-        self.btn_new.get_style_context().add_class("tbtn")
-        self.btn_new.get_style_context().add_class("newbtn")
-        self.btn_new.set_can_focus(False)
-        nb = Gtk.Box(spacing=8)
-        self.new_img = Gtk.Image.new_from_pixbuf(icons.pixbuf("plus", 18, col))
-        self.new_label = Gtk.Label(label="Novo")
-        nb.pack_start(self.new_img, False, False, 0)
-        nb.pack_start(self.new_label, False, False, 0)
-        self.btn_new.add(nb)
-        self.btn_new.set_tooltip_text("Nova captura (Ctrl+N)")
-        self.btn_new.connect("clicked", lambda *_: self.app.start_capture(self.app_tool_for_new(), settings["delay"], from_app=True))
-        left.pack_start(self.btn_new, False, False, 0)
-
-        seg = Gtk.Box()
-        seg.get_style_context().add_class("seg")
-        seg.set_margin_start(6)
-        seg.set_margin_end(4)
-        self.b_photo = Gtk.ToggleButton()
-        self.b_video = Gtk.ToggleButton()
-        for b_, ic, tip in ((self.b_photo, "camera", "Captura de tela"), (self.b_video, "video", "Gravação de tela")):
-            b_.get_style_context().add_class("tbtn")
-            b_.set_can_focus(False)
-            b_.set_tooltip_text(tip)
-            seg.pack_start(b_, False, False, 0)
-        (self.b_video if settings["mode"] == "video" else self.b_photo).set_active(True)
-        self._indicated(self.b_photo, icons.image("camera", 18, col), "bar")
-        self._indicated(self.b_video, icons.image("video", 18, col), "bar")
-        self.b_photo.connect("clicked", lambda b: self.set_mode("photo"))
-        self.b_video.connect("clicked", lambda b: self.set_mode("video"))
-        left.pack_start(seg, False, False, 0)
-
-        self.shape_btn = btn(None, None, tip="Modo de captura")
-        self.shape_img = Gtk.Image()
-        r = Gtk.Box(spacing=3)
-        r.pack_start(self.shape_img, False, False, 0)
-        r.pack_start(icons.image("chevron_down", 10, col), False, False, 0)
-        self.shape_btn.add(r)
-        self.shape_btn.connect("clicked", self.popup_shape_menu)
-        left.pack_start(self.shape_btn, False, False, 0)
-
-        self.delay_btn = btn(None, None, tip="Atraso de captura")
-        self.delay_img = Gtk.Image()
-        r = Gtk.Box(spacing=3)
-        r.pack_start(self.delay_img, False, False, 0)
-        r.pack_start(icons.image("chevron_down", 10, col), False, False, 0)
-        self.delay_btn.add(r)
-        self.delay_btn.connect("clicked", self.popup_delay_menu)
-        left.pack_start(self.delay_btn, False, False, 0)
+        bar = chrome.build_toolbar(self, SHAPES, DELAYS)
         self.refresh_capture_icons()
-
-        # extrator de texto (estado vazio): separador + ícone, sem rótulo
-        self.ocr_empty_box = Gtk.Box(spacing=2)
-        self.ocr_empty_box.pack_start(self._sep(), False, False, 0)
-        self.btn_ocr_empty = btn("textscan", tip="Extrator de Texto")
-        self.btn_ocr_empty.connect("clicked", lambda *_: self.app.start_capture("ocr", settings["delay"], from_app=True))
-        self.ocr_empty_box.pack_start(self.btn_ocr_empty, False, False, 0)
-        left.pack_start(self.ocr_empty_box, False, False, 0)
-        bar.pack_start(left, False, False, 0)
-
-        # ---- centro (centralizado de verdade: Gtk.Box.set_center_widget)
-        self.center = Gtk.Stack()
-        self.center.set_homogeneous(False)
-        self.edit_group = Gtk.Box(spacing=4)
-        self.btn_pen = Gtk.ToggleButton()
-        self.btn_hl = Gtk.ToggleButton()
-        self.btn_eraser = Gtk.ToggleButton()
-        self.btn_shape = Gtk.ToggleButton()
-        self.pen_img = Gtk.Image()
-        self.hl_img = Gtk.Image()
-        specs = (("pen", self.btn_pen, self.pen_img, "Caneta"), ("hl", self.btn_hl, self.hl_img, "Marca-texto"),
-                 ("eraser", self.btn_eraser, icons.image("eraser", 20, col), "Borracha"),
-                 ("shape", self.btn_shape, icons.image("shapes", 20, col), "Formas"))
-        self.tool_btns = {}
-        for name, b_, img, tip in specs:
-            b_.get_style_context().add_class("tbtn")
-            b_.set_can_focus(False)
-            b_.set_tooltip_text(tip)
-            self._indicated(b_, img, "chevron")
-            b_.connect("button-press-event", self.on_tool_press, name)
-            self.tool_btns[name] = b_
-            self.edit_group.pack_start(b_, False, False, 0)
         self.refresh_tool_icons()
-        self.edit_group.pack_start(self._sep(), False, False, 0)
-        self.btn_crop = btn("crop", tip="Corte de imagem", toggle=True, size=18)
-        self.btn_crop.connect("clicked", lambda b: self.toggle_crop(b.get_active()))
-        self.btn_text = btn("textscan", tip="Ações de texto", size=18)
-        self.btn_text.connect("clicked", lambda *_: self.app.ocr_current(self))
-        self.edit_group.pack_start(self.btn_crop, False, False, 0)
-        self.edit_group.pack_start(self.btn_text, False, False, 0)
-        self.edit_group.pack_start(self._sep(), False, False, 0)
-        self.btn_undo = btn("undo", tip="Desfazer (Ctrl+Z)", size=18)
-        self.btn_redo = btn("redo", tip="Refazer (Ctrl+Y)", size=18)
-        self.btn_undo.connect("clicked", lambda *_: self.canvas.undo())
-        self.btn_redo.connect("clicked", lambda *_: self.canvas.redo())
-        self.edit_group.pack_start(self.btn_undo, False, False, 0)
-        self.edit_group.pack_start(self.btn_redo, False, False, 0)
-        self.center.add_named(self.edit_group, "edit")
-
-        self.crop_group = Gtk.Box(spacing=6)
-        ok = btn("check", "Concluir", cls=("accentbtn",), size=16)
-        ok.connect("clicked", lambda *_: self.toggle_crop(False, apply=True))
-        cancel = btn("close", "Cancelar", size=16)
-        cancel.connect("clicked", lambda *_: self.toggle_crop(False, apply=False))
-        self.crop_group.pack_start(cancel, False, False, 0)
-        self.crop_group.pack_start(ok, False, False, 0)
-        self.center.add_named(self.crop_group, "crop")
-        self.center.add_named(Gtk.Box(), "none")
-        bar.set_center_widget(self.center)
-
-        # ---- direita: só ícones
-        self.right = Gtk.Box(spacing=4)
-        self.btn_ext = btn("openwith", tip="Editar em outro aplicativo", size=18)
-        self.btn_ext.connect("clicked", lambda *_: self.edit_external())
-        self.btn_save = btn("save", tip="Salvar como (Ctrl+S)", size=18)
-        self.btn_save.connect("clicked", lambda *_: self.save_as())
-        self.btn_copy = btn("copy", tip="Copiar (Ctrl+C)", size=18)
-        self.btn_copy.connect("clicked", lambda *_: self.copy_image())
-        self.btn_share = btn("share", tip="Compartilhar", size=18)
-        self.btn_share.connect("clicked", self.popup_share)
-        self.btn_more = btn("more", tip="Mais", size=18)
-        self.btn_more.connect("clicked", self.popup_more)
-        self.file_group = Gtk.Box(spacing=4)
-        for w in (self.btn_ext, self.btn_save, self.btn_copy, self.btn_share):
-            self.file_group.pack_start(w, False, False, 0)
-        self.file_group.pack_start(self._sep(), False, False, 0)
-        self.right.pack_start(self.file_group, False, False, 0)
-        self.right.pack_start(self.btn_more, False, False, 0)
-        bar.pack_end(self.right, False, False, 0)
-        self.toolbar = bar
+        self.btn_hl.connect("toggled", lambda *_: self.refresh_tool_icons())
         return bar
 
-    def _sep(self):
-        s = Gtk.Box()
-        s.get_style_context().add_class("sep")
-        s.set_valign(Gtk.Align.CENTER)
-        return s
-
     def build_infobar(self):
-        rev = Gtk.Revealer()
-        rev.set_transition_type(Gtk.RevealerTransitionType.SLIDE_DOWN)
-        box = Gtk.Box(spacing=14)
-        box.get_style_context().add_class("cap-infobar")
-        ic = icons.image("info_filled", 20, theme.palette()["accent"])
-        ic.set_valign(Gtk.Align.START)
-        ic.set_margin_top(2)
-        box.pack_start(ic, False, False, 0)
-        col = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=7)
-        t = Gtk.Label(label="As capturas de tela são salvas automaticamente na pasta Capturas de Tela", xalign=0)
-        t.get_style_context().add_class("bold")
-        t.set_line_wrap(True)
-        t2 = Gtk.Label(label="Você pode desativá-lo nas configurações do aplicativo.", xalign=0)
-        link = Gtk.Button(label="Abrir as Configurações da Ferramenta de Captura")
-        link.get_style_context().add_class("link")
-        link.set_halign(Gtk.Align.START)
-        link.set_margin_top(8)
-        link.connect("clicked", lambda *_: self.show_page("settings"))
-        for w in (t, t2, link):
-            col.pack_start(w, False, False, 0)
-        box.pack_start(col, True, True, 0)
-        cl = self._close_btn(rev)
-        cl.set_valign(Gtk.Align.START)
-        box.pack_end(cl, False, False, 0)
-        rev.add(box)
-        return rev
-
-    def _close_btn(self, rev):
-        b = btn("close", size=18)
-        b.connect("clicked", lambda *_: (rev.set_reveal_child(False), settings.__setitem__("infobar_dismissed", True)))
-        return b
+        return chrome.build_infobar(self)
 
     def build_empty(self):
         l = Gtk.Label()
-        l.set_markup("Pressione <b>Super</b> + <b>Shift</b> + <b>S</b> para iniciar uma captura")
+        l.set_markup("Pressione <b>⊞</b> + <b>Shift</b> + <b>S</b> para iniciar uma captura")
         l.get_style_context().add_class("empty-text")
         l.set_valign(Gtk.Align.CENTER)
         l.set_halign(Gtk.Align.CENTER)
+        l.set_margin_bottom(61)      # o original centraliza o texto acima de uma faixa inferior de 29 px
         bg = Gtk.EventBox()
         bg.get_style_context().add_class("cap-canvas-bg")
         bg.add(l)
@@ -375,15 +180,16 @@ class EditorWindow(Gtk.ApplicationWindow):
 
     def refresh_capture_icons(self):
         name = [i for k, i, _ in SHAPES if k == settings["shape"]][0]
-        self.shape_img.set_from_pixbuf(icons.pixbuf(name, 18, theme.icon_color()))
+        icons.set_role(self.shape_img, name=name)
         d = [i for k, i, _ in DELAYS if k == settings["delay"]][0]
-        self.delay_img.set_from_pixbuf(icons.pixbuf(d, 18, theme.icon_color()))
+        icons.set_role(self.delay_img, name=d)
 
     def refresh_tool_icons(self):
+        pal = theme.palette()
         pc, _ = self.canvas_opts("pen")
         hc, _ = self.canvas_opts("hl")
-        self.pen_img.set_from_pixbuf(icons.tool_pixbuf("pen", pc, theme.icon_color(), 22))
-        self.hl_img.set_from_pixbuf(icons.tool_pixbuf("highlighter", hc, theme.icon_color(), 22))
+        self.pen_img.set_from_pixbuf(icons.tool_pixbuf("pen", pc, pal["text"], 20, pal["bg0"]))
+        self.hl_img.set_from_pixbuf(icons.tool_pixbuf("highlighter", hc, pal["text"], 20, pal["tile_on"] if self.btn_hl.get_active() else pal["bg0"]))
 
     def canvas_opts(self, k):
         c = getattr(self, "canvas", None)
@@ -402,18 +208,15 @@ class EditorWindow(Gtk.ApplicationWindow):
         has = self.canvas.base is not None
         cropping = self.canvas.tool == "crop"
         self.center.set_visible_child_name("crop" if has and cropping else "edit" if has else "none")
-        self.ocr_empty_box.set_visible(not has)
-        self.new_label.set_visible(not has)
-        self.new_label.set_no_show_all(True)
-        ctx = self.btn_new.get_style_context()
-        if has:
-            ctx.add_class("icononly")
-        else:
-            ctx.remove_class("icononly")
-        self.new_img.set_from_pixbuf(icons.pixbuf("plus", 18, theme.palette()["accent"] if has else theme.icon_color()))
-        self.file_group.set_visible(has)
+        for w_ in self._ocr_widgets:
+            w_.set_visible(not has)
+        chrome.layout_left(self, not has)
+        for w_ in self.file_widgets:
+            w_.set_visible(has)
         self.btn_undo.set_sensitive(bool(self.canvas.undo_stack))
         self.btn_redo.set_sensitive(bool(self.canvas.redo_stack))
+        icons.set_role(self.undo_img, role="text" if self.canvas.undo_stack else "disabled")
+        icons.set_role(self.redo_img, role="text" if self.canvas.redo_stack else "disabled")
         ed, lab = services.external_editor()
         self.btn_ext.set_tooltip_text(f"Editar no {lab}" if lab else "Abrir com…")
 
@@ -459,7 +262,7 @@ class EditorWindow(Gtk.ApplicationWindow):
         self.show_page("main")
         show = new_capture and settings["shot_autosave"] and not settings["infobar_dismissed"]
         self.infobar.set_reveal_child(bool(show))
-        self.title_label.set_text(APP_NAME if not name else f"{APP_NAME} — {name}")
+        self.title_label.set_text(APP_NAME)
         self.canvas.set_tool(None)
         self.uncheck_tools()
         self.update_edit_group()

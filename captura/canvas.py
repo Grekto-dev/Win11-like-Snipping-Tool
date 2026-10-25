@@ -174,14 +174,6 @@ class Canvas(Gtk.DrawingArea):
         cr.translate(ox, oy)
         cr.scale(self.zoom, self.zoom)
         iw, ih = self.base.get_width(), self.base.get_height()
-        # sombra suave
-        cr.save()
-        cr.set_source_rgba(0, 0, 0, 0.18 if not pal["dark"] else 0.5)
-        for i, al in ((3, 0.04), (2, 0.06), (1, 0.08)):
-            cr.rectangle(-i / self.zoom, -i / self.zoom + 1 / self.zoom, iw + 2 * i / self.zoom, ih + 2 * i / self.zoom)
-            cr.set_source_rgba(0, 0, 0, al)
-            cr.fill()
-        cr.restore()
         cr.set_source_surface(self.base, 0, 0)
         f = cr.get_source()
         if self.zoom < 1:

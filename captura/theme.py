@@ -8,33 +8,33 @@ from gi.repository import Gtk, Gdk
 from .config import settings
 
 LIGHT = dict(
-    dark=False, bg0="#f3f3f3", surface="#fbfbfb", canvas="#fcfcfc", text="#1b1b1b", subtle="#5f5f5f", disabled="#a0a0a0",
+    dark=False, bg0="#f3f3f3", surface="#fbfbfb", canvas="#fcfcfc", text="#1a1a1a", subtle="#5f5f5f", disabled="#a0a0a0",
+    chev="#5b5b5b", disabled_icon="#9b9b9b", tile_on="#eaeaea", seg_off="#ededed", seg_on="#fafafa", seg_edge="#c4c4c4", seg_out="#dfdfdf",
     border="#e0e0e0", border2="#d1d1d1", hover="rgba(0,0,0,0.055)", press="rgba(0,0,0,0.085)", card="#fdfdfd",
     accent="#0067c0", accent_hover="#1975c5", accent_text="#ffffff", infobar="#ffffff", flyout="#fcfcfc",
     shadow="rgba(0,0,0,0.28)", bar="#e9e9e9", crop_bg="#666666", toast_bg="#ffffff", link="#003e92", segbg="#ececec",
 )
 DARK = dict(
     dark=True, bg0="#202020", surface="#2b2b2b", canvas="#1c1c1c", text="#ffffff", subtle="#c8c8c8", disabled="#6f6f6f",
+    chev="#c8c8c8", disabled_icon="#6f6f6f", tile_on="#2f2f2f", seg_off="#2b2b2b", seg_on="#3a3a3a", seg_edge="#5a5a5a", seg_out="#3d3d3d",
     border="#333333", border2="#454545", hover="rgba(255,255,255,0.07)", press="rgba(255,255,255,0.05)", card="#2b2b2b",
     accent="#60cdff", accent_hover="#7ad6ff", accent_text="#000000", infobar="#2b2b2b", flyout="#2c2c2c",
     shadow="rgba(0,0,0,0.6)", bar="#2c2c2c", crop_bg="#1a1a1a", toast_bg="#2b2b2b", link="#99ebff", segbg="#2d2d2d",
 )
 
 CSS = string.Template(r"""
-* { font-size: 9.5pt; }
-.cap-window, .cap-window decoration { background: $bg0; color: $text; }
-.cap-window headerbar, headerbar.cap-header {
-    background: $bg0; color: $text; border: none; box-shadow: none; min-height: 32px; padding: 0 4px;
-}
+* { font-family: "Selawik", "Segoe UI", "Noto Sans", sans-serif; font-size: 14px; }
+.cap-window { background: $bg0; color: $text; }
+window.cap-window decoration { background: $bg0; box-shadow: 0 0 0 1px rgba(0,0,0,0.18), 0 6px 22px rgba(0,0,0,0.28); margin: 24px; border-radius: 8px; }
+window.cap-window.maximized decoration { margin: 0; box-shadow: none; border-radius: 0; }
+headerbar.cap-header { background: $bg0; color: $text; border: none; box-shadow: none; min-height: 32px; padding: 0; margin: 0; border-radius: 8px 8px 0 0; }
+headerbar.cap-header .title { color: $text; }
 headerbar.cap-header .title { color: $subtle; font-size: 9pt; }
-headerbar.cap-header button.titlebutton { color: $text; background: transparent; border: none; box-shadow: none; min-width: 34px; min-height: 30px; border-radius: 4px; }
-headerbar.cap-header button.titlebutton:hover { background: $hover; }
-headerbar.cap-header button.titlebutton.close:hover { background: #c42b1c; color: #fff; }
 .cap-window label { color: $text; }
-.cap-window label.subtle { color: $subtle; font-size: 9pt; }
-.cap-window label.section { font-weight: 400; font-size: 10.5pt; }
-.cap-window label.pagetitle { font-size: 15pt; font-weight: 600; }
-.cap-canvas-bg { background: $canvas; }
+.cap-window label.subtle { color: $subtle; font-size: 12px; }
+.cap-window label.section { font-weight: 400; font-size: 14px; }
+.cap-window label.pagetitle { font-size: 24px; font-weight: 600; }
+.cap-canvas-bg { background: #f9f9f9; }
 .cap-canvas-bg.cropping { background: $crop_bg; }
 
 button.tbtn, button.tbtn:backdrop {
@@ -61,17 +61,13 @@ button.tbtn.menuitem label { color: $text; }
 .sep { background: $border2; min-width: 1px; min-height: 20px; margin: 0 6px; }
 .msep { background: $border; min-height: 1px; margin: 4px 2px; }
 .cap-toolbar { border-bottom: 0; }
-.ind-bar { background: $accent; border-radius: 2px; min-width: 14px; min-height: 3px; }
-.cap-infobar { padding: 14px 18px 12px 18px; }
-.cap-infobar label, .cap-infobar label.bold { font-size: 9pt; }
-.tbtn label { font-size: 9.5pt; }
-.cap-infobar label.bold { font-weight: 600; }
-.cap-title { color: $subtle; font-size: 9pt; }
-.empty-text { font-size: 9.5pt; }
+.cap-title { color: $text; font-size: 12px; }
+.empty-text { font-size: 14px; }
 
-.cap-infobar { background: $infobar; border: 0 solid $border; border-width: 1px 0 1px 0; border-radius: 0; margin: 0; }
-.cap-infobar label.bold { font-weight: 700; }
-.cap-infobar button.link { background: none; border: none; box-shadow: none; padding: 0; color: $link; min-height: 24px; min-width: 0; }
+.cap-infobar { background: $infobar; border: 1px solid #ededed; border-radius: 5px; margin: 0; padding: 0; }
+.info-title { font-weight: 600; color: $text; }
+.info-desc { color: $text; letter-spacing: 0.1px; }
+.cap-infobar button.link { background: none; border: none; box-shadow: none; padding: 0; margin: 0; color: $link; min-height: 0; min-width: 0; }
 .cap-infobar button.link label { color: $link; }
 
 popover.cap-pop, popover.cap-pop.background {
@@ -88,13 +84,36 @@ popover.cap-pop modelbutton:hover { background: $hover; }
 .swatch:checked { border: 2px solid $accent; }
 scale trough { background: $border2; min-height: 4px; border-radius: 2px; }
 scale highlight { background: $accent; border-radius: 2px; min-height: 4px; }
-.cap-pop scale value { color: $text; font-size: 9pt; }
+.cap-pop scale value { color: $text; font-size: 12px; }
 scale slider { background: $accent; border: 3px solid $flyout; border-radius: 99px; min-width: 14px; min-height: 14px; margin: -7px; box-shadow: 0 0 0 1px $border2; }
 
 tooltip.background, tooltip { background: $flyout; background-color: $flyout; color: $text; border: 1px solid $border2; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
-tooltip label { color: $text; font-size: 9.5pt; padding: 2px 4px; }
+tooltip label { color: $text; font-size: 12px; padding: 2px 4px; }
 menu, .menu { background: $flyout; color: $text; border: 1px solid $border2; border-radius: 6px; }
 menu menuitem label, .menu menuitem label { color: $text; }
+/* ---- botões de precisão (barra de ferramentas) ---- */
+button.px { background: transparent; background-image: none; border: 0 solid transparent; border-radius: 4px; padding: 0; margin: 0;
+    min-width: 0; min-height: 0; box-shadow: none; text-shadow: none; outline: none; -gtk-icon-shadow: none; }
+button.px:hover { background: rgba(0,0,0,0.0373); }
+button.px:active { background: rgba(0,0,0,0.0241); }
+button.px:disabled { opacity: 1; }
+button.px:disabled image { -gtk-icon-effect: none; opacity: 1; }
+button.px.tool { border: 1px solid transparent; border-radius: 5px; }
+button.px.tool:checked { background: $tile_on; border-color: $accent; box-shadow: inset 0 0 0 2px $card; }
+button.px.newbtn { background: #fbfbfb; border: 1px solid #e5e5e5; border-bottom-color: #cccccc; border-radius: 4px; }
+button.px.segl, button.px.segr { background: $seg_off; border: 1px solid $seg_out; border-radius: 0; }
+button.px.segl { border-radius: 4px 0 0 4px; border-right-color: transparent; }
+button.px.segr { border-radius: 0 4px 4px 0; border-left-color: transparent; }
+button.px.segl:checked, button.px.segr:checked { background: $seg_on; border-color: $seg_edge; }
+button.px.segl:checked { border-right-color: #cccccc; }
+button.px.segr:checked { border-left-color: #cccccc; }
+box.pxsep { background: #e0e0e0; min-width: 1px; }
+box.tbline { background: #e0e0e0; min-height: 1px; }
+button.caption { background: transparent; background-image: none; border: 0; border-radius: 0; padding: 0; margin: 0; min-width: 0; min-height: 0; box-shadow: none; outline: none; }
+button.caption:hover { background: rgba(0,0,0,0.0373); }
+button.caption-close:hover { background: #c42b1c; }
+.ind-bar { background: $accent; border-radius: 2px; min-width: 16px; min-height: 3px; }
+.cap-toolbar { background: $bg0; }
 /* Overlay de captura */
 .snip-toolbar { background: $bar; border: 1px solid $border; border-radius: 12px; padding: 3px 8px; box-shadow: 0 6px 24px $shadow; }
 .snip-toolbar .seg { background: transparent; border: none; }
@@ -125,9 +144,9 @@ switch:checked slider { background: $accent_text; }
 .cap-window combobox menu menuitem, menu menuitem { color: $text; padding: 6px 10px; border-radius: 4px; }
 .cap-window combobox menu menuitem:hover, menu menuitem:hover { background: $hover; }
 .cap-toolbar-crop label { color: $text; }
-.sizelabel { color: $subtle; font-size: 9pt; }
+.sizelabel { color: $subtle; font-size: 12px; }
 .rec-bar { background: $card; border: 1px solid $border2; border-radius: 8px; padding: 4px 10px; box-shadow: 0 4px 16px $shadow; }
-.rec-time { font-weight: 600; font-size: 11pt; min-width: 54px; }
+.rec-time { font-weight: 600; font-size: 14px; min-width: 54px; }
 .rec-dot { color: #e81123; }
 .toast { background: $card; border: 1px solid $border2; border-radius: 8px; padding: 10px 18px; box-shadow: 0 4px 16px $shadow; }
 """)
@@ -162,7 +181,7 @@ def apply():
     Gtk.StyleContext.add_provider_for_screen(screen, _provider, Gtk.STYLE_PROVIDER_PRIORITY_USER)
     _current = pal
     from . import icons
-    icons.set_text_color(pal["text"])
+    icons.apply_palette(pal)
     return pal
 
 

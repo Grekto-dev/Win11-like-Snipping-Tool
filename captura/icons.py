@@ -3,6 +3,7 @@
 `pixbuf(nome, tamanho, cor)` renderiza com GdkPixbuf; `image(...)` devolve Gtk.Image.
 Os ícones usam `currentColor` (substituído pela cor pedida), então servem ao tema claro e escuro.
 """
+import os
 import gi
 gi.require_version("Gtk", "3.0")
 gi.require_version("GdkPixbuf", "2.0")
@@ -71,11 +72,54 @@ def svg(name, size=20, color="#000000", extra=""):
 
 
 _cache = {}
+_DATA = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "icons")
+
+# nome usado pelo app -> ("f", arquivo Fluent) | ("c", arquivo próprio)
+_NEW = {
+    "camera": ("f", "camera"), "video": ("c", "video"), "rect": ("c", "shape"), "window": ("f", "window"),
+    "fullscreen": ("f", "desktop"), "freeform": ("f", "lasso"), "timer0": ("f", "timer_off"), "timer3": ("f", "timer_3"),
+    "timer10": ("f", "timer_10"), "eraser": ("f", "eraser"), "shapes": ("f", "shapes"), "crop": ("f", "crop"),
+    "textscan": ("c", "text"), "undo": ("c", "undo"), "redo": ("c", "redo"), "save": ("f", "save"), "copy": ("f", "copy"),
+    "share": ("c", "share"), "more": ("c", "more"), "close": ("f", "dismiss"), "plus": ("c", "plus"),
+    "chevron_down": ("f", "chevron_down"), "chevron_up": ("f", "chevron_up"), "chevron_right": ("f", "chevron_right"),
+    "eyedropper": ("f", "eyedropper"), "gear": ("f", "settings"), "folder": ("f", "folder_open"), "print": ("f", "print"),
+    "zoom": ("f", "zoom_in"), "back": ("f", "arrow_left"), "trash": ("f", "delete"), "info": ("f", "info"),
+    "mic": ("f", "mic"), "speaker": ("f", "speaker_2"), "record": ("f", "record"), "stop": ("f", "stop"),
+    "line": ("f", "line"), "arrow": ("f", "arrow_up_right"), "ellipse": ("f", "circle"), "square": ("f", "square"),
+    "share_mail": ("f", "mail"), "openwith": ("f", "open"), "check": ("f", "checkmark"), "edit": ("f", "edit"),
+    "markup": ("f", "image_edit"), "markup_img": ("f", "image_edit"),
+    "chev": ("c", "chev"), "pen": ("c", "pen"), "hl": ("c", "hl"), "paint": ("f", "paint_brush"), "info15": ("c", "info15"),
+}
 
 
-def pixbuf(name, size=20, color="#1b1b1b", scale=1):
-    key = (name, size, color, scale)
-    if key not in _cache:
+def _file_svg(kind, fname):
+    sub = "fluent" if kind == "f" else "custom"
+    path = os.path.join(_DATA, sub, f"ic_fluent_{fname}_20_regular.svg" if kind == "f" else f"{fname}.svg")
+    with open(path, encoding="utf-8") as f:
+        return f.read()
+
+
+def _render_svg(text, size, scale=1):
+    loader = GdkPixbuf.PixbufLoader.new_with_type("svg")
+    loader.set_size(size * scale, size * scale)
+    loader.write(text.encode())
+    loader.close()
+    return loader.get_pixbuf()
+
+
+def pixbuf(name, size=20, color="#1b1b1b", scale=1, tip=None, bg="#f3f3f3"):
+    key = (name, size, color, scale, tip, bg)
+    if key in _cache:
+        return _cache[key]
+    if name in _NEW:
+        kind, fname = _NEW[name]
+        text = _file_svg(kind, fname)
+        for ink in ("#212121", "#1a1a1a"):
+            text = text.replace(ink, color)
+        text = text.replace("{c}", color).replace("{pen}", tip or "#e61b1b").replace("{hl}", tip or "#ffe600").replace("{bg}", bg)
+        text = text.replace("#5b5b5b", color).replace("#0067c0", color)
+        _cache[key] = _render_svg(text, size, scale)
+    else:
         loader = GdkPixbuf.PixbufLoader.new_with_type("svg")
         loader.set_size(size * scale, size * scale)
         loader.write(svg(name, size * scale, color))
@@ -84,30 +128,59 @@ def pixbuf(name, size=20, color="#1b1b1b", scale=1):
     return _cache[key]
 
 
-TEXT_COLOR = ["#1b1b1b"]
-_themed = []
+TEXT_COLOR = ["#1a1a1a"]
+_themed = []           # (Gtk.Image, nome, tamanho, papel)
+_PALETTE = {"text": "#1a1a1a", "chev": "#5b5b5b", "disabled": "#9b9b9b", "accent": "#0067c0"}
 
 
-def image(name, size=20, color="#1b1b1b"):
-    img = Gtk.Image.new_from_pixbuf(pixbuf(name, size, color))
-    if color == TEXT_COLOR[0]:
-        entry = (img, name, size)
-        _themed.append(entry)
-        # GTK pode manter o widget C vivo após coletar seu wrapper Python.
-        # Uma weakref ao wrapper, portanto, perde ícones ainda na tela.
-        # Mantemos a referência até o sinal destroy, sem reter widgets mortos.
-        def forget(_img):
-            if entry in _themed:
-                _themed.remove(entry)
-        img.connect('destroy', forget)
+def role_color(role):
+    return _PALETTE[role]
+
+
+def role_image(name, size=20, role="text"):
+    """Gtk.Image que é recolorido sozinho quando o tema muda (papel: text|chev|disabled|accent)."""
+    img = Gtk.Image.new_from_pixbuf(pixbuf(name, size, _PALETTE[role]))
+    entry = [img, name, size, role]
+    _themed.append(entry)
+
+    def forget(_img):
+        if entry in _themed:
+            _themed.remove(entry)
+    img.connect("destroy", forget)
     return img
 
 
+def set_role(img, name=None, role=None):
+    """Troca nome e/ou papel de uma imagem criada por role_image."""
+    for e in _themed:
+        if e[0] is img:
+            if name:
+                e[1] = name
+            if role:
+                e[3] = role
+            img.set_from_pixbuf(pixbuf(e[1], e[2], _PALETTE[e[3]]))
+            return
+
+
+def image(name, size=20, color="#1a1a1a"):
+    """Compatibilidade: ícone na cor de texto do tema (recolorido na troca de tema) ou cor fixa."""
+    if color in ("#1b1b1b", "#1a1a1a", _PALETTE["text"]):
+        return role_image(name, size, "text")
+    return Gtk.Image.new_from_pixbuf(pixbuf(name, size, color))
+
+
+def apply_palette(pal):
+    """Chamado ao aplicar o tema: atualiza as cores por papel e recolore todos os ícones vivos."""
+    _PALETTE.update(text=pal["text"], chev=pal.get("chev", pal["subtle"]),
+                    disabled=pal.get("disabled_icon", pal["disabled"]), accent=pal["accent"])
+    TEXT_COLOR[0] = pal["text"]
+    _cache_keep = {}
+    for img, name, size, role in tuple(_themed):
+        img.set_from_pixbuf(pixbuf(name, size, _PALETTE[role]))
+
+
 def set_text_color(color):
-    """Recolore todos os ícones temáticos ainda vivos."""
-    TEXT_COLOR[0] = color
-    for img, name, size in tuple(_themed):
-        img.set_from_pixbuf(pixbuf(name, size, color))
+    apply_palette({"text": color, "subtle": _PALETTE["chev"], "disabled": _PALETTE["disabled"], "accent": _PALETTE["accent"]})
 
 
 def marker_svg(color, tip="#e61b1b", highlighter=False, size=22):
@@ -121,13 +194,10 @@ def marker_svg(color, tip="#e61b1b", highlighter=False, size=22):
     return body
 
 
-def tool_pixbuf(kind, tip, color, size=22):
-    """kind: 'pen' | 'highlighter'."""
-    body = marker_svg(color, tip, kind == "highlighter")
-    doc = (f'<svg xmlns="http://www.w3.org/2000/svg" width="{size}" height="{size}" viewBox="0 0 24 24" {_S} '
-           f'color="{color}">{body}</svg>').replace("currentColor", color).encode()
-    loader = GdkPixbuf.PixbufLoader.new_with_type("svg")
-    loader.set_size(size, size)
-    loader.write(doc)
-    loader.close()
-    return loader.get_pixbuf()
+def tool_pixbuf(kind, tip, color, size=20, bg="#f3f3f3"):
+    """kind: 'pen' | 'highlighter' — ícone com a cor da ponta atual."""
+    text = _file_svg("c", "pen" if kind == "pen" else "hl")
+    for ink in ("#1a1a1a", "#212121"):
+        text = text.replace(ink, color)
+    text = text.replace("{pen}", tip).replace("{hl}", tip).replace("{bg}", bg)
+    return _render_svg(text, size)

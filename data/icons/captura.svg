@@ -1,9 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
-  <defs>
-    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3aa0ff"/><stop offset="1" stop-color="#1b5fd1"/></linearGradient>
-  </defs>
-  <rect x="10" y="22" width="108" height="84" rx="14" fill="url(#g)"/>
-  <rect x="10" y="22" width="108" height="84" rx="14" fill="none" stroke="#0b3a8c" stroke-opacity=".35" stroke-width="2"/>
-  <path d="M30 52V40a6 6 0 0 1 6-6h12M80 34h12a6 6 0 0 1 6 6v12M98 76v12a6 6 0 0 1-6 6H80M48 94H36a6 6 0 0 1-6-6V76" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round"/>
-  <circle cx="64" cy="64" r="11" fill="#fff"/>
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16" fill="none">
+  <g stroke="#d83b01" stroke-width="2" shape-rendering="crispEdges">
+    <path d="M2 2h2M5 2h2M8 2h2M3 4v2M3 7v2"/>
+  </g>
+  <g stroke="#8e959d" stroke-width="1.5">
+    <path d="M11 3v8M4.2 10h8.8"/>
+  </g>
+  <circle cx="14.5" cy="9" r="1.5" fill="#a5d6ee" stroke="#28afea" stroke-width="1"/>
+  <circle cx="9.5" cy="13.5" r="1.5" fill="#a5d6ee" stroke="#28afea" stroke-width="1"/>
 </svg>
