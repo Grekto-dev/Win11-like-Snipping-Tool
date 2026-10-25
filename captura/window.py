@@ -1,13 +1,14 @@
 """Janela principal: barra de ferramentas, editor, configurações."""
 import os
 import subprocess
+import threading
 import gi
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 import cairo
 from gi.repository import Gtk, Gdk, GLib, GdkPixbuf
 
-from . import APP_NAME, annot, chrome, icons, menus, metrics as M, services, theme
+from . import APP_NAME, annot, chrome, icons, menus, metrics as M, services, textlayer, theme
 from .canvas import Canvas
 from .config import settings
 from .flyouts import ToolFlyout, ShapeFlyout
@@ -125,6 +126,7 @@ class EditorWindow(Gtk.ApplicationWindow):
         self.toast_rev.add(tbox)
         self.toast_overlay.add_overlay(self.toast_rev)
         self.toast_overlay.set_overlay_pass_through(self.toast_rev, True)
+        self.toast_overlay.add_overlay(self.build_text_bar())
         self._toast_id = 0
         main.pack_start(self.toast_overlay, True, True, 0)
         self.canvas = Canvas()
@@ -228,6 +230,7 @@ class EditorWindow(Gtk.ApplicationWindow):
 
     def on_canvas_changed(self, *a):
         self.update_edit_group()
+        self.btn_copy_sel.set_sensitive(bool(self.canvas.text_sel))
         if self.canvas.base is not None and settings["shot_autocopy_edits"] and self.canvas.dirty:
             if self._copy_timer:
                 GLib.source_remove(self._copy_timer)
@@ -311,6 +314,8 @@ class EditorWindow(Gtk.ApplicationWindow):
         return True
 
     def select_tool(self, name):
+        if self.btn_text.get_active():
+            self.btn_text.set_active(False)
         for k, tb in self.tool_btns.items():
             tb.set_active(k == name)
         if self.btn_crop.get_active():
@@ -364,6 +369,8 @@ class EditorWindow(Gtk.ApplicationWindow):
 
     def toggle_crop(self, on, apply=False):
         if on:
+            if self.btn_text.get_active():
+                self.btn_text.set_active(False)
             for tb in self.tool_btns.values():
                 tb.set_active(False)
             self.canvas.set_tool("crop")
@@ -420,6 +427,108 @@ class EditorWindow(Gtk.ApplicationWindow):
         self._menu([("share_mail", "Enviar por e-mail", None, self.share_mail),
                     ("copytext", "Copiar caminho do arquivo", None, self.copy_path),
                     ("openwith", "Abrir com…", None, self.open_with)], menus.MORE, right=M.W, top=78)
+
+    # ------------------------------------------------------- ações de texto
+    def build_text_bar(self):
+        bar = Gtk.Box(spacing=6)
+        bar.get_style_context().add_class("textbar")
+        bar.set_halign(Gtk.Align.CENTER)
+        bar.set_valign(Gtk.Align.START)
+        bar.set_margin_top(12)
+        specs = (("btn_copy_all", "Copiar todo o texto", self.copy_all_text),
+                 ("btn_copy_sel", "Copiar seleção", self.copy_selected_text),
+                 ("btn_hide", "Ocultar dados ▾", self.popup_hide_menu))
+        for attr, label, cb in specs:
+            b = Gtk.Button(label=label)
+            b.get_style_context().add_class("tbtn")
+            b.set_can_focus(False)
+            b.connect("clicked", lambda _b, cb=cb: cb() if cb != self.popup_hide_menu else cb(_b))
+            bar.pack_start(b, False, False, 0)
+            setattr(self, attr, b)
+        self.btn_copy_sel.set_sensitive(False)
+        bar.set_no_show_all(True)
+        bar.hide()
+        self.text_bar = bar
+        return bar
+
+    def toggle_text_mode(self, btn):
+        if not btn.get_active():
+            if self.canvas.tool == "text":
+                self.canvas.set_tool(None)
+            self.text_bar.hide()
+            return
+        s = self.current_surface()
+        if s is None:
+            btn.set_active(False)
+            return
+        if self.btn_crop.get_active():
+            self.btn_crop.set_active(False)
+        for tb in self.tool_btns.values():
+            tb.set_active(False)
+        self._text_job = job = object()
+
+        def work():
+            try:
+                words = textlayer.ocr_surface(s)
+                err = None
+            except Exception as e:
+                words, err = [], str(e)
+            GLib.idle_add(done, words, err)
+
+        def done(words, err):
+            if self._text_job is not job or not self.btn_text.get_active():
+                return False
+            if err or not words:
+                self.btn_text.set_active(False)
+                self.show_toast("Falha ao reconhecer o texto" if err else "Nenhum texto foi encontrado na imagem")
+                return False
+            self.canvas.set_tool("text")
+            self.canvas.set_text_words(words)
+            self.btn_copy_sel.set_sensitive(False)
+            for child in self.text_bar.get_children():
+                child.show()
+            self.text_bar.show()
+            return False
+        if not services.ocr_available():
+            btn.set_active(False)
+            self.app.run_ocr(services.surface_to_pixbuf(s), self)      # mostra a orientação de instalação
+            return
+        threading.Thread(target=work, daemon=True).start()
+
+    def copy_all_text(self):
+        text = textlayer.words_text(self.canvas.text_words)
+        if text:
+            services.copy_text(text)
+            self.show_toast("Texto copiado")
+
+    def copy_selected_text(self):
+        text = self.canvas.selected_text()
+        if text:
+            services.copy_text(text)
+            self.show_toast("Texto copiado")
+
+    def hide_sensitive(self, kinds=("email", "phone", "url")):
+        found = textlayer.sensitive(self.canvas.text_words)
+        words = [w for k in kinds for w in found.get(k, [])]
+        n = self.canvas.redact(words)
+        self.show_toast(f"{n} item(ns) ocultado(s)" if n else "Nenhum dado confidencial encontrado")
+        return n
+
+    def popup_hide_menu(self, b):
+        sel = bool(self.canvas.text_sel)
+        items = [("eye", "Ocultar e-mails", None, lambda: self.hide_sensitive(("email",))),
+                 ("eye", "Ocultar números de telefone", None, lambda: self.hide_sensitive(("phone",))),
+                 ("eye", "Ocultar endereços da web", None, lambda: self.hide_sensitive(("url",))),
+                 ("eye", "Ocultar tudo isso", None, self.hide_sensitive),
+                 None,
+                 ("eye", "Ocultar seleção", None, self.hide_selection, sel)]
+        x, y = b.translate_coordinates(self.toolbar, 0, 0)
+        self._menu(items, menus.SINGLE, left=x + 4, top=y + b.get_allocated_height() + M.TB_Y + 4)
+
+    def hide_selection(self):
+        n = self.canvas.redact(list(self.canvas.text_sel))
+        if n:
+            self.show_toast(f"{n} item(ns) ocultado(s)")
 
     def popup_eraser_menu(self, b):
         self._menu([("trash", "Apagar todas as marcações", None, self.canvas.clear_markup)],

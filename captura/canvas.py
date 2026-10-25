@@ -8,6 +8,7 @@ from gi.repository import Gtk, Gdk, GObject
 
 from . import annot, theme
 from .ruler import Ruler
+from . import textlayer
 
 HANDLE_R = 5.5
 
@@ -39,6 +40,9 @@ class Canvas(Gtk.DrawingArea):
         self.show_ruler = False
         self.ruler = None
         self.ruler_drag = None
+        self.text_words = []
+        self.text_sel = []
+        self.text_drag = None
         self.opts = {"pen": ("#e61b1b", 4), "hl": ("#ffe600", 12), "shape": ("#e61b1b", 3), "shape_kind": "rect"}
         self.crop_rect = None            # (x0, y0, x1, y1) em px da imagem
         self.crop_drag = None
@@ -72,8 +76,15 @@ class Canvas(Gtk.DrawingArea):
         self.queue_draw()
         self.emit("changed")
 
+    def _snapshot(self):
+        return (self.base, annot.clone(self.items), list(self.text_words))
+
+    def _restore(self, snap):
+        self.base, self.items, self.text_words = snap
+        self.text_sel = []
+
     def push_undo(self):
-        self.undo_stack.append((self.base, annot.clone(self.items)))
+        self.undo_stack.append(self._snapshot())
         if len(self.undo_stack) > 100:
             self.undo_stack.pop(0)
         self.redo_stack.clear()
@@ -82,8 +93,8 @@ class Canvas(Gtk.DrawingArea):
     def undo(self):
         if not self.undo_stack:
             return
-        self.redo_stack.append((self.base, annot.clone(self.items)))
-        self.base, self.items = self.undo_stack.pop()
+        self.redo_stack.append(self._snapshot())
+        self._restore(self.undo_stack.pop())
         self.sel = None
         self.update_scale()
         self.queue_draw()
@@ -92,8 +103,8 @@ class Canvas(Gtk.DrawingArea):
     def redo(self):
         if not self.redo_stack:
             return
-        self.undo_stack.append((self.base, annot.clone(self.items)))
-        self.base, self.items = self.redo_stack.pop()
+        self.undo_stack.append(self._snapshot())
+        self._restore(self.redo_stack.pop())
         self.sel = None
         self.update_scale()
         self.queue_draw()
@@ -144,9 +155,39 @@ class Canvas(Gtk.DrawingArea):
     def zoom_by(self, f):
         self.set_zoom(self.zoom * f)
 
+    def set_text_words(self, words):
+        self.text_words = list(words)
+        self.text_sel = []
+        self.text_drag = None
+        self.queue_draw()
+
+    def selected_text(self):
+        if self.tool != "text":
+            return ""
+        return textlayer.words_text(self.text_sel)
+
+    def redact(self, words, pad=2):
+        """Cobre palavras com retângulos pretos opacos (anotações desfazíveis)."""
+        words = [w for w in words if w in self.text_words]
+        if not words or self.base is None:
+            return 0
+        self.push_undo()
+        for w in words:
+            x0, y0, x1, y1 = w.box
+            s = annot.Shape("rect", x0 - pad, y0 - pad, x1 + pad, y1 + pad, "#000000", 1)
+            s.fill = "#000000"
+            self.items.append(s)
+        self.text_words = [w for w in self.text_words if w not in words]
+        self.text_sel = [w for w in self.text_sel if w not in words]
+        self.queue_draw()
+        self.emit("changed")
+        return len(words)
+
     def set_tool(self, tool):
         self.tool = tool
         self.sel = None
+        self.text_sel = []
+        self.text_drag = None
         if tool == "crop" and self.base is not None:
             self.crop_rect = (0, 0, self.base.get_width(), self.base.get_height())
             self.fit = True
@@ -196,6 +237,8 @@ class Canvas(Gtk.DrawingArea):
             self.draw_handles(cr, self.sel)
         if self.tool == "crop" and self.crop_rect:
             self.draw_crop(cr)
+        if self.tool == "text":
+            self.draw_text_layer(cr, iw, ih)
         cr.restore()
         if self.show_ruler:
             if self.ruler is None:
@@ -211,6 +254,36 @@ class Canvas(Gtk.DrawingArea):
             cr.arc(x, y, 9, 0, 2 * math.pi)
             cr.stroke()
         return False
+
+    def draw_text_layer(self, cr, iw, ih):
+        """Esmaece a imagem e mantém as palavras reconhecidas em destaque."""
+        cr.save()
+        cr.rectangle(0, 0, iw, ih)
+        for w in self.text_words:
+            x0, y0, x1, y1 = w.box
+            cr.rectangle(x0 - 2, y0 - 1, x1 - x0 + 4, y1 - y0 + 2)
+        cr.set_fill_rule(cairo.FILL_RULE_EVEN_ODD)
+        cr.set_source_rgba(0, 0, 0, .5)
+        cr.fill()
+        cr.restore()
+        pal = theme.palette()
+        r, g, b = annot.hex_rgb(pal.get("accent", "#0067c0"))
+        cr.set_line_width(1.2 / self.zoom)
+        for w in self.text_words:
+            x0, y0, x1, y1 = w.box
+            cr.rectangle(x0 - 2, y0 - 1, x1 - x0 + 4, y1 - y0 + 2)
+            if w in self.text_sel:
+                cr.set_source_rgba(r, g, b, .35)
+                cr.fill_preserve()
+            cr.set_source_rgba(r, g, b, .9)
+            cr.stroke()
+        if self.text_drag:
+            x0, y0, x1, y1 = self.text_drag
+            cr.rectangle(min(x0, x1), min(y0, y1), abs(x1 - x0), abs(y1 - y0))
+            cr.set_source_rgba(r, g, b, .15)
+            cr.fill_preserve()
+            cr.set_source_rgba(r, g, b, .9)
+            cr.stroke()
 
     def draw_handles(self, cr, s):
         z = self.zoom
@@ -298,6 +371,8 @@ class Canvas(Gtk.DrawingArea):
         for it in self.items:
             it.translate(-x0, -y0)
         self.base = new
+        self.text_words = []
+        self.text_sel = []
         self.crop_rect = None
         self.fit = True
         self.update_scale()
@@ -331,6 +406,10 @@ class Canvas(Gtk.DrawingArea):
             return True
         ix, iy = self.to_img(ev.x, ev.y)
         t = self.tool
+        if t == "text":
+            self.text_drag = (ix, iy, ix, iy)
+            self.queue_draw()
+            return True
         if t in ("pen", "hl"):
             col, size = self.opts[t]
             self.cur_stroke = annot.Stroke(t, [(ix, iy)], col, size)
@@ -381,6 +460,10 @@ class Canvas(Gtk.DrawingArea):
         if self.base is None:
             return False
         ix, iy = self.to_img(ev.x, ev.y)
+        if self.text_drag:
+            self.text_drag = (self.text_drag[0], self.text_drag[1], ix, iy)
+            self.queue_draw()
+            return True
         if self.cur_stroke:
             last = self.cur_stroke.pts[-1]
             if math.hypot(ix - last[0], iy - last[1]) * self.zoom >= 1.2:
@@ -434,6 +517,17 @@ class Canvas(Gtk.DrawingArea):
             return False
         if self.ruler_drag:
             self.ruler_drag = None
+            return True
+        if self.text_drag:
+            x0, y0, x1, y1 = self.text_drag
+            self.text_drag = None
+            if abs(x1 - x0) * self.zoom < 3 and abs(y1 - y0) * self.zoom < 3:
+                hit = [w for w in self.text_words if w.box[0] <= x0 <= w.box[2] and w.box[1] <= y0 <= w.box[3]]
+                self.text_sel = hit[:1]
+            else:
+                self.text_sel = textlayer.words_in_rect(self.text_words, (x0, y0, x1, y1))
+            self.queue_draw()
+            self.emit("changed")
             return True
         if self.cur_stroke:
             self.push_undo()

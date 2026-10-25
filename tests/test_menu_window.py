@@ -6,6 +6,7 @@ import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gio, GLib
 
+from gtkapp import shared_app
 from captura import menus, theme
 from captura.window import EditorWindow
 from captura.config import settings
@@ -21,16 +22,9 @@ def drain(seconds=0.12):
 class MenuWindowTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.app = Gtk.Application(application_id="org.captura.MenuTests.t" + uuid.uuid4().hex, flags=Gio.ApplicationFlags.NON_UNIQUE)
-        cls.app.register(None)
+        cls.app = shared_app()
         cls.app.apply_theme = theme.apply
 
-    @classmethod
-    def tearDownClass(cls):
-        # register() alone must be paired with run() to unexport D-Bus cleanly.
-        cls.app.connect('activate', lambda _app: None)
-        GLib.idle_add(lambda: (cls.app.quit(), False)[1])
-        cls.app.run([])
 
     def setUp(self):
         settings['theme'] = 'light'

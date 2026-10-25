@@ -169,6 +169,7 @@ switch:checked slider { background: $accent_text; }
 .rec-bar { background: $card; border: 1px solid $border2; border-radius: 8px; padding: 4px 10px; box-shadow: 0 4px 16px $shadow; }
 .rec-time { font-weight: 600; font-size: 14px; min-width: 54px; }
 .rec-dot { color: #e81123; }
+.textbar { background: $card; border: 1px solid $border2; border-radius: 8px; padding: 6px; box-shadow: 0 4px 16px $shadow; }
 .toast { background: $card; border: 1px solid $border2; border-radius: 8px; padding: 10px 18px; box-shadow: 0 4px 16px $shadow; }
 """)
 

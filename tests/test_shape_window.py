@@ -4,14 +4,14 @@ import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gio
 import cairo
+from gtkapp import shared_app
 from captura import annot, theme
 from captura.window import EditorWindow
 
 
 class ShapeWindowTests(unittest.TestCase):
     def test_fill_from_picker_reaches_new_shapes_and_can_be_undone(self):
-        app = Gtk.Application(application_id='org.captura.VisualTests', flags=Gio.ApplicationFlags.NON_UNIQUE)
-        app.register(None)
+        app = shared_app()
         app.apply_theme = theme.apply
         theme.apply()
         w = EditorWindow(app)
