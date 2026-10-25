@@ -1,5 +1,6 @@
 """Aplicação: instância única (D-Bus), fluxos de captura, gravação, OCR, cor, notificações."""
 import os
+import shutil
 import subprocess
 import sys
 import threading
@@ -383,7 +384,7 @@ class CapturaApp(Gtk.Application):
             self._release()
             self.msg(None, "FFmpeg não encontrado", "A gravação de tela precisa do FFmpeg.\n\nInstale com:\n  sudo apt install ffmpeg")
             return
-        d = settings.rec_directory
+        d = settings.rec_directory if settings["rec_autosave"] else self._rec_scratch_dir()
         name = services.timestamp_name("Gravação de tela", "mp4")
         self.rec_dest = services.unique_path(d, name)
         self.recorder = services.Recorder(rect, settings["rec_mic"], settings["rec_system_audio"], self.rec_dest)
@@ -430,6 +431,41 @@ class CapturaApp(Gtk.Application):
         self.rec_bar = self.rec_outline = None
         self.recorder = None
 
+    @staticmethod
+    def _remove_quietly(path):
+        try:
+            os.remove(path)
+        except OSError:
+            pass
+
+    @staticmethod
+    def _rec_scratch_dir():
+        d = os.path.join(GLib.get_user_cache_dir(), "captura", "recordings")
+        os.makedirs(d, exist_ok=True)
+        return d
+
+    def ask_save_recording(self, tmp_path):
+        """Com o salvamento automático desligado: pergunta onde salvar. None descarta a gravação."""
+        while True:
+            d = Gtk.MessageDialog(message_type=Gtk.MessageType.QUESTION, text="Salvar a gravação de tela?")
+            d.format_secondary_text("O salvamento automático está desativado. Se você descartar, a gravação será perdida.")
+            d.add_buttons("Descartar", Gtk.ResponseType.REJECT, "Salvar", Gtk.ResponseType.YES)
+            r = d.run()
+            d.destroy()
+            if r != Gtk.ResponseType.YES:
+                return None
+            fc = Gtk.FileChooserDialog(title="Salvar gravação de tela", action=Gtk.FileChooserAction.SAVE)
+            fc.add_buttons("Cancelar", Gtk.ResponseType.CANCEL, "Salvar", Gtk.ResponseType.OK)
+            fc.set_do_overwrite_confirmation(True)
+            if os.path.isdir(settings.rec_directory):
+                fc.set_current_folder(settings.rec_directory)
+            fc.set_current_name(os.path.basename(tmp_path))
+            ok = fc.run() == Gtk.ResponseType.OK
+            path = fc.get_filename() if ok else None
+            fc.destroy()
+            if path:
+                return path if os.path.splitext(path)[1] else path + ".mp4"
+
     def stop_recording(self, discard=False):
         r = self.recorder
         if r is None:
@@ -438,13 +474,20 @@ class CapturaApp(Gtk.Application):
         self._teardown_rec()
         r.stop()
         if discard or not os.path.exists(dest):
-            try:
-                os.remove(dest)
-            except OSError:
-                pass
+            self._remove_quietly(dest)
             return
         if not settings["rec_autosave"]:
-            pass
+            final = self.ask_save_recording(dest)
+            if not final:
+                self._remove_quietly(dest)
+                return
+            try:
+                os.makedirs(os.path.dirname(final), exist_ok=True)
+                shutil.move(dest, final)
+            except OSError as e:
+                self.msg(None, "Não foi possível salvar a gravação", f"{e}\n\nO arquivo foi mantido em:\n{dest}")
+                return
+            dest = final
         services.notify("Gravação de tela salva", os.path.basename(dest) + "\nSelecione para abrir.", "video-x-generic",
                         [("default", "Abrir", lambda: subprocess.Popen(["xdg-open", dest]))])
 

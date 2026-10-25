@@ -11,6 +11,7 @@ from gi.repository import Gtk, Gdk, GLib, GdkPixbuf
 from . import APP_NAME, annot, chrome, icons, menus, metrics as M, services, textlayer, theme
 from .canvas import Canvas
 from .config import settings
+from .emoji_picker import EmojiPicker
 from .flyouts import ToolFlyout, ShapeFlyout
 from .settings_page import SettingsPage
 
@@ -332,15 +333,37 @@ class EditorWindow(Gtk.ApplicationWindow):
         else:
             col, sz = self.canvas.opts["shape"]
             fl = ShapeFlyout(b, col, sz, self.canvas.opts["shape_kind"],
-                             self.canvas.opts.get("shape_fill"), self.set_shape_style)
+                             self.canvas.opts.get("shape_fill"), self.set_shape_style,
+                             on_emoji=self.popup_emoji_picker,
+                             emoji_selected=getattr(self.canvas.sel, "kind", None) == "emoji")
         old = getattr(self, "_tool_pop", None)
         if old:
             old.destroy()
         self._tool_pop = fl
         fl.popup()
 
+    def popup_emoji_picker(self, anchor):
+        if getattr(self, "_tool_pop", None):
+            self._tool_pop.popdown()
+        old = getattr(self, "_emoji_picker", None)
+        if old is not None:
+            old.close_popup()
+        picker = EmojiPicker(self.insert_emoji)
+        self._emoji_picker = picker
+        x, y = menus.anchor_origin(anchor)
+        picker.open_at(x - 20, y + anchor.get_allocated_height() + 8)
+
+    def insert_emoji(self, char):
+        self.canvas.add_emoji(char)
+        self.canvas.grab_focus()
+
     def set_shape_style(self, color, size, kind, fill):
         selected = self.canvas.sel
+        if getattr(selected, "kind", None) == "emoji":
+            self.canvas.opts["shape_fill"] = fill
+            settings["shape_fill"] = fill
+            self.set_tool_opts("shape", color, size, kind)
+            return
         if selected is not None:
             current = (selected.color, selected.size, selected.shape, selected.fill)
             if current != (color, size, kind, fill):

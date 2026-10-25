@@ -36,6 +36,8 @@ class TextActionsWindowTests(unittest.TestCase):
 
     def setUp(self):
         settings["theme"] = "light"
+        old = settings["shot_autocopy_edits"]; settings["shot_autocopy_edits"] = False
+        self.addCleanup(lambda: settings.__setitem__("shot_autocopy_edits", old))
         theme.apply()
         self.w = EditorWindow(self.app)
         self.addCleanup(self.w.destroy)

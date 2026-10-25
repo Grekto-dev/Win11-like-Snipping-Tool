@@ -102,7 +102,14 @@ class MenuWindowTests(unittest.TestCase):
 
     def test_more_menu_tracks_the_right_edge_after_resize(self):
         self.w.resize(1184, 651)
-        drain()
+        # The window manager applies the resize asynchronously: wait for a stable allocation.
+        stable, last, deadline = 0, None, time.monotonic() + 3
+        while stable < 5 and time.monotonic() < deadline:
+            drain(.05)
+            width = self.w.toolbar.get_allocated_width()
+            stable = stable + 1 if width == last and width > 1000 else 0
+            last = width
+        self.assertGreater(last, 1000)
         self.w.popup_more(self.w.btn_more)
         drain()
         pop = self.w._cur_menu

@@ -155,6 +155,18 @@ class Canvas(Gtk.DrawingArea):
     def zoom_by(self, f):
         self.set_zoom(self.zoom * f)
 
+    def add_emoji(self, char, size=48):
+        """Insere o emoji no centro da imagem, já selecionado (com alças de redimensionar/girar)."""
+        if self.base is None:
+            return None
+        self.push_undo()
+        e = annot.Emoji(char, self.base.get_width() / 2, self.base.get_height() / 2, size)
+        self.items.append(e)
+        self.sel = e
+        self.queue_draw()
+        self.emit("changed")
+        return e
+
     def set_text_words(self, words):
         self.text_words = list(words)
         self.text_sel = []
@@ -288,11 +300,14 @@ class Canvas(Gtk.DrawingArea):
     def draw_handles(self, cr, s):
         z = self.zoom
         r = HANDLE_R / z
-        if s.shape not in ("line", "arrow"):
-            l, rr = min(s.x0, s.x1), max(s.x0, s.x1)
-            t, b = min(s.y0, s.y1), max(s.y0, s.y1)
-            cr.set_source_rgba(1, 1, 1, .6)
+        if s.kind == "emoji":
+            hs = s.handles()
+            cr.set_source_rgba(0, 0, 0, .45)
             cr.set_line_width(1 / z)
+            cr.move_to(*hs["nw"]); cr.line_to(*hs["ne"]); cr.line_to(*hs["se"]); cr.line_to(*hs["sw"]); cr.close_path()
+            cr.stroke()
+            tx, ty = (hs["nw"][0] + hs["ne"][0]) / 2, (hs["nw"][1] + hs["ne"][1]) / 2
+            cr.move_to(tx, ty); cr.line_to(*hs["rot"]); cr.stroke()
         for name, (hx, hy) in s.handles().items():
             cr.arc(hx, hy, r, 0, 2 * math.pi)
             cr.set_source_rgb(1, 1, 1)
@@ -423,7 +438,7 @@ class Canvas(Gtk.DrawingArea):
                     self.push_undo()
                     self.drag = ("handle", h)
                     return True
-            hit = self.find_item(ix, iy, ("shape",))
+            hit = self.find_item(ix, iy, ("shape", "emoji"))
             if hit is not None:
                 self.sel = hit
                 self.push_undo()
@@ -441,7 +456,7 @@ class Canvas(Gtk.DrawingArea):
             if h:
                 self.crop_drag = (h, ix, iy, self.crop_rect)
         else:
-            hit = self.find_item(ix, iy, ("shape",))
+            hit = self.find_item(ix, iy, ("shape", "emoji"))
             self.sel = hit
             if hit is not None:
                 h = self.handle_at(hit, ix, iy)
@@ -506,7 +521,7 @@ class Canvas(Gtk.DrawingArea):
             self.get_window().set_cursor(Gdk.Cursor.new_from_name(self.get_display(), names[h]))
         elif self.tool in (None, "shape") and self.sel is not None:
             h = self.handle_at(self.sel, ix, iy)
-            hit = self.find_item(ix, iy, ("shape",))
+            hit = self.find_item(ix, iy, ("shape", "emoji"))
             nm = "pointer" if h else ("move" if hit is not None else ("crosshair" if self.tool == "shape" else "default"))
             self.get_window().set_cursor(Gdk.Cursor.new_from_name(self.get_display(), nm))
         self.queue_draw()

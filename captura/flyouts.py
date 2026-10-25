@@ -46,8 +46,9 @@ class ShapeFlyout(Gtk.Popover):
     Os menus de cor são separados para a barra continuar compacta.
     Não há botão de emoji: essa ferramenta ainda não é implementada.
     """
-    def __init__(self, relative_to, color, size, shape_kind, fill, on_change):
+    def __init__(self, relative_to, color, size, shape_kind, fill, on_change, on_emoji=None, emoji_selected=False):
         super().__init__(relative_to=relative_to)
+        self.on_emoji = on_emoji
         self.get_style_context().add_class('cap-pop')
         self.color, self.size, self.shape_kind, self.fill = color, size, shape_kind, fill
         self.on_change = on_change
@@ -57,6 +58,15 @@ class ShapeFlyout(Gtk.Popover):
         row = Gtk.Box(spacing=2)
         self.add(row)
         self.shape_btns = {}
+        self.emoji_btn = Gtk.Button()
+        self.emoji_btn.get_style_context().add_class('tbtn')
+        self.emoji_btn.set_tooltip_text('Emoji')
+        self.emoji_btn.add(icons.image('emoji', 20, theme.icon_color()))
+        self.emoji_btn.connect('clicked', lambda b: self.on_emoji and self.on_emoji(b))
+        row.pack_start(self.emoji_btn, False, False, 0)
+        sep0 = Gtk.Box()
+        sep0.get_style_context().add_class('sep')
+        row.pack_start(sep0, False, False, 0)
         for key, label, icon in annot.SHAPE_KINDS:
             b = Gtk.ToggleButton()
             b.get_style_context().add_class('tbtn')
@@ -75,7 +85,9 @@ class ShapeFlyout(Gtk.Popover):
         for b in (self.fill_btn, self.outline_btn):
             b.get_style_context().add_class('tbtn')
             row.pack_start(b, False, False, 0)
-        self.fill_btn.set_sensitive(shape_kind in ('rect', 'ellipse'))
+        self.emoji_selected = emoji_selected
+        self.outline_btn.set_sensitive(not emoji_selected)
+        self.fill_btn.set_sensitive(shape_kind in ('rect', 'ellipse') and not emoji_selected)
         self.fill_btn.connect('clicked', lambda b: self._colors(b, filling=True))
         self.outline_btn.connect('clicked', lambda b: self._colors(b, filling=False))
         row.show_all()
@@ -90,7 +102,7 @@ class ShapeFlyout(Gtk.Popover):
             self.shape_kind = key
             for k, other in self.shape_btns.items():
                 other.set_active(k == key)
-            self.fill_btn.set_sensitive(key in ('rect', 'ellipse'))
+            self.fill_btn.set_sensitive(key in ('rect', 'ellipse') and not self.emoji_selected)
             self._emit()
         self._busy = False
 

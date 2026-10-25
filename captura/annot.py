@@ -106,6 +106,65 @@ class Shape:
             self.x0, self.y0, self.x1, self.y1 = l, t, r, b
 
 
+EMOJI_FONT = "Noto Color Emoji"
+EMOJI_MIN = 12
+ROT_OFFSET = 28
+
+
+class Emoji:
+    """Emoji colorido: centro, lado do quadrado e ângulo (radianos, sentido horário)."""
+    kind = "emoji"
+
+    def __init__(self, char, cx, cy, size):
+        self.char, self.cx, self.cy, self.size, self.angle = char, cx, cy, size, 0.0
+
+    def _rot(self, dx, dy):
+        c, s = math.cos(self.angle), math.sin(self.angle)
+        return self.cx + dx * c - dy * s, self.cy + dx * s + dy * c
+
+    def bbox(self):
+        r = self.size * 0.75 + ROT_OFFSET
+        return self.cx - r, self.cy - r, self.cx + r, self.cy + r
+
+    def handles(self):
+        h = self.size / 2
+        return {"nw": self._rot(-h, -h), "ne": self._rot(h, -h), "se": self._rot(h, h), "sw": self._rot(-h, h),
+                "rot": self._rot(0, -h - ROT_OFFSET)}
+
+    def hit(self, x, y, tol):
+        c, s = math.cos(-self.angle), math.sin(-self.angle)
+        dx, dy = x - self.cx, y - self.cy
+        lx, ly = dx * c - dy * s, dx * s + dy * c
+        h = self.size / 2 + tol
+        return abs(lx) <= h and abs(ly) <= h
+
+    def translate(self, dx, dy):
+        self.cx += dx; self.cy += dy
+
+    def drag_handle(self, name, x, y):
+        if name == "rot":
+            self.angle = math.atan2(x - self.cx, -(y - self.cy))
+        else:
+            self.size = max(EMOJI_MIN, 2 * math.hypot(x - self.cx, y - self.cy) / math.sqrt(2))
+
+
+def draw_emoji(cr, e):
+    import gi
+    gi.require_version("Pango", "1.0"); gi.require_version("PangoCairo", "1.0")
+    from gi.repository import Pango, PangoCairo
+    cr.save()
+    cr.translate(e.cx, e.cy)
+    cr.rotate(e.angle)
+    layout = PangoCairo.create_layout(cr)
+    layout.set_font_description(Pango.FontDescription(f"{EMOJI_FONT} {max(1.0, e.size * 0.82):.2f}px"))
+    layout.set_text(e.char, -1)
+    w, h = layout.get_pixel_size()
+    ink, logical = layout.get_pixel_extents()
+    cr.move_to(-logical.width / 2, -logical.height / 2)
+    PangoCairo.show_layout(cr, layout)
+    cr.restore()
+
+
 def dist_seg(px, py, x0, y0, x1, y1):
     dx, dy = x1 - x0, y1 - y0
     if dx == 0 and dy == 0:
@@ -214,6 +273,8 @@ def draw_all(cr, items):
     for it in items:
         if it.kind == "stroke":
             draw_stroke(cr, it)
+        elif it.kind == "emoji":
+            draw_emoji(cr, it)
         else:
             draw_shape(cr, it)
 

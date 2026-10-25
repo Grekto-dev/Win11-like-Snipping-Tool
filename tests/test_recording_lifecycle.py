@@ -1,4 +1,5 @@
 """Recording-state regressions, with external recorder/UI boundaries replaced."""
+import pathlib
 import tempfile
 import time
 import unittest
@@ -21,11 +22,62 @@ class RecordingLifecycleTests(unittest.TestCase):
         self.releases = []
         self.app._release = lambda delay_ms=0: self.releases.append(delay_ms)
         self.app.msg = Mock()
+        self.scratch = tempfile.TemporaryDirectory(prefix='captura-rec-scratch-')
+        self.addCleanup(self.scratch.cleanup)
+        self.app._rec_scratch_dir = lambda: self.scratch.name
         self.temp = tempfile.TemporaryDirectory(prefix='captura-recording-tests-')
         self.addCleanup(self.temp.cleanup)
         old = settings['rec_dir']
         settings['rec_dir'] = self.temp.name
         self.addCleanup(lambda: settings.__setitem__('rec_dir', old))
+
+    def _record(self, autosave, fake_file=b"video"):
+        """Runs start→stop with a fake recorder that really writes its output file."""
+        old = settings['rec_autosave']
+        settings['rec_autosave'] = autosave
+        self.addCleanup(lambda: settings.__setitem__('rec_autosave', old))
+        created = {}
+
+        def make(rect, mic, system, dest):
+            created['dest'] = dest
+            r = Mock()
+            r.alive.return_value = True
+            r.stop.side_effect = lambda: pathlib.Path(dest).write_bytes(fake_file)
+            return r
+        self.notified = []
+        patches = [patch('captura.app.services.ffmpeg_path', return_value='/usr/bin/ffmpeg'),
+                   patch('captura.app.services.Recorder', side_effect=make),
+                   patch('captura.app.OutlineWindow'), patch('captura.app.RecordingBar'),
+                   patch('captura.app.services.notify', side_effect=lambda *a, **k: self.notified.append(a))]
+        for p in patches:
+            p.start(); self.addCleanup(p.stop)
+        self.app.start_recording((0, 0, 100, 100))
+        self.app.stop_recording()
+        return created['dest']
+
+    def test_autosave_on_keeps_recording_in_configured_folder(self):
+        import os
+        dest = self._record(True)
+        self.assertEqual(os.path.dirname(dest), self.temp.name)
+        self.assertTrue(os.path.exists(dest))
+        self.assertEqual(len(self.notified), 1)
+
+    def test_autosave_off_records_outside_folder_and_saves_only_on_confirmation(self):
+        import os
+        chosen = os.path.join(self.temp.name, 'meu-video.mp4')
+        self.app.ask_save_recording = lambda tmp: chosen
+        dest = self._record(False)
+        self.assertNotEqual(os.path.dirname(dest), self.temp.name)
+        self.assertFalse(os.path.exists(dest), 'o temporário deve ser movido')
+        self.assertEqual(pathlib.Path(chosen).read_bytes(), b'video')
+
+    def test_autosave_off_discarded_recording_leaves_no_file(self):
+        import os
+        self.app.ask_save_recording = lambda tmp: None
+        dest = self._record(False)
+        self.assertFalse(os.path.exists(dest))
+        self.assertEqual(os.listdir(self.temp.name), [])
+        self.assertEqual(self.notified, [])
 
     def test_start_exception_closes_ui_and_releases_hold(self):
         recorder = Mock()
