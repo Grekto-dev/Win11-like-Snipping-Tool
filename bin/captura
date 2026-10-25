@@ -1,0 +1,7 @@
+#!/usr/bin/python3
+"""Lançador: usa o python3 do sistema (precisa de PyGObject/GTK3/Wnck)."""
+import os, sys
+here = os.path.dirname(os.path.realpath(__file__))
+sys.path.insert(0, os.path.dirname(here))
+from captura.app import main
+sys.exit(main(sys.argv))

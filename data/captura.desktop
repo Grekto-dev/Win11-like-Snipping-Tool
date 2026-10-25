@@ -1,0 +1,23 @@
+[Desktop Entry]
+Type=Application
+Name=Ferramenta de Captura
+Comment=Capturas e gravações de tela com marcação (estilo Windows 11)
+Exec=captura %f
+Icon=captura
+Terminal=false
+Categories=Utility;Graphics;
+MimeType=image/png;image/jpeg;image/bmp;
+StartupWMClass=captura
+Actions=Snip;Ocr;Color;
+
+[Desktop Action Snip]
+Name=Nova captura
+Exec=captura --snip
+
+[Desktop Action Ocr]
+Name=Extrator de Texto
+Exec=captura --ocr
+
+[Desktop Action Color]
+Name=Seletor de cores
+Exec=captura --color
