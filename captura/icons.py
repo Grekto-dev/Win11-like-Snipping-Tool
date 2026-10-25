@@ -8,7 +8,7 @@ gi.require_version("Gtk", "3.0")
 gi.require_version("GdkPixbuf", "2.0")
 from gi.repository import Gtk, GdkPixbuf
 
-_S = 'fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"'
+_S = 'fill="none" stroke="currentColor" stroke-width="1.65" stroke-linecap="round" stroke-linejoin="round"'
 
 _ICONS = {
     "camera": '<path d="M8.5 5.5h7l1.5 2h2.5A1.5 1.5 0 0 1 21 9v8.5a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 17.5V9a1.5 1.5 0 0 1 1.5-1.5H7z"/><circle cx="12" cy="13" r="3.5"/>',
@@ -47,6 +47,8 @@ _ICONS = {
     "rotate": '<path d="M19 12a7 7 0 1 1-2.3-5.2"/><path d="M19 4.5v4h-4"/>',
     "edit": '<path d="M4.5 19.5l.8-3.8L16.6 4.4a2.1 2.1 0 0 1 3 3L8.3 18.7z"/>',
     "info": '<circle cx="12" cy="12" r="8.5"/><path d="M12 11v5.5" /><circle cx="12" cy="7.8" r=".6" fill="currentColor"/>',
+    "markup_img": '<path d="M12.5 4.5H7A2.5 2.5 0 0 0 4.5 7v10A2.5 2.5 0 0 0 7 19.5h10a2.5 2.5 0 0 0 2.5-2.5v-4.5"/><path d="M4.8 16.5l4.2-4.2a1.6 1.6 0 0 1 2.2 0l1.3 1.3"/><circle cx="8.6" cy="8.6" r="1.2"/><path d="M19.8 4.2a1.7 1.7 0 0 1 0 2.4L14 12.4l-2.7.7.7-2.7 5.8-5.8a1.7 1.7 0 0 1 2.4 0z"/>',
+    "info_filled": '<circle cx="12" cy="12" r="9.5" fill="currentColor" stroke="none"/><path d="M12 11v5.6" stroke="#ffffff" stroke-width="2"/><circle cx="12" cy="7.6" r="1.25" fill="#ffffff" stroke="none"/>',
     "trash": '<path d="M4.5 7h15M9.5 7V4.5h5V7M6.5 7l.8 12.5h9.4L17.5 7M10 11v5.5M14 11v5.5"/>',
     "copytext": '<rect x="8.5" y="8.5" width="11.5" height="11.5" rx="2"/><path d="M15.5 8.5V6A2 2 0 0 0 13.5 4H6A2 2 0 0 0 4 6v7.5A2 2 0 0 0 6 15.5h2.5M11.5 12.5h5M11.5 15.5h5"/>',
     "mic": '<rect x="9" y="3.5" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v2.5"/>',
@@ -82,8 +84,28 @@ def pixbuf(name, size=20, color="#1b1b1b", scale=1):
     return _cache[key]
 
 
+import weakref
+TEXT_COLOR = ["#1b1b1b"]
+_themed = []
+
+
 def image(name, size=20, color="#1b1b1b"):
-    return Gtk.Image.new_from_pixbuf(pixbuf(name, size, color))
+    img = Gtk.Image.new_from_pixbuf(pixbuf(name, size, color))
+    if color == TEXT_COLOR[0]:
+        _themed.append((weakref.ref(img), name, size))
+    return img
+
+
+def set_text_color(color):
+    """Recolore todos os ícones criados com a cor de texto do tema anterior."""
+    TEXT_COLOR[0] = color
+    alive = []
+    for ref, name, size in _themed:
+        img = ref()
+        if img is not None:
+            img.set_from_pixbuf(pixbuf(name, size, color))
+            alive.append((ref, name, size))
+    _themed[:] = alive
 
 
 def marker_svg(color, tip="#e61b1b", highlighter=False, size=22):

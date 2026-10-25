@@ -93,68 +93,90 @@ class Overlay(Gtk.Window):
         box.get_style_context().add_class("snip-toolbar")
         self.toolbar_ev.add(box)
 
-        # foto | vídeo
-        seg = Gtk.Box(spacing=0)
+        # foto | vídeo (com barra azul sob o modo ativo, como no Windows)
+        seg = Gtk.Box(spacing=2)
         seg.get_style_context().add_class("seg")
-        self.btn_photo = self._toggle("camera", "Captura de tela", col)
-        self.btn_video = self._toggle("video", "Gravação de tela", col)
+        self.btn_photo = self._seg_toggle("camera", "Captura de tela", col)
+        self.btn_video = self._seg_toggle("video", "Gravação de tela", col)
         for b in (self.btn_photo, self.btn_video):
-            b.get_style_context().add_class("indicator")
             seg.pack_start(b, False, False, 0)
         (self.btn_video if self.mode == "video" else self.btn_photo).set_active(True)
         self.btn_photo.connect("clicked", lambda b: self.set_mode("photo") if b.get_active() else self._keep(b))
         self.btn_video.connect("clicked", lambda b: self.set_mode("video") if b.get_active() else self._keep(b))
-        box.pack_start(seg, False, False, 0)
+        box.pack_start(seg, False, False, 2)
 
         # forma
         self.shape_btn = Gtk.Button()
         self.shape_btn.get_style_context().add_class("tbtn")
         self.shape_btn.set_tooltip_text("Modo de captura")
         self.shape_img = Gtk.Image()
-        row = Gtk.Box(spacing=4)
+        row = Gtk.Box(spacing=6)
         row.pack_start(self.shape_img, False, False, 0)
         row.pack_start(icons.image("chevron_down", 12, col), False, False, 0)
         self.shape_btn.add(row)
         self.shape_btn.connect("clicked", self.show_shape_menu)
-        box.pack_start(self.shape_btn, False, False, 0)
+        box.pack_start(self.shape_btn, False, False, 2)
         self._refresh_shape_icon()
 
-        # marcação rápida
-        self.btn_markup = self._toggle("markup", "Marcação rápida (Ctrl+E)", col)
+        # marcação rápida, seletor de cores, extrator de texto
+        self.btn_markup = self._toggle("markup_img", "Marcação rápida (Ctrl+E)", col)
         self.btn_markup.set_active(settings["quick_markup"])
         self.btn_markup.connect("toggled", lambda b: settings.__setitem__("quick_markup", b.get_active()))
-        box.pack_start(self._sep(), False, False, 0)
-        box.pack_start(self.btn_markup, False, False, 0)
+        box.pack_start(self.btn_markup, False, False, 2)
+        box.pack_start(self._sep(), False, False, 2)
         self.btn_color = self._toggle("eyedropper", "Seletor de cores", col)
         self.btn_color.set_active(self.tool == "color")
         self.btn_color.connect("toggled", lambda b: self._tool_toggled(b, "color"))
         self.btn_ocr = self._toggle("textscan", "Extrator de Texto", col)
         self.btn_ocr.set_active(self.tool == "ocr")
         self.btn_ocr.connect("toggled", lambda b: self._tool_toggled(b, "ocr"))
-        box.pack_start(self.btn_color, False, False, 0)
-        box.pack_start(self.btn_ocr, False, False, 0)
-        box.pack_start(self._sep(), False, False, 0)
+        box.pack_start(self.btn_color, False, False, 2)
+        box.pack_start(self.btn_ocr, False, False, 2)
+        box.pack_start(self._sep(), False, False, 2)
         close = Gtk.Button()
         close.get_style_context().add_class("tbtn")
-        close.add(icons.image("close", 16, col))
+        close.add(icons.image("close", 18, col))
         close.set_tooltip_text("Fechar")
         close.connect("clicked", lambda *_: self.finish("cancel", None))
-        box.pack_start(close, False, False, 0)
+        box.pack_start(close, False, False, 2)
 
         self.toolbar_ev.set_halign(Gtk.Align.START)
         self.toolbar_ev.set_valign(Gtk.Align.START)
         px, py = self.pointer
-        mx, my, mw, mh = grab.monitor_at(px, py)
-        _, nat = box.get_preferred_width()
-        self.toolbar_ev.set_margin_start(max(0, mx + (mw - nat) // 2))
-        self.toolbar_ev.set_margin_top(my + 13)
+        self._mon = grab.monitor_at(px, py)
+        self.toolbar_ev.set_margin_top(self._mon[1] + 13)
+
+        def place(w, alloc):
+            mx, my, mw, mh = self._mon
+            want = max(0, mx + (mw - alloc.width) // 2)
+            if abs(w.get_margin_start() - want) > 0:
+                w.set_margin_start(want)
+        self.toolbar_ev.connect("size-allocate", place)
         overlay.add_overlay(self.toolbar_ev)
         self.toolbar_box = box
+
+    def _seg_toggle(self, icon, tip, col):
+        b = Gtk.ToggleButton()
+        b.get_style_context().add_class("tbtn")
+        ov = Gtk.Overlay()
+        ov.add(icons.image(icon, 20, col))
+        ind = Gtk.Box()
+        ind.get_style_context().add_class("ind-bar")
+        ind.set_halign(Gtk.Align.CENTER)
+        ind.set_valign(Gtk.Align.END)
+        ind.set_margin_bottom(-6)
+        ind.set_opacity(0.0)
+        ov.add_overlay(ind)
+        b.add(ov)
+        b.connect("toggled", lambda x: ind.set_opacity(1.0 if x.get_active() else 0.0))
+        b.set_tooltip_text(tip)
+        b.set_can_focus(False)
+        return b
 
     def _toggle(self, icon, tip, col):
         b = Gtk.ToggleButton()
         b.get_style_context().add_class("tbtn")
-        b.add(icons.image(icon, 18, col))
+        b.add(icons.image(icon, 20, col))
         b.set_tooltip_text(tip)
         b.set_can_focus(False)
         return b
@@ -165,11 +187,12 @@ class Overlay(Gtk.Window):
     def _sep(self):
         s = Gtk.Box()
         s.get_style_context().add_class("sep")
+        s.set_valign(Gtk.Align.CENTER)
         return s
 
     def _refresh_shape_icon(self):
         name = [i for k, i, _ in SHAPES if k == self.shape][0]
-        self.shape_img.set_from_pixbuf(icons.pixbuf(name, 18, theme.icon_color()))
+        self.shape_img.set_from_pixbuf(icons.pixbuf(name, 20, theme.icon_color()))
 
     def show_shape_menu(self, btn):
         pop = Gtk.Popover.new(btn)
