@@ -12,7 +12,8 @@ from . import APP_NAME, annot, chrome, icons, menus, metrics as M, services, tex
 from .canvas import Canvas
 from .config import settings
 from .emoji_picker import EmojiPicker
-from .flyouts import ToolFlyout, ShapeFlyout
+from .flyouts import ToolFlyout
+from .shape_bar import ShapeBar, ShapeColorFlyout, BTN_Y
 from .settings_page import SettingsPage
 
 SHAPES = [("rectangle", "rect", "Retângulo"), ("window", "window", "Janela"),
@@ -114,6 +115,11 @@ class EditorWindow(Gtk.ApplicationWindow):
         self.canvas_stack = Gtk.Stack()
         self.toast_overlay = Gtk.Overlay()
         self.toast_overlay.add(self.canvas_stack)
+        # a barra de Formas fica sob o aviso (como na referência, onde o aviso a oculta)
+        self.shape_bar = ShapeBar(self.popup_emoji_picker, self.on_shape_kind, self.popup_fill_flyout, self.popup_outline_flyout)
+        self.shape_bar.set_margin_top(M.SHAPEBAR_TOP)
+        self.shape_bar.set_no_show_all(True)
+        self.toast_overlay.add_overlay(self.shape_bar)
         self.toast_overlay.add_overlay(self.infobar)
         self.toast_rev = Gtk.Revealer()
         self.toast_rev.set_transition_type(Gtk.RevealerTransitionType.SLIDE_UP)
@@ -135,6 +141,9 @@ class EditorWindow(Gtk.ApplicationWindow):
             self.canvas.opts[name] = (settings[f"{name}_color"], settings[f"{name}_size"])
         self.canvas.opts["shape_kind"] = settings["shape_kind"]
         self.canvas.opts["shape_fill"] = settings["shape_fill"]
+        self.canvas.opts["shape_alpha"] = settings["shape_alpha"]
+        self.canvas.opts["shape_fill_alpha"] = settings["shape_fill_alpha"]
+        self.canvas.connect("tool-changed", self.sync_shape_bar)
         self.canvas.connect("changed", self.on_canvas_changed)
         self.canvas_stack.add_named(self.canvas, "canvas")
         self.empty = self.build_empty()
@@ -231,6 +240,7 @@ class EditorWindow(Gtk.ApplicationWindow):
 
     def on_canvas_changed(self, *a):
         self.update_edit_group()
+        self.sync_shape_bar()
         self.btn_copy_sel.set_sensitive(bool(self.canvas.text_sel))
         if self.canvas.base is not None and settings["shot_autocopy_edits"] and self.canvas.dirty:
             if self._copy_timer:
@@ -306,12 +316,10 @@ class EditorWindow(Gtk.ApplicationWindow):
         if self.canvas.tool == name:
             if name == "eraser":
                 self.popup_eraser_menu(b)
-            else:
+            elif name != "shape":          # Formas: a barra já está no conteúdo
                 self.popup_flyout(b, name)
             return True
         self.select_tool(name)
-        if name == "shape":
-            self.popup_flyout(b, name)
         return True
 
     def select_tool(self, name):
@@ -331,50 +339,96 @@ class EditorWindow(Gtk.ApplicationWindow):
             col, sz = self.canvas.opts["hl"]
             fl = ToolFlyout(b, "hl", col, sz, lambda c, s: self.set_tool_opts("hl", c, s))
         else:
-            col, sz = self.canvas.opts["shape"]
-            fl = ShapeFlyout(b, col, sz, self.canvas.opts["shape_kind"],
-                             self.canvas.opts.get("shape_fill"), self.set_shape_style,
-                             on_emoji=self.popup_emoji_picker,
-                             emoji_selected=getattr(self.canvas.sel, "kind", None) == "emoji")
+            return
         old = getattr(self, "_tool_pop", None)
         if old:
             old.destroy()
         self._tool_pop = fl
         fl.popup()
 
+    # ------------------------------------------------- barra de Formas (no conteúdo)
+    def _bar_top(self):
+        """y de tela da borda superior da barra de Formas."""
+        return menus.anchor_origin(self.shape_bar.emoji_btn)[1] - BTN_Y
+
     def popup_emoji_picker(self, anchor):
-        if getattr(self, "_tool_pop", None):
-            self._tool_pop.popdown()
         old = getattr(self, "_emoji_picker", None)
         if old is not None:
             old.close_popup()
         picker = EmojiPicker(self.insert_emoji)
         self._emoji_picker = picker
-        x, y = menus.anchor_origin(anchor)
-        picker.open_at(x - 20, y + anchor.get_allocated_height() + 8)
+        x, _ = menus.anchor_origin(anchor)
+        picker.popup(self._bar_top(), x + anchor.get_allocated_width() / 2)
 
     def insert_emoji(self, char):
         self.canvas.add_emoji(char)
         self.canvas.grab_focus()
 
-    def set_shape_style(self, color, size, kind, fill):
-        selected = self.canvas.sel
-        if getattr(selected, "kind", None) == "emoji":
-            self.canvas.opts["shape_fill"] = fill
-            settings["shape_fill"] = fill
-            self.set_tool_opts("shape", color, size, kind)
-            return
-        if selected is not None:
-            current = (selected.color, selected.size, selected.shape, selected.fill)
-            if current != (color, size, kind, fill):
+    def popup_fill_flyout(self, anchor):
+        self._color_flyout(anchor, "fill")
+
+    def popup_outline_flyout(self, anchor):
+        self._color_flyout(anchor, "outline")
+
+    def _color_flyout(self, anchor, mode):
+        old = getattr(self, "_tool_pop", None)
+        if old:
+            old.destroy()
+        st = self.shape_style()
+        if mode == "fill":
+            fl = ShapeColorFlyout(anchor, "fill", st["fill"], st["fill_alpha"], st["size"],
+                                  lambda c, a, sz: self.apply_shape_style(fill=c, fill_alpha=a))
+        else:
+            fl = ShapeColorFlyout(anchor, "outline", st["color"], st["alpha"], st["size"],
+                                  lambda c, a, sz: self.apply_shape_style(color=c, alpha=a, size=sz))
+        self._style_session = object()
+        self._tool_pop = fl
+        fl.popup()
+
+    def on_shape_kind(self, kind):
+        self.apply_shape_style(kind=kind)
+
+    def shape_style(self):
+        """Estilo atual: da forma selecionada, se houver; senão das opções da ferramenta."""
+        o = self.canvas.opts
+        sel = self.canvas.sel
+        if sel is not None and sel.kind == "shape":
+            return dict(kind=sel.shape, color=sel.color, alpha=sel.alpha, size=sel.size, fill=sel.fill, fill_alpha=sel.fill_alpha)
+        return dict(kind=o["shape_kind"], color=o["shape"][0], alpha=o.get("shape_alpha", 1.0), size=o["shape"][1],
+                    fill=o.get("shape_fill"), fill_alpha=o.get("shape_fill_alpha", 1.0))
+
+    def apply_shape_style(self, **changes):
+        """Atualiza opções da ferramenta (e a forma selecionada, de forma desfazível e agrupada por flyout)."""
+        st = self.shape_style()
+        st.update(changes)
+        o = self.canvas.opts
+        o["shape"] = (st["color"], st["size"])
+        o["shape_kind"], o["shape_alpha"] = st["kind"], st["alpha"]
+        o["shape_fill"], o["shape_fill_alpha"] = st["fill"], st["fill_alpha"]
+        for key, val in (("shape_color", st["color"]), ("shape_size", st["size"]), ("shape_kind", st["kind"]),
+                         ("shape_alpha", st["alpha"]), ("shape_fill", st["fill"]), ("shape_fill_alpha", st["fill_alpha"])):
+            settings[key] = val
+        sel = self.canvas.sel
+        if sel is not None and sel.kind == "shape":
+            token = (getattr(self, "_style_session", None), id(sel))
+            if getattr(self, "_style_undo_token", None) != token or changes.keys() == {"kind"}:
                 self.canvas.push_undo()
-        self.canvas.opts["shape_fill"] = fill
-        settings["shape_fill"] = fill
-        self.set_tool_opts("shape", color, size, kind)
-        if selected is not None:
-            selected.fill = fill
-            self.canvas.queue_draw()
+                self._style_undo_token = token
+            sel.shape, sel.color, sel.alpha, sel.size = st["kind"], st["color"], st["alpha"], st["size"]
+            sel.fill, sel.fill_alpha = st["fill"], st["fill_alpha"]
             self.canvas.emit("changed")
+        self.shape_bar.set_kind(st["kind"])
+        self.shape_bar.set_style(st["fill"], st["color"])
+        self.canvas.queue_draw()
+        self.refresh_tool_icons()
+
+    def sync_shape_bar(self, *a):
+        show = self.canvas.base is not None and self.canvas.tool == "shape"
+        self.shape_bar.set_visible(show)
+        if show:
+            st = self.shape_style()
+            self.shape_bar.set_kind(st["kind"])
+            self.shape_bar.set_style(st["fill"], st["color"])
 
     def set_tool_opts(self, name, color, size, shape_kind=None):
         self.canvas.opts[name] = (color, size)

@@ -60,6 +60,8 @@ class Shape:
         self.color = color
         self.size = size
         self.fill = None           # None: sem preenchimento
+        self.alpha = 1.0           # opacidade do contorno
+        self.fill_alpha = 1.0      # opacidade do preenchimento
 
     def bbox(self):
         m = self.size + 10
@@ -74,7 +76,7 @@ class Shape:
         return {"nw": (l, t), "ne": (r, t), "se": (r, b), "sw": (l, b)}
 
     def hit(self, x, y, tol):
-        r = self.size / 2 + tol
+        r = self.size / 2 + tol if self.color is not None else tol
         l, rr = min(self.x0, self.x1), max(self.x0, self.x1)
         t, b = min(self.y0, self.y1), max(self.y0, self.y1)
         if self.shape in ("line", "arrow"):
@@ -222,50 +224,53 @@ def draw_stroke(cr, s):
 
 
 def draw_shape(cr, s):
-    r, g, b = hex_rgb(s.color)
+    """Contorno e preenchimento têm cor e opacidade próprias; cor None = sem contorno."""
     cr.save()
-    cr.set_source_rgb(r, g, b)
     cr.set_line_width(s.size)
     cr.set_line_join(cairo.LINE_JOIN_MITER)
     cr.set_line_cap(cairo.LINE_CAP_ROUND)
     l, rr = min(s.x0, s.x1), max(s.x0, s.x1)
     t, bt = min(s.y0, s.y1), max(s.y0, s.y1)
-    if s.shape == "rect":
-        cr.rectangle(l, t, rr - l, bt - t)
+
+    def outline():
+        if s.color is not None:
+            cr.set_source_rgba(*hex_rgb(s.color), s.alpha)
+            cr.stroke()
+        else:
+            cr.new_path()
+
+    def closed_path():
+        if s.shape == "rect":
+            cr.rectangle(l, t, rr - l, bt - t)
+        else:
+            w, h = max(0.1, rr - l), max(0.1, bt - t)
+            cr.save()
+            cr.translate((l + rr) / 2, (t + bt) / 2)
+            cr.scale(w / 2, h / 2)
+            cr.arc(0, 0, 1, 0, 2 * math.pi)
+            cr.restore()
+
+    if s.shape in ("rect", "ellipse"):
+        closed_path()
         if s.fill is not None:
-            cr.set_source_rgb(*hex_rgb(s.fill))
+            cr.set_source_rgba(*hex_rgb(s.fill), s.fill_alpha)
             cr.fill_preserve()
-            cr.set_source_rgb(r, g, b)
-        cr.stroke()
-    elif s.shape == "ellipse":
-        w, h = max(0.1, rr - l), max(0.1, bt - t)
-        cr.save()
-        cr.translate((l + rr) / 2, (t + bt) / 2)
-        cr.scale(w / 2, h / 2)
-        cr.arc(0, 0, 1, 0, 2 * math.pi)
-        cr.restore()
-        if s.fill is not None:
-            cr.set_source_rgb(*hex_rgb(s.fill))
-            cr.fill_preserve()
-            cr.set_source_rgb(r, g, b)
-        cr.stroke()
+        outline()
     elif s.shape == "line":
         cr.move_to(s.x0, s.y0)
         cr.line_to(s.x1, s.y1)
-        cr.stroke()
+        outline()
     elif s.shape == "arrow":
         ang = math.atan2(s.y1 - s.y0, s.x1 - s.x0)
         head = max(12, s.size * 4)
         bx, by = s.x1 - math.cos(ang) * head * 0.6, s.y1 - math.sin(ang) * head * 0.6
         cr.move_to(s.x0, s.y0)
         cr.line_to(bx, by)
-        cr.stroke()
         cr.move_to(s.x1, s.y1)
         for da in (math.pi * 0.84, -math.pi * 0.84):
             cr.line_to(s.x1 + math.cos(ang + da) * head, s.y1 + math.sin(ang + da) * head)
             cr.move_to(s.x1, s.y1)
-        cr.set_line_width(s.size)
-        cr.stroke()
+        outline()
     cr.restore()
 
 

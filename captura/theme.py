@@ -14,6 +14,7 @@ LIGHT = dict(
     accent="#0067c0", accent_hover="#1975c5", accent_text="#ffffff", infobar="#ffffff", flyout="#fcfcfc",
     shadow="rgba(0,0,0,0.28)", bar="#e9e9e9", crop_bg="#666666", toast_bg="#ffffff", link="#003e92", segbg="#ececec",
     menu_bg="#f9f9f9", menu_border="#dbdbdb", menu_top="#c0c0c0", menu_sel="#eaeaea", menu_sep="#e5e5e5",
+    sbar_border="#ededed", sbar_sep="#eaeaea", sbar_sel="#f0f0f0", sbar_inner="#ffffff", fly2_border="#eaeaea",
 )
 DARK = dict(
     dark=True, bg0="#202020", surface="#2b2b2b", canvas="#1c1c1c", text="#ffffff", subtle="#c8c8c8", disabled="#6f6f6f",
@@ -22,6 +23,7 @@ DARK = dict(
     accent="#60cdff", accent_hover="#7ad6ff", accent_text="#000000", infobar="#2b2b2b", flyout="#2c2c2c",
     shadow="rgba(0,0,0,0.6)", bar="#2c2c2c", crop_bg="#1a1a1a", toast_bg="#2b2b2b", link="#99ebff", segbg="#2d2d2d",
     menu_bg="#2c2c2c", menu_border="#383838", menu_top="#454545", menu_sel="#383838", menu_sep="#414141",
+    sbar_border="#3a3a3a", sbar_sep="#404040", sbar_sel="#383838", sbar_inner="#2c2c2c", fly2_border="#3a3a3a",
 )
 
 CSS = string.Template(r"""
@@ -135,6 +137,16 @@ scale.palette-size { padding: 0; margin: 0; }
 scale.palette-size trough { background: #8a8a8a; min-height: 4px; border: 0; border-radius: 2px; }
 scale.palette-size highlight { background: $accent; min-height: 4px; border-radius: 2px; }
 scale.palette-size slider { background: $accent; background-image: none; border: 5px solid #ffffff; border-radius: 99px; min-width: 10px; min-height: 10px; margin: -8px; box-shadow: 0 0 0 1px rgba(0,0,0,0.04); }
+/* barra de Formas no conteúdo e flyouts de cor */
+.shapebar { background: $menu_bg; border: 1px solid $sbar_border; border-radius: 8px; }
+box.sb-sep { background: $sbar_sep; min-width: 1px; }
+button.sb-btn { background: transparent; background-image: none; border: 1px solid transparent; border-radius: 4px; padding: 0; margin: 0; min-width: 0; min-height: 0; box-shadow: none; outline: none; }
+button.sb-btn:hover { background: $sbar_sel; }
+button.sb-btn:checked { background: $sbar_sel; border-color: $accent; box-shadow: inset 0 0 0 1px $sbar_inner; }
+button.sb-btn.sb-plain:hover { background: transparent; }
+.wflyout2 { background: $menu_bg; border: 1px solid $fly2_border; border-radius: 8px; box-shadow: none; }
+.wflyout2 button.emoji-cell { background: transparent; background-image: none; border: 0; border-radius: 4px; padding: 0; margin: 0; min-width: 0; min-height: 0; box-shadow: none; outline: none; }
+.wflyout2 button.emoji-cell:hover { background: $sbar_sel; }
 /* Overlay de captura */
 .snip-toolbar { background: $bar; border: 1px solid $border; border-radius: 12px; padding: 3px 8px; box-shadow: 0 6px 24px $shadow; }
 .snip-toolbar .seg { background: transparent; border: none; }

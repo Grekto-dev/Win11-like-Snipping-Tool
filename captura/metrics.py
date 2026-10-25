@@ -8,6 +8,7 @@ TITLE_H = 32
 TB_Y = 32            # topo da faixa de ferramentas
 TB_H = 46            # altura da faixa (até a linha separadora em y=78)
 LINE_Y = 78
+SHAPEBAR_TOP = 6      # a barra de Formas (borda em y=85) começa 6 px abaixo do topo do conteúdo (y=79)
 
 # (tile x, y, w, h)  /  origem do canvas 20x20 do ícone
 NEW = dict(tile=(16, 38, 40, 32), canvas=(25, 43))

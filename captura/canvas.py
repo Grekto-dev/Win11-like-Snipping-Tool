@@ -17,6 +17,7 @@ class Canvas(Gtk.DrawingArea):
     __gsignals__ = {
         "changed": (GObject.SignalFlags.RUN_FIRST, None, ()),       # histórico/estado mudou
         "zoom-changed": (GObject.SignalFlags.RUN_FIRST, None, (float,)),
+        "tool-changed": (GObject.SignalFlags.RUN_FIRST, None, ()),
     }
 
     def __init__(self):
@@ -196,6 +197,7 @@ class Canvas(Gtk.DrawingArea):
         return len(words)
 
     def set_tool(self, tool):
+        changed = tool != self.tool
         self.tool = tool
         self.sel = None
         self.text_sel = []
@@ -208,6 +210,8 @@ class Canvas(Gtk.DrawingArea):
             self.crop_rect = None
         self.update_cursor()
         self.queue_draw()
+        if changed:
+            self.emit("tool-changed")
 
     def update_cursor(self):
         w = self.get_window()
@@ -448,6 +452,8 @@ class Canvas(Gtk.DrawingArea):
                 s = annot.Shape(self.opts["shape_kind"], ix, iy, ix, iy, col, size)
                 self.push_undo()
                 s.fill = self.opts.get("shape_fill")
+                s.alpha = self.opts.get("shape_alpha", 1.0)
+                s.fill_alpha = self.opts.get("shape_fill_alpha", 1.0)
                 self.items.append(s)
                 self.sel = s
                 self.drag = ("new",)

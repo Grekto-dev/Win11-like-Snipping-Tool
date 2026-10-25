@@ -46,19 +46,6 @@ class EmojiPickerTests(unittest.TestCase):
         self.assertEqual(got, ["🔥"])
         p.destroy()
 
-    def test_shape_flyout_emoji_button_inserts_selected_emoji_and_disables_fill(self):
-        self.w.popup_flyout(self.w.btn_shape, "shape")
-        fl = self.w._tool_pop
-        self.assertTrue(hasattr(fl, "emoji_btn"))
-        fl.emoji_btn.clicked(); drain()
-        picker = self.w._emoji_picker
-        picker.buttons[1].clicked(); drain(.4)
-        self.assertEqual([i.kind for i in self.w.canvas.items], ["emoji"])
-        self.assertEqual(self.w.canvas.items[0].char, "⭐")
-        self.assertIs(self.w.canvas.sel, self.w.canvas.items[0])
-        self.w.popup_flyout(self.w.btn_shape, "shape")
-        self.assertFalse(self.w._tool_pop.fill_btn.get_sensitive())
-
 
 if __name__ == "__main__":
     unittest.main()

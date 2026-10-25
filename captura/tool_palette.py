@@ -98,7 +98,7 @@ class StrokePreview(Gtk.DrawingArea):
 class ToolFlyout(Popup):
     def __init__(self, relative_to, kind, color, size, on_change, shape_kind=None):
         if kind not in ('pen', 'hl'):
-            raise ValueError('ToolFlyout supports pen and hl; use ShapeFlyout for shapes')
+            raise ValueError('ToolFlyout supports pen and hl; shapes use shape_bar.ShapeColorFlyout')
         self.anchor = relative_to
         self.kind = kind
         self.color = color
