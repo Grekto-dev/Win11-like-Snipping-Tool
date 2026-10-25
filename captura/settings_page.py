@@ -28,7 +28,7 @@ class SettingsPage(Gtk.Box):
         super().__init__(orientation=Gtk.Orientation.VERTICAL)
         self.on_theme_changed = on_theme_changed
         head = Gtk.Box(spacing=12)
-        head.set_margin_start(14)
+        head.set_margin_start(40)
         head.set_margin_top(14)
         head.set_margin_bottom(6)
         back = Gtk.Button()
@@ -40,16 +40,17 @@ class SettingsPage(Gtk.Box):
         self.pack_start(head, False, False, 0)
 
         sw = Gtk.ScrolledWindow()
-        sw.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
+        sw.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
         self.pack_start(sw, True, True, 0)
-        outer = Gtk.Box(spacing=32)
-        outer.set_margin_start(32)
-        outer.set_margin_end(32)
+        outer = Gtk.Box()
+        outer.set_halign(Gtk.Align.FILL)
+        outer.set_margin_start(56)
+        outer.set_margin_end(56)
         outer.set_margin_bottom(32)
         sw.add(outer)
         col = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
-        col.set_size_request(560, -1)
-        outer.pack_start(col, False, False, 0)
+        col.set_hexpand(True)
+        outer.pack_start(col, True, True, 0)
         self.col = col
 
         self.section("Captura")
@@ -85,19 +86,21 @@ class SettingsPage(Gtk.Box):
         card.pack_start(row, False, False, 0)
         col.pack_start(card, False, False, 0)
 
-        about = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10)
-        about.set_margin_top(24)
-        about.set_size_request(240, -1)
-        about.pack_start(_label("Sobre este app", "section"), False, False, 0)
-        about.pack_start(_label(f"Ferramenta de Captura {__version__}"), False, False, 0)
-        about.pack_start(_label("Recriação para o Linux Mint (Cinnamon/X11).\nSoftware livre — GPL-3.0-or-later.", "subtle", wrap=True), False, False, 0)
-        about.pack_start(_label("Inspirada na Ferramenta de Captura do Windows 11;\nnão contém código nem recursos da Microsoft.", "subtle", wrap=True), False, False, 0)
-        outer.pack_start(about, False, False, 0)
+        self.section("Sobre este aplicativo")
+        card = _card()
+        row = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
+        row.get_style_context().add_class("cap-row")
+        row.pack_start(_label(f"Ferramenta de Captura {__version__}"), False, False, 0)
+        row.pack_start(_label("Recriação livre para o Linux Mint (Cinnamon/X11) da Ferramenta de Captura do Windows 11. "
+                              "Software livre sob GPL-3.0-or-later; não contém código nem recursos da Microsoft.", "subtle", wrap=True), False, False, 0)
+        card.pack_start(row, False, False, 0)
+        col.pack_start(card, False, False, 0)
 
     def section(self, title):
         l = _label(title, "section")
-        l.set_margin_top(18)
+        l.set_margin_top(22)
         l.set_margin_bottom(6)
+        l.set_margin_start(2)
         self.col.pack_start(l, False, False, 0)
 
     def switch_row(self, title, desc, key, expander=None, on_change=None, icon=None):
@@ -105,50 +108,60 @@ class SettingsPage(Gtk.Box):
         row = Gtk.Box(spacing=12)
         row.get_style_context().add_class("cap-row")
         if icon:
-            row.pack_start(icons.image(icon, 18, theme.icon_color()), False, False, 0)
+            im = icons.image(icon, 18, theme.icon_color())
+            im.set_valign(Gtk.Align.CENTER)
+            row.pack_start(im, False, False, 0)
         tb = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
+        tb.set_valign(Gtk.Align.CENTER)
         tb.pack_start(_label(title, wrap=True), False, False, 0)
         if desc:
             tb.pack_start(_label(desc, "subtle", wrap=True), False, False, 0)
         row.pack_start(tb, True, True, 0)
-        state = _label("Ativado" if settings[key] else "Desativado")
+
+        right = Gtk.Box(spacing=12)
+        right.set_valign(Gtk.Align.CENTER)
         sw = Gtk.Switch()
         sw.set_active(bool(settings[key]))
         sw.set_valign(Gtk.Align.CENTER)
-        row.pack_end(state, False, False, 0)
-        row.reorder_child(state, 0)
-        # ordem: [texto][Ativado][switch] — pack_end inverte; monta manualmente
-        row.remove(state)
-        right = Gtk.Box(spacing=12)
-        right.pack_start(state, False, False, 0)
+        state = _label("Ativado" if settings[key] else "Desativado")
+        state.set_size_request(76, -1)
         right.pack_start(sw, False, False, 0)
+        right.pack_start(state, False, False, 0)
+        slot = Gtk.Box()
+        slot.set_size_request(48, -1)
+        right.pack_start(slot, False, False, 0)
         row.pack_end(right, False, False, 0)
+
         revealer = None
         if expander:
             chev = Gtk.Button()
             chev.get_style_context().add_class("tbtn")
             chev.set_valign(Gtk.Align.CENTER)
-            img = icons.image("chevron_up" if settings[key] else "chevron_down", 14, theme.icon_color())
+            chev.set_size_request(32, 32)
+            chev.set_halign(Gtk.Align.CENTER)
+            img = icons.image("chevron_up" if settings[key] else "chevron_down", 12, theme.icon_color())
             chev.add(img)
-            right.pack_start(chev, False, False, 0)
+            slot.pack_start(chev, True, True, 0)
             revealer = Gtk.Revealer()
-            inner = expander()
-            revealer.add(inner)
+            revealer.add(expander())
             revealer.set_reveal_child(bool(settings[key]))
+            revealer.connect('notify::reveal-child', lambda r, _p: img.set_from_pixbuf(
+                icons.pixbuf('chevron_up' if r.get_reveal_child() else 'chevron_down',
+                             12, theme.icon_color())))
 
             def toggle(*_):
                 r = not revealer.get_reveal_child()
                 revealer.set_reveal_child(r)
-                img.set_from_pixbuf(icons.pixbuf("chevron_up" if r else "chevron_down", 14, theme.icon_color()))
+                img.set_from_pixbuf(icons.pixbuf("chevron_up" if r else "chevron_down", 12, theme.icon_color()))
             chev.connect("clicked", toggle)
 
-        def changed(s, _p):
-            settings[key] = s.get_active()
-            state.set_text("Ativado" if s.get_active() else "Desativado")
+        def changed(s_, _p):
+            settings[key] = s_.get_active()
+            state.set_text("Ativado" if s_.get_active() else "Desativado")
             if revealer is not None:
-                revealer.set_reveal_child(s.get_active())
+                revealer.set_reveal_child(s_.get_active())
             if on_change:
-                on_change(s.get_active())
+                on_change(s_.get_active())
         sw.connect("notify::active", changed)
         card.pack_start(row, False, False, 0)
         if revealer is not None:
@@ -233,7 +246,7 @@ class SettingsPage(Gtk.Box):
         rgba = Gdk.RGBA()
         rgba.parse(settings["shot_border_color"])
         cb.set_rgba(rgba)
-        cb.set_use_alpha(False)
+        cb.props.use_alpha = False
 
         def color_set(b):
             c = b.get_rgba()

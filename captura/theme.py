@@ -32,8 +32,8 @@ headerbar.cap-header button.titlebutton:hover { background: $hover; }
 headerbar.cap-header button.titlebutton.close:hover { background: #c42b1c; color: #fff; }
 .cap-window label { color: $text; }
 .cap-window label.subtle { color: $subtle; font-size: 9pt; }
-.cap-window label.section { font-weight: 600; font-size: 11pt; margin-top: 8px; }
-.cap-window label.pagetitle { font-size: 20pt; font-weight: 600; }
+.cap-window label.section { font-weight: 400; font-size: 10.5pt; }
+.cap-window label.pagetitle { font-size: 15pt; font-weight: 600; }
 .cap-canvas-bg { background: $canvas; }
 .cap-canvas-bg.cropping { background: $crop_bg; }
 
@@ -89,10 +89,13 @@ popover.cap-pop modelbutton:hover { background: $hover; }
 .swatch:checked { border: 2px solid $accent; }
 scale trough { background: $border2; min-height: 4px; border-radius: 2px; }
 scale highlight { background: $accent; border-radius: 2px; min-height: 4px; }
+.cap-pop scale value { color: $text; font-size: 9pt; }
 scale slider { background: $accent; border: 3px solid $flyout; border-radius: 99px; min-width: 14px; min-height: 14px; margin: -7px; box-shadow: 0 0 0 1px $border2; }
 
 tooltip.background, tooltip { background: $flyout; background-color: $flyout; color: $text; border: 1px solid $border2; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.2); }
 tooltip label { color: $text; font-size: 9.5pt; padding: 2px 4px; }
+menu, .menu { background: $flyout; color: $text; border: 1px solid $border2; border-radius: 6px; }
+menu menuitem label, .menu menuitem label { color: $text; }
 /* Overlay de captura */
 .snip-toolbar { background: $bar; border: 1px solid $border; border-radius: 12px; padding: 3px 8px; box-shadow: 0 6px 24px $shadow; }
 .snip-toolbar .seg { background: transparent; border: none; }
@@ -103,9 +106,9 @@ tooltip label { color: $text; font-size: 9.5pt; padding: 2px 4px; }
 .snip-toolbar .sep { margin: 8px 6px; }
 
 /* Configurações */
-.cap-card { background: $card; border: 1px solid $border; border-radius: 4px; }
+.cap-card { background: $card; border: 1px solid $border; border-radius: 5px; }
 .cap-card.inner { border-radius: 0; border-width: 1px 0 0 0; background: $surface; }
-.cap-row { padding: 14px 16px; min-height: 36px; }
+.cap-row { padding: 12px 16px; min-height: 40px; }
 switch { background: transparent; border: 1px solid $subtle; border-radius: 99px; min-width: 40px; min-height: 20px; }
 switch slider { background: $subtle; border-radius: 99px; min-width: 12px; min-height: 12px; margin: 3px; border: none; }
 switch:checked { background: $accent; border-color: $accent; }
@@ -115,7 +118,12 @@ switch:checked slider { background: $accent_text; }
 .cap-window button.plain:hover { background: $hover; }
 .cap-window button.linkbtn { background: none; border: none; box-shadow: none; padding: 0; color: $link; min-height: 0; }
 .cap-window button.linkbtn label { color: $link; }
-.cap-window combobox button, .cap-window combobox * { color: $text; }
+.cap-window combobox button.combo { background: $surface; background-image: none; color: $text; border: 1px solid $border2; border-radius: 4px; box-shadow: none; padding: 4px 10px; min-height: 28px; min-width: 190px; }
+.cap-window combobox button.combo:hover { background: $hover; }
+.cap-window combobox button.combo cellview, .cap-window combobox button.combo label, .cap-window combobox arrow { color: $text; }
+.cap-window combobox window.popup, .cap-window combobox menu, menu.cap-combo-menu { background: $flyout; color: $text; border: 1px solid $border2; border-radius: 6px; padding: 4px; }
+.cap-window combobox menu menuitem, menu menuitem { color: $text; padding: 6px 10px; border-radius: 4px; }
+.cap-window combobox menu menuitem:hover, menu menuitem:hover { background: $hover; }
 .cap-toolbar-crop label { color: $text; }
 .sizelabel { color: $subtle; font-size: 9pt; }
 .rec-bar { background: $card; border: 1px solid $border2; border-radius: 8px; padding: 4px 10px; box-shadow: 0 4px 16px $shadow; }

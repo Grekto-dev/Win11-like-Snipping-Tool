@@ -350,6 +350,7 @@ class Canvas(Gtk.DrawingArea):
                 col, size = self.opts["shape"]
                 s = annot.Shape(self.opts["shape_kind"], ix, iy, ix, iy, col, size)
                 self.push_undo()
+                s.fill = self.opts.get("shape_fill")
                 self.items.append(s)
                 self.sel = s
                 self.drag = ("new",)

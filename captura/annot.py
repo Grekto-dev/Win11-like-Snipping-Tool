@@ -59,6 +59,7 @@ class Shape:
         self.x0, self.y0, self.x1, self.y1 = x0, y0, x1, y1
         self.color = color
         self.size = size
+        self.fill = None           # None: sem preenchimento
 
     def bbox(self):
         m = self.size + 10
@@ -81,11 +82,11 @@ class Shape:
         if self.shape == "rect":
             inside = l - r <= x <= rr + r and t - r <= y <= b + r
             core = l + r < x < rr - r and t + r < y < b - r
-            return inside and not core
+            return inside and (self.fill is not None or not core)
         cx, cy = (l + rr) / 2, (t + b) / 2
         a, bb = max(1, (rr - l) / 2), max(1, (b - t) / 2)
         v = math.hypot((x - cx) / a, (y - cy) / bb)
-        return abs(v - 1) * min(a, bb) <= r
+        return (self.fill is not None and v <= 1) or abs(v - 1) * min(a, bb) <= r
 
     def translate(self, dx, dy):
         self.x0 += dx; self.x1 += dx; self.y0 += dy; self.y1 += dy
@@ -172,6 +173,10 @@ def draw_shape(cr, s):
     t, bt = min(s.y0, s.y1), max(s.y0, s.y1)
     if s.shape == "rect":
         cr.rectangle(l, t, rr - l, bt - t)
+        if s.fill is not None:
+            cr.set_source_rgb(*hex_rgb(s.fill))
+            cr.fill_preserve()
+            cr.set_source_rgb(r, g, b)
         cr.stroke()
     elif s.shape == "ellipse":
         w, h = max(0.1, rr - l), max(0.1, bt - t)
@@ -180,6 +185,10 @@ def draw_shape(cr, s):
         cr.scale(w / 2, h / 2)
         cr.arc(0, 0, 1, 0, 2 * math.pi)
         cr.restore()
+        if s.fill is not None:
+            cr.set_source_rgb(*hex_rgb(s.fill))
+            cr.fill_preserve()
+            cr.set_source_rgb(r, g, b)
         cr.stroke()
     elif s.shape == "line":
         cr.move_to(s.x0, s.y0)

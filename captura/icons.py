@@ -84,7 +84,6 @@ def pixbuf(name, size=20, color="#1b1b1b", scale=1):
     return _cache[key]
 
 
-import weakref
 TEXT_COLOR = ["#1b1b1b"]
 _themed = []
 
@@ -92,20 +91,23 @@ _themed = []
 def image(name, size=20, color="#1b1b1b"):
     img = Gtk.Image.new_from_pixbuf(pixbuf(name, size, color))
     if color == TEXT_COLOR[0]:
-        _themed.append((weakref.ref(img), name, size))
+        entry = (img, name, size)
+        _themed.append(entry)
+        # GTK pode manter o widget C vivo após coletar seu wrapper Python.
+        # Uma weakref ao wrapper, portanto, perde ícones ainda na tela.
+        # Mantemos a referência até o sinal destroy, sem reter widgets mortos.
+        def forget(_img):
+            if entry in _themed:
+                _themed.remove(entry)
+        img.connect('destroy', forget)
     return img
 
 
 def set_text_color(color):
-    """Recolore todos os ícones criados com a cor de texto do tema anterior."""
+    """Recolore todos os ícones temáticos ainda vivos."""
     TEXT_COLOR[0] = color
-    alive = []
-    for ref, name, size in _themed:
-        img = ref()
-        if img is not None:
-            img.set_from_pixbuf(pixbuf(name, size, color))
-            alive.append((ref, name, size))
-    _themed[:] = alive
+    for img, name, size in tuple(_themed):
+        img.set_from_pixbuf(pixbuf(name, size, color))
 
 
 def marker_svg(color, tip="#e61b1b", highlighter=False, size=22):

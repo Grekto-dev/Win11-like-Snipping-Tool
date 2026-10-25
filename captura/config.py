@@ -50,6 +50,7 @@ DEFAULTS = {
     "pen_color": "#e61b1b", "pen_size": 4,
     "hl_color": "#ffe600", "hl_size": 12,
     "shape_kind": "rect", "shape_color": "#e61b1b", "shape_size": 3,
+    "shape_fill": None,
 }
 
 

@@ -10,7 +10,7 @@ from gi.repository import Gtk, Gdk, GLib, GdkPixbuf
 from . import APP_NAME, annot, icons, services, theme
 from .canvas import Canvas
 from .config import settings
-from .flyouts import ToolFlyout
+from .flyouts import ToolFlyout, ShapeFlyout
 from .settings_page import SettingsPage
 
 SHAPES = [("rectangle", "rect", "Retângulo"), ("window", "window", "Janela"),
@@ -135,6 +135,7 @@ class EditorWindow(Gtk.ApplicationWindow):
         self._toast_id = 0
         main.pack_start(self.toast_overlay, True, True, 0)
         self.canvas = Canvas()
+        self.canvas.opts["shape_fill"] = settings["shape_fill"]
         self.canvas.connect("changed", self.on_canvas_changed)
         self.canvas_stack.add_named(self.canvas, "canvas")
         self.empty = self.build_empty()
@@ -499,6 +500,8 @@ class EditorWindow(Gtk.ApplicationWindow):
                 self.popup_flyout(b, name)
             return True
         self.select_tool(name)
+        if name == "shape":
+            self.popup_flyout(b, name)
         return True
 
     def select_tool(self, name):
@@ -517,8 +520,27 @@ class EditorWindow(Gtk.ApplicationWindow):
             fl = ToolFlyout(b, "hl", col, sz, lambda c, s: self.set_tool_opts("hl", c, s))
         else:
             col, sz = self.canvas.opts["shape"]
-            fl = ToolFlyout(b, "shape", col, sz, lambda c, s, k: self.set_tool_opts("shape", c, s, k), self.canvas.opts["shape_kind"])
+            fl = ShapeFlyout(b, col, sz, self.canvas.opts["shape_kind"],
+                             self.canvas.opts.get("shape_fill"), self.set_shape_style)
+        old = getattr(self, "_tool_pop", None)
+        if old:
+            old.destroy()
+        self._tool_pop = fl
         fl.popup()
+
+    def set_shape_style(self, color, size, kind, fill):
+        selected = self.canvas.sel
+        if selected is not None:
+            current = (selected.color, selected.size, selected.shape, selected.fill)
+            if current != (color, size, kind, fill):
+                self.canvas.push_undo()
+        self.canvas.opts["shape_fill"] = fill
+        settings["shape_fill"] = fill
+        self.set_tool_opts("shape", color, size, kind)
+        if selected is not None:
+            selected.fill = fill
+            self.canvas.queue_draw()
+            self.canvas.emit("changed")
 
     def set_tool_opts(self, name, color, size, shape_kind=None):
         self.canvas.opts[name] = (color, size)
