@@ -151,6 +151,7 @@ class EditorWindow(Gtk.ApplicationWindow):
         self.canvas_stack.set_visible_child_name("empty")
 
         self.connect("delete-event", self.on_delete)
+        self.connect("destroy", self._close_popups)
         self.connect("key-press-event", self.on_key)
         self.refresh_state()
         root.show_all()
@@ -227,7 +228,12 @@ class EditorWindow(Gtk.ApplicationWindow):
             w_.set_visible(not has)
         chrome.layout_left(self, not has)
         for w_ in self.file_widgets:
-            w_.set_visible(has)
+            w_.set_visible(has and not cropping)
+        self.btn_more.set_visible(not cropping)
+        self.crop_zoom.set_visible(cropping)
+        # no corte, o grupo da esquerda some (mas mantém o espaço, para o centro não se mover)
+        self._left.set_opacity(0 if cropping else 1)
+        self._left.set_sensitive(not cropping)
         self.btn_undo.set_sensitive(bool(self.canvas.undo_stack))
         self.btn_redo.set_sensitive(bool(self.canvas.redo_stack))
         icons.set_role(self.undo_img, role="text" if self.canvas.undo_stack else "disabled")
@@ -345,6 +351,17 @@ class EditorWindow(Gtk.ApplicationWindow):
             old.destroy()
         self._tool_pop = fl
         fl.popup()
+
+    def _close_popups(self, *_):
+        """Fecha menus/flyouts abertos: um popup com grab não pode sobreviver à janela dona."""
+        for name in ("_cur_menu", "_emoji_picker", "_tool_pop"):
+            pop = getattr(self, name, None)
+            if pop is None:
+                continue
+            try:
+                pop.close_popup() if hasattr(pop, "close_popup") else pop.destroy()
+            except Exception:
+                pass
 
     # ------------------------------------------------- barra de Formas (no conteúdo)
     def _bar_top(self):
@@ -476,6 +493,16 @@ class EditorWindow(Gtk.ApplicationWindow):
         ox, oy = menus.anchor_origin(self.toolbar)
         # a faixa começa em y=32 da janela; `top` é dado em coordenadas da janela
         m.open_at(ox + left, oy + (top - M.TB_Y))
+        return m
+
+    def _menu_at(self, items, style, x, y):
+        """Abre o menu com o canto superior esquerdo da caixa em coordenadas de tela."""
+        old = getattr(self, "_cur_menu", None)
+        if old is not None:
+            old.close_popup()
+        m = menus.Menu(items, style)
+        self._cur_menu = m
+        m.open_at(x, y)
         return m
 
     def popup_shape_menu(self, b):
@@ -622,14 +649,45 @@ class EditorWindow(Gtk.ApplicationWindow):
             ("print", "Imprimir", "Ctrl+P", self.print_image, has),
             ("gear", "Configurações", None, lambda: self.show_page("settings")),
         ]
-        self._menu(items, menus.MORE, right=M.W, top=78)
+        m = self._menu(items, menus.MORE, right=M.W, top=78)
+        _, wx, wy = m.get_window().get_origin()
+        self._more_geom = (wx + menus.SHADOW, wy + menus.SHADOW, m.frame.get_preferred_width()[1])
+
+    # -------------------------------------------------------------- zoom
+    def zoom_items(self):
+        return [(None, "100%", "Ctrl+0", self.zoom_actual),
+                (None, "Aplicar zoom", "Ctrl++", self.zoom_in),
+                (None, "Reduzir", "Ctrl+-", self.zoom_out, self.can_zoom_out()),
+                (None, "Ajustar à janela", "Ctrl+1", self.zoom_fit)]
+
+    def can_zoom_out(self):
+        return not self.canvas.fit
+
+    def zoom_in(self):
+        self.canvas.zoom_by(1.25)
+
+    def zoom_out(self):
+        if self.can_zoom_out():
+            self.canvas.zoom_by(0.8)
+
+    def zoom_fit(self):
+        self.canvas.set_zoom(1.0, fit=True)
+        self.canvas.update_scale()
+
+    def zoom_actual(self):
+        self.canvas.set_zoom(1.0)
 
     def popup_zoom(self):
-        items = [("zoom", "Aumentar zoom", "Ctrl++", lambda: self.canvas.zoom_by(1.25)),
-                 (None, "Diminuir zoom", "Ctrl+-", lambda: self.canvas.zoom_by(0.8)),
-                 (None, "Ajustar à janela", "Ctrl+0", lambda: (self.canvas.set_zoom(1.0, fit=True), self.canvas.update_scale())),
-                 (None, "Tamanho real (100%)", None, lambda: self.canvas.set_zoom(1.0))]
-        GLib.idle_add(lambda: (self._menu(items, menus.MORE, right=M.W, top=78), False)[1])
+        """Submenu de Zoom do menu Mais: à direita do menu principal, 5 px mais baixo (medido)."""
+        x, y, w = getattr(self, "_more_geom", (None, None, None))
+        if x is None:
+            return
+        GLib.idle_add(lambda: (self._menu_at(self.zoom_items(), menus.ZOOM, x + w - 1, y + 5), False)[1])
+
+    def popup_crop_zoom(self, anchor):
+        """Zoom do modo de corte: centrado no botão, topo 44 px abaixo do topo dele."""
+        ax, ay = menus.anchor_origin(anchor)
+        self._menu_at(self.zoom_items(), menus.ZOOM, ax + anchor.get_allocated_width() / 2 - (menus.ZOOM["width"] + 2) / 2, ay + 44)
 
     def toggle_ruler(self):
         self.canvas.show_ruler = not getattr(self.canvas, "show_ruler", False)
@@ -790,11 +848,13 @@ class EditorWindow(Gtk.ApplicationWindow):
         if ctrl and k in (Gdk.KEY_p, Gdk.KEY_P):
             self.print_image(); return True
         if ctrl and k in (Gdk.KEY_plus, Gdk.KEY_equal, Gdk.KEY_KP_Add):
-            self.canvas.zoom_by(1.25); return True
+            self.zoom_in(); return True
         if ctrl and k in (Gdk.KEY_minus, Gdk.KEY_KP_Subtract):
-            self.canvas.zoom_by(0.8); return True
+            self.zoom_out(); return True
         if ctrl and k in (Gdk.KEY_0, Gdk.KEY_KP_0):
-            self.canvas.set_zoom(1.0, fit=True); self.canvas.update_scale(); return True
+            self.zoom_actual(); return True
+        if ctrl and k in (Gdk.KEY_1, Gdk.KEY_KP_1):
+            self.zoom_fit(); return True
         if ctrl and k in (Gdk.KEY_n, Gdk.KEY_N):
             self.btn_new.clicked(); return True
         if k == Gdk.KEY_Escape:

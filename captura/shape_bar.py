@@ -201,6 +201,7 @@ def _setup_button(btn, w, h, painter, label, plain):
         return False
     area.connect("draw", draw)
     btn.add(area)
+    area.show()               # o botão pode ficar com no_show_all; o desenho precisa estar visível
     btn.area = area
 
 

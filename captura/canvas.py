@@ -324,32 +324,39 @@ class Canvas(Gtk.DrawingArea):
         x0, y0, x1, y1 = self.crop_rect
         iw, ih = self.base.get_width(), self.base.get_height()
         z = self.zoom
-        cr.set_source_rgba(0.4, 0.4, 0.4, 0.62)
+        cr.set_source_rgba(0, 0, 0, 0.6)             # medido: fora do corte = 40 % do brilho original
         cr.rectangle(0, 0, iw, ih)
         cr.rectangle(x0, y0, x1 - x0, y1 - y0)
         cr.set_fill_rule(cairo.FILL_RULE_EVEN_ODD)
         cr.fill()
+        # Medido no Windows (1:1): borda branca de 1 px dentro da aresta; alças brancas de 4 px FORA da imagem.
+        px = 1 / z
         cr.set_source_rgb(1, 1, 1)
-        cr.set_line_width(1.5 / z)
-        cr.rectangle(x0, y0, x1 - x0, y1 - y0)
+        cr.set_line_width(px)
+        cr.rectangle(x0 + px / 2, y0 + px / 2, (x1 - x0) - px, (y1 - y0) - px)
         cr.stroke()
-        # alças em "L" nos cantos e barras nas arestas, como no Windows
-        L = 16 / z
-        t = 4 / z
-        cr.set_line_width(t)
+        T, A = 4 * px, 24 * px
+        cr.set_line_width(T)
         cr.set_line_cap(cairo.LINE_CAP_BUTT)
-        for (cx, cy, dx, dy) in ((x0, y0, 1, 1), (x1, y0, -1, 1), (x1, y1, -1, -1), (x0, y1, 1, -1)):
-            cr.move_to(cx + dx * L, cy)
-            cr.line_to(cx, cy)
-            cr.line_to(cx, cy + dy * L)
+        # cantos em "L": faixa [aresta-3, aresta+1) à esquerda/topo e [aresta-1, aresta+3) à direita/base, braços de 24 px
+        o_lo, o_hi = -1 * px, 1 * px                 # centro da faixa de 4 px em relação à aresta
+        for (cx, cy, sx, sy) in ((x0, y0, 1, 1), (x1, y0, -1, 1), (x1, y1, -1, -1), (x0, y1, 1, -1)):
+            ox = o_lo if sx > 0 else o_hi
+            oy = o_lo if sy > 0 else o_hi
+            hx, hy = cx + ox, cy + oy                  # vértice da linha de centro
+            far_x = hx - sx * 2 * px + sx * A           # braço horizontal de 24 px (da borda externa da faixa)
+            far_y = hy - sy * 2 * px + sy * A
+            cr.move_to(far_x, hy); cr.line_to(hx, hy); cr.line_to(hx, far_y)
             cr.stroke()
+        # barras de 24x4 nas arestas, totalmente fora: [aresta-4, aresta) topo/esquerda; [aresta, aresta+4) base/direita
         mx, my = (x0 + x1) / 2, (y0 + y1) / 2
-        S = 11 / z
-        for (cx, cy, hz) in ((mx, y0, True), (mx, y1, True), (x0, my, False), (x1, my, False)):
+        for (cx, cy, hz, out) in ((mx, y0, True, -1), (mx, y1, True, 1), (x0, my, False, -1), (x1, my, False, 1)):
             if hz:
-                cr.move_to(cx - S, cy); cr.line_to(cx + S, cy)
+                yy = cy + out * 2 * px
+                cr.move_to(cx - A / 2, yy); cr.line_to(cx + A / 2, yy)
             else:
-                cr.move_to(cx, cy - S); cr.line_to(cx, cy + S)
+                xx = cx + out * 2 * px
+                cr.move_to(xx, cy - A / 2); cr.line_to(xx, cy + A / 2)
             cr.stroke()
 
     # ------------------------------------------------------------ crop helpers

@@ -12,9 +12,9 @@ LIGHT = dict(
     chev="#5b5b5b", disabled_icon="#9b9b9b", tile_on="#eaeaea", seg_off="#ededed", seg_on="#fafafa", seg_edge="#c4c4c4", seg_out="#dfdfdf",
     border="#e0e0e0", border2="#d1d1d1", hover="rgba(0,0,0,0.055)", press="rgba(0,0,0,0.085)", card="#fdfdfd",
     accent="#0067c0", accent_hover="#1975c5", accent_text="#ffffff", infobar="#ffffff", flyout="#fcfcfc",
-    shadow="rgba(0,0,0,0.28)", bar="#e9e9e9", crop_bg="#666666", toast_bg="#ffffff", link="#003e92", segbg="#ececec",
+    shadow="rgba(0,0,0,0.28)", bar="#e9e9e9", crop_bg="#656565", toast_bg="#ffffff", link="#003e92", segbg="#ececec",
     menu_bg="#f9f9f9", menu_border="#dbdbdb", menu_top="#c0c0c0", menu_sel="#eaeaea", menu_sep="#e5e5e5",
-    sbar_border="#ededed", sbar_sep="#eaeaea", sbar_sel="#f0f0f0", sbar_inner="#ffffff", fly2_border="#eaeaea",
+    crop_hover="#eaeaea", sbar_border="#ededed", sbar_sep="#eaeaea", sbar_sel="#f0f0f0", sbar_inner="#ffffff", fly2_border="#eaeaea",
 )
 DARK = dict(
     dark=True, bg0="#202020", surface="#2b2b2b", canvas="#1c1c1c", text="#ffffff", subtle="#c8c8c8", disabled="#6f6f6f",
@@ -23,7 +23,7 @@ DARK = dict(
     accent="#60cdff", accent_hover="#7ad6ff", accent_text="#000000", infobar="#2b2b2b", flyout="#2c2c2c",
     shadow="rgba(0,0,0,0.6)", bar="#2c2c2c", crop_bg="#1a1a1a", toast_bg="#2b2b2b", link="#99ebff", segbg="#2d2d2d",
     menu_bg="#2c2c2c", menu_border="#383838", menu_top="#454545", menu_sel="#383838", menu_sep="#414141",
-    sbar_border="#3a3a3a", sbar_sep="#404040", sbar_sel="#383838", sbar_inner="#2c2c2c", fly2_border="#3a3a3a",
+    crop_hover="#333333", sbar_border="#3a3a3a", sbar_sep="#404040", sbar_sel="#383838", sbar_inner="#2c2c2c", fly2_border="#3a3a3a",
 )
 
 CSS = string.Template(r"""
@@ -144,6 +144,7 @@ button.sb-btn { background: transparent; background-image: none; border: 1px sol
 button.sb-btn:hover { background: $sbar_sel; }
 button.sb-btn:checked { background: $sbar_sel; border-color: $accent; box-shadow: inset 0 0 0 1px $sbar_inner; }
 button.sb-btn.sb-plain:hover { background: transparent; }
+button.sb-btn.crop-btn:hover { background: $crop_hover; }
 .wflyout2 { background: $menu_bg; border: 1px solid $fly2_border; border-radius: 8px; box-shadow: none; }
 .wflyout2 button.emoji-cell { background: transparent; background-image: none; border: 0; border-radius: 4px; padding: 0; margin: 0; min-width: 0; min-height: 0; box-shadow: none; outline: none; }
 .wflyout2 button.emoji-cell:hover { background: $sbar_sel; }

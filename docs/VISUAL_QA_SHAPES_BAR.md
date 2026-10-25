@@ -38,3 +38,31 @@ coincidem ao pixel.
 - Sombra projetada dos flyouts não reproduzida.
 - Tema escuro: cores da barra derivadas (sem referência medida).
 - O aviso (infobar) cobre a barra, como na referência.
+
+# QA visual — modo de corte
+
+Referência: `shots/ref/cr-*.png` (`crstates.py`, `crdrag.py`). Com a mesma imagem de entrada
+(`shots/win-crop-input.png`, recorte 700×450 da própria referência) o estado "modo de corte" fecha em **MAE 0,30** na janela inteira.
+
+| Elemento | Medida |
+|---|---|
+| Aplicar | caixa 85×32 em (401,38), ícone de visto 12×8 em +11,+13, texto em +33; hover #eaeaea raio 4; dica "Aplicar (Enter)" |
+| Cancelar | caixa 95×32 em (486,38), ícone × 11×11, texto em +34; dica "Cancelar (Esc)" |
+| Zoom | caixa 56×32 em (920,38); lupa+ e chevron; abre menu de 184×138 centrado no botão, topo 44 px abaixo |
+| Menu de zoom | "100%" Ctrl+0, "Aplicar zoom" Ctrl++, "Reduzir" Ctrl+- (desabilitado enquanto ajustado), "Ajustar à janela" Ctrl+1 |
+| Escurecimento | fora do corte = 40 % do brilho original (preto 60 %), medido por razão de pixels |
+| Borda | linha branca de 1 px dentro da aresta |
+| Alças | cantos em L: faixa de 4 px, braços de 24 px, de [aresta−3, aresta+1) (topo/esquerda) e [aresta−1, aresta+3) (base/direita); barras 24×4 nas arestas, totalmente fora |
+| Outros grupos | esquerda fica invisível e inerte (mantém o espaço); Salvar/Copiar/Compartilhar/Mais somem |
+
+Menu Mais → Zoom: submenu de 184×138, encostado à direita do menu principal (−1 px) e 5 px mais baixo.
+
+## Diferença conhecida (não reproduzida)
+
+Depois de redimensionar o corte, o Windows reposiciona a vista (imagem deslocada ≈ +73,+48 px) e mostra barras de rolagem:
+o conteúdo vira um `ScrollViewer` com margens. Aqui a vista continua fixa.
+
+## Defeito real encontrado e corrigido no caminho
+
+Fechar a janela com um menu/flyout aberto deixava o `grab` do popup ativo no processo (testes seguintes falhavam de
+forma intermitente). `EditorWindow` agora fecha `_cur_menu`, `_emoji_picker` e `_tool_pop` ao destruir.

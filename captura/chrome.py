@@ -5,7 +5,7 @@ import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, Gdk
 
-from . import icons, metrics as M, APP_NAME
+from . import crop_bar, icons, metrics as M, APP_NAME
 from .config import settings
 
 
@@ -257,18 +257,13 @@ def build_toolbar(win, shapes, delays):
     put(edit, win.btn_redo, *M.REDO["tile"][:2], origin=co)
     win.center.add_named(edit, "edit")
 
-    crop = Gtk.Box(spacing=8)
-    ok = Gtk.Button(label="Concluir")
-    ok.get_style_context().add_class("accentbtn")
-    ok.connect("clicked", lambda *_: win.toggle_crop(False, apply=True))
-    cancel = Gtk.Button(label="Cancelar")
-    cancel.get_style_context().add_class("plain")
-    cancel.connect("clicked", lambda *_: win.toggle_crop(False, apply=False))
-    for w_ in (cancel, ok):
-        w_.set_size_request(96, 32)
-        w_.set_valign(Gtk.Align.START)
-        w_.set_margin_top(6)
-        crop.pack_start(w_, False, False, 0)
+    crop = Gtk.Fixed()
+    crop.set_size_request(M.CENTER_W, M.TB_H)
+    win.crop_apply, win.crop_cancel = crop_bar.make_apply(), crop_bar.make_cancel()
+    win.crop_apply.connect("clicked", lambda *_: win.toggle_crop(False, apply=True))
+    win.crop_cancel.connect("clicked", lambda *_: win.toggle_crop(False, apply=False))
+    put(crop, win.crop_apply, *crop_bar.APPLY_BOX[:2], origin=co)
+    put(crop, win.crop_cancel, *crop_bar.CANCEL_BOX[:2], origin=co)
     win.crop_group = crop
     win.center.add_named(crop, "crop")
     win.center.add_named(Gtk.Box(), "none")
@@ -296,6 +291,11 @@ def build_toolbar(win, shapes, delays):
         win.file_widgets.append(b)
     win.file_widgets.append(separator(right, M.SEP3_X, ro))
     put(right, win.btn_more, *M.MORE["tile"][:2], origin=ro)
+    win.crop_zoom = crop_bar.make_zoom()
+    win.crop_zoom.connect("clicked", win.popup_crop_zoom)
+    win.crop_zoom.set_no_show_all(True)
+    win.crop_zoom.hide()
+    put(right, win.crop_zoom, *crop_bar.ZOOM_BOX[:2], origin=ro)
     bar.pack_end(right, False, False, 0)
     win.toolbar = bar
     return bar
