@@ -21,10 +21,10 @@ DARK = dict(
 )
 
 CSS = string.Template(r"""
+* { font-size: 9.5pt; }
 .cap-window, .cap-window decoration { background: $bg0; color: $text; }
 .cap-window headerbar, headerbar.cap-header {
-    background: $bg0; color: $text; border: none; box-shadow: none; min-height: 46px; padding: 0 6px;
-    border-bottom: 1px solid $border;
+    background: $bg0; color: $text; border: none; box-shadow: none; min-height: 32px; padding: 0 4px;
 }
 headerbar.cap-header .title { color: $subtle; font-size: 9pt; }
 headerbar.cap-header button.titlebutton { color: $text; background: transparent; border: none; box-shadow: none; min-width: 34px; min-height: 30px; border-radius: 4px; }
@@ -39,7 +39,7 @@ headerbar.cap-header button.titlebutton.close:hover { background: #c42b1c; color
 
 button.tbtn, button.tbtn:backdrop {
     background: transparent; color: $text; border: 1px solid transparent; box-shadow: none; text-shadow: none;
-    border-radius: 4px; padding: 0 5px; min-height: 36px; min-width: 36px; -gtk-icon-shadow: none; outline: none;
+    border-radius: 4px; padding: 0 3px; min-height: 34px; min-width: 34px; -gtk-icon-shadow: none; outline: none;
 }
 button.tbtn:hover { background: $hover; }
 button.tbtn:active, button.tbtn:checked { background: $press; }
@@ -55,22 +55,21 @@ button.tbtn.menuitem { min-width: 0; padding: 0 12px; border-radius: 4px; }
 button.tbtn.menuitem label { color: $text; }
 
 .seg { background: $segbg; border: 1px solid $border; border-radius: 6px; padding: 1px; }
-.seg button.tbtn { min-width: 38px; min-height: 32px; border-radius: 5px; padding: 0 4px; }
+.seg button.tbtn { min-width: 36px; min-height: 30px; border-radius: 5px; padding: 0 4px; }
 .seg button.tbtn:checked { background: $card; border: 1px solid $border2; }
 .seg button.tbtn:checked.indicator { }
 .sep { background: $border2; min-width: 1px; min-height: 20px; margin: 0 6px; }
 .msep { background: $border; min-height: 1px; margin: 4px 2px; }
-.cap-toolbar { border-bottom: 1px solid $border; }
+.cap-toolbar { border-bottom: 0; }
 .ind-bar { background: $accent; border-radius: 2px; min-width: 14px; min-height: 3px; }
-.cap-infobar { padding: 16px 18px 14px 18px; }
-.cap-infobar label { font-size: 10.5pt; }
-.cap-infobar label.bold { font-size: 10.5pt; }
-.tbtn label { font-size: 10.5pt; }
+.cap-infobar { padding: 14px 18px 12px 18px; }
+.cap-infobar label, .cap-infobar label.bold { font-size: 9pt; }
+.tbtn label { font-size: 9.5pt; }
 .cap-infobar label.bold { font-weight: 600; }
-.cap-title { color: $subtle; font-size: 10pt; }
-.empty-text { font-size: 10.5pt; }
+.cap-title { color: $subtle; font-size: 9pt; }
+.empty-text { font-size: 9.5pt; }
 
-.cap-infobar { background: $infobar; border: 1px solid $border; border-radius: 4px; margin: 8px 8px 0 8px; }
+.cap-infobar { background: $infobar; border: 0 solid $border; border-width: 1px 0 1px 0; border-radius: 0; margin: 0; }
 .cap-infobar label.bold { font-weight: 700; }
 .cap-infobar button.link { background: none; border: none; box-shadow: none; padding: 0; color: $link; min-height: 24px; min-width: 0; }
 .cap-infobar button.link label { color: $link; }
@@ -99,16 +98,17 @@ menu menuitem label, .menu menuitem label { color: $text; }
 /* Overlay de captura */
 .snip-toolbar { background: $bar; border: 1px solid $border; border-radius: 12px; padding: 3px 8px; box-shadow: 0 6px 24px $shadow; }
 .snip-toolbar .seg { background: transparent; border: none; }
-.snip-toolbar .seg button.tbtn { min-width: 36px; min-height: 36px; padding: 0; border-radius: 6px; border: 1px solid transparent; }
+.snip-toolbar .seg button.tbtn { background: $hover; border-radius: 6px; margin: 0 1px; }
+.snip-toolbar .seg button.tbtn { min-width: 34px; min-height: 36px; padding: 0; border-radius: 6px; border: 1px solid transparent; }
 .snip-toolbar .seg button.tbtn:checked { background: $card; border: 1px solid $border2; }
-.snip-toolbar button.tbtn { min-height: 36px; min-width: 30px; padding: 0 2px; }
+.snip-toolbar button.tbtn { min-height: 34px; min-width: 28px; padding: 0 2px; }
 .snip-toolbar button.tbtn { min-height: 32px; }
 .snip-toolbar .sep { margin: 8px 6px; }
 
 /* Configurações */
 .cap-card { background: $card; border: 1px solid $border; border-radius: 5px; }
-.cap-card.inner { border-radius: 0; border-width: 1px 0 0 0; background: $surface; }
-.cap-row { padding: 12px 16px; min-height: 40px; }
+.cap-card.inner { border-radius: 0; border-width: 1px 0 0 0; background: $bg0; }
+.cap-row { padding: 10px 16px; min-height: 40px; }
 switch { background: transparent; border: 1px solid $subtle; border-radius: 99px; min-width: 40px; min-height: 20px; }
 switch slider { background: $subtle; border-radius: 99px; min-width: 12px; min-height: 12px; margin: 3px; border: none; }
 switch:checked { background: $accent; border-color: $accent; }

@@ -80,7 +80,7 @@ class EditorWindow(Gtk.ApplicationWindow):
     def __init__(self, app):
         super().__init__(application=app)
         self.app = app
-        self.set_default_size(1100, 700)
+        self.set_default_size(1000, 691)
         self.set_icon_name("captura")
         self.get_style_context().add_class("cap-window")
         self.saved_path = None
@@ -150,7 +150,7 @@ class EditorWindow(Gtk.ApplicationWindow):
         self.canvas_stack.set_visible_child_name("empty")
         self.update_edit_group()
         self.set_title(APP_NAME)
-        self.resize(1100, 700)
+        self.resize(1000, 691)
 
     # --------------------------------------------------------------- UI
     def _indicated(self, b, image, kind):
@@ -175,12 +175,12 @@ class EditorWindow(Gtk.ApplicationWindow):
         bar = Gtk.Box()
         bar.set_margin_start(8)
         bar.set_margin_end(8)
-        bar.set_margin_top(7)
-        bar.set_margin_bottom(7)
+        bar.set_margin_top(6)
+        bar.set_margin_bottom(6)
         bar.get_style_context().add_class("cap-toolbar")
 
         # ---- esquerda
-        left = Gtk.Box(spacing=2)
+        left = Gtk.Box(spacing=4)
         self.btn_new = Gtk.Button()
         self.btn_new.get_style_context().add_class("tbtn")
         self.btn_new.get_style_context().add_class("newbtn")
@@ -207,8 +207,8 @@ class EditorWindow(Gtk.ApplicationWindow):
             b_.set_tooltip_text(tip)
             seg.pack_start(b_, False, False, 0)
         (self.b_video if settings["mode"] == "video" else self.b_photo).set_active(True)
-        self._indicated(self.b_photo, icons.image("camera", 20, col), "bar")
-        self._indicated(self.b_video, icons.image("video", 20, col), "bar")
+        self._indicated(self.b_photo, icons.image("camera", 18, col), "bar")
+        self._indicated(self.b_video, icons.image("video", 18, col), "bar")
         self.b_photo.connect("clicked", lambda b: self.set_mode("photo"))
         self.b_video.connect("clicked", lambda b: self.set_mode("video"))
         left.pack_start(seg, False, False, 0)
@@ -244,7 +244,7 @@ class EditorWindow(Gtk.ApplicationWindow):
         # ---- centro (centralizado de verdade: Gtk.Box.set_center_widget)
         self.center = Gtk.Stack()
         self.center.set_homogeneous(False)
-        self.edit_group = Gtk.Box(spacing=2)
+        self.edit_group = Gtk.Box(spacing=4)
         self.btn_pen = Gtk.ToggleButton()
         self.btn_hl = Gtk.ToggleButton()
         self.btn_eraser = Gtk.ToggleButton()
@@ -252,8 +252,8 @@ class EditorWindow(Gtk.ApplicationWindow):
         self.pen_img = Gtk.Image()
         self.hl_img = Gtk.Image()
         specs = (("pen", self.btn_pen, self.pen_img, "Caneta"), ("hl", self.btn_hl, self.hl_img, "Marca-texto"),
-                 ("eraser", self.btn_eraser, icons.image("eraser", 22, col), "Borracha"),
-                 ("shape", self.btn_shape, icons.image("shapes", 22, col), "Formas"))
+                 ("eraser", self.btn_eraser, icons.image("eraser", 20, col), "Borracha"),
+                 ("shape", self.btn_shape, icons.image("shapes", 20, col), "Formas"))
         self.tool_btns = {}
         for name, b_, img, tip in specs:
             b_.get_style_context().add_class("tbtn")
@@ -265,15 +265,15 @@ class EditorWindow(Gtk.ApplicationWindow):
             self.edit_group.pack_start(b_, False, False, 0)
         self.refresh_tool_icons()
         self.edit_group.pack_start(self._sep(), False, False, 0)
-        self.btn_crop = btn("crop", tip="Corte de imagem", toggle=True, size=22)
+        self.btn_crop = btn("crop", tip="Corte de imagem", toggle=True, size=18)
         self.btn_crop.connect("clicked", lambda b: self.toggle_crop(b.get_active()))
-        self.btn_text = btn("textscan", tip="Ações de texto", size=22)
+        self.btn_text = btn("textscan", tip="Ações de texto", size=18)
         self.btn_text.connect("clicked", lambda *_: self.app.ocr_current(self))
         self.edit_group.pack_start(self.btn_crop, False, False, 0)
         self.edit_group.pack_start(self.btn_text, False, False, 0)
         self.edit_group.pack_start(self._sep(), False, False, 0)
-        self.btn_undo = btn("undo", tip="Desfazer (Ctrl+Z)", size=22)
-        self.btn_redo = btn("redo", tip="Refazer (Ctrl+Y)", size=22)
+        self.btn_undo = btn("undo", tip="Desfazer (Ctrl+Z)", size=18)
+        self.btn_redo = btn("redo", tip="Refazer (Ctrl+Y)", size=18)
         self.btn_undo.connect("clicked", lambda *_: self.canvas.undo())
         self.btn_redo.connect("clicked", lambda *_: self.canvas.redo())
         self.edit_group.pack_start(self.btn_undo, False, False, 0)
@@ -292,18 +292,18 @@ class EditorWindow(Gtk.ApplicationWindow):
         bar.set_center_widget(self.center)
 
         # ---- direita: só ícones
-        self.right = Gtk.Box(spacing=2)
-        self.btn_ext = btn("openwith", tip="Editar em outro aplicativo", size=20)
+        self.right = Gtk.Box(spacing=4)
+        self.btn_ext = btn("openwith", tip="Editar em outro aplicativo", size=18)
         self.btn_ext.connect("clicked", lambda *_: self.edit_external())
-        self.btn_save = btn("save", tip="Salvar como (Ctrl+S)", size=20)
+        self.btn_save = btn("save", tip="Salvar como (Ctrl+S)", size=18)
         self.btn_save.connect("clicked", lambda *_: self.save_as())
-        self.btn_copy = btn("copy", tip="Copiar (Ctrl+C)", size=20)
+        self.btn_copy = btn("copy", tip="Copiar (Ctrl+C)", size=18)
         self.btn_copy.connect("clicked", lambda *_: self.copy_image())
-        self.btn_share = btn("share", tip="Compartilhar", size=20)
+        self.btn_share = btn("share", tip="Compartilhar", size=18)
         self.btn_share.connect("clicked", self.popup_share)
-        self.btn_more = btn("more", tip="Mais", size=20)
+        self.btn_more = btn("more", tip="Mais", size=18)
         self.btn_more.connect("clicked", self.popup_more)
-        self.file_group = Gtk.Box(spacing=2)
+        self.file_group = Gtk.Box(spacing=4)
         for w in (self.btn_ext, self.btn_save, self.btn_copy, self.btn_share):
             self.file_group.pack_start(w, False, False, 0)
         self.file_group.pack_start(self._sep(), False, False, 0)
@@ -375,15 +375,15 @@ class EditorWindow(Gtk.ApplicationWindow):
 
     def refresh_capture_icons(self):
         name = [i for k, i, _ in SHAPES if k == settings["shape"]][0]
-        self.shape_img.set_from_pixbuf(icons.pixbuf(name, 22, theme.icon_color()))
+        self.shape_img.set_from_pixbuf(icons.pixbuf(name, 18, theme.icon_color()))
         d = [i for k, i, _ in DELAYS if k == settings["delay"]][0]
-        self.delay_img.set_from_pixbuf(icons.pixbuf(d, 22, theme.icon_color()))
+        self.delay_img.set_from_pixbuf(icons.pixbuf(d, 18, theme.icon_color()))
 
     def refresh_tool_icons(self):
         pc, _ = self.canvas_opts("pen")
         hc, _ = self.canvas_opts("hl")
-        self.pen_img.set_from_pixbuf(icons.tool_pixbuf("pen", pc, theme.icon_color(), 24))
-        self.hl_img.set_from_pixbuf(icons.tool_pixbuf("highlighter", hc, theme.icon_color(), 24))
+        self.pen_img.set_from_pixbuf(icons.tool_pixbuf("pen", pc, theme.icon_color(), 22))
+        self.hl_img.set_from_pixbuf(icons.tool_pixbuf("highlighter", hc, theme.icon_color(), 22))
 
     def canvas_opts(self, k):
         c = getattr(self, "canvas", None)

@@ -166,6 +166,7 @@ class CapturaApp(Gtk.Application):
         self.add_main_option("ocr", 0, 0, 0, "Extrator de texto", None)
         self.add_main_option("color", 0, 0, 0, "Seletor de cores", None)
         self.add_main_option("record", 0, 0, 0, "Gravação de tela", None)
+        self.add_main_option("settings", 0, 0, 0, "Abre as Configurações", None)
         self.add_main_option("background", 0, 0, 0, "Fica residente, sem janela", None)
         self.add_main_option("fullscreen", 0, 0, 0, "Captura a tela inteira imediatamente", None)
 
@@ -187,7 +188,11 @@ class CapturaApp(Gtk.Application):
         if "background" in opts:
             self.hold()
             return 0
-        if "snip" in opts:
+        if "settings" in opts:
+            w = self.get_window()
+            w.show_page("settings")
+            w.present()
+        elif "snip" in opts:
             self.start_capture("snip", 0)
         elif "ocr" in opts:
             self.start_capture("ocr", 0)

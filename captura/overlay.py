@@ -164,7 +164,7 @@ class Overlay(Gtk.Window):
         ind.get_style_context().add_class("ind-bar")
         ind.set_halign(Gtk.Align.CENTER)
         ind.set_valign(Gtk.Align.END)
-        ind.set_margin_bottom(-6)
+        ind.set_margin_bottom(1)
         ind.set_opacity(0.0)
         ov.add_overlay(ind)
         b.add(ov)
