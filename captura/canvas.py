@@ -1,14 +1,15 @@
 """Tela de edição: imagem centralizada, zoom, caneta, marca-texto, borracha, formas e corte."""
 import math
+import time
 import gi
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
 import cairo
-from gi.repository import Gtk, Gdk, GObject
+from gi.repository import Gtk, Gdk, GLib, GObject
 
 from . import annot, theme
 from .ruler import Ruler
-from . import textlayer
+from . import textlayer, text_anim
 
 TEXT_RADIUS = 4.0          # cantos das caixas de linha do modo Ações de texto (medido)
 
@@ -46,6 +47,14 @@ class Canvas(Gtk.DrawingArea):
         self.text_words = []
         self.text_sel = []
         self.on_text_context = None
+        self.text_dim = 1.0                # progresso do esmaecimento (0 durante a varredura)
+        self.text_scan_t0 = None           # monotonic do início da varredura
+        self.text_border = 0.0             # espessura da borda animada na revelação
+        self.text_reveal_t0 = None
+        self.text_scan_end = 0.0
+        self.connect("destroy", lambda *_: self.cancel_text_anim())
+        self.on_reveal = None              # callback(offset_px) para a barra de ações
+        self._anim_id = 0
         self.text_drag = None
         self.opts = {"pen": ("#e61b1b", 4), "hl": ("#ffe600", 12), "shape": ("#e61b1b", 3), "shape_kind": "rect"}
         self.crop_rect = None            # (x0, y0, x1, y1) em px da imagem
@@ -177,6 +186,60 @@ class Canvas(Gtk.DrawingArea):
         self.text_drag = None
         self.queue_draw()
 
+    # ------------------------------------------------------ animação (ver text_anim)
+    def begin_text_scan(self):
+        """Entra no modo Ações de texto: borda girando enquanto o OCR roda."""
+        self.set_tool("text")
+        self.text_words, self.text_sel = [], []
+        self.text_dim = 0.0
+        self.text_reveal_t0 = None
+        self.text_scan_t0 = time.monotonic()
+        self._run_anim()
+
+    def end_text_scan(self, words):
+        """OCR pronto: a borda some, a imagem esmaece, a barra desce."""
+        self.text_words, self.text_sel = list(words), []
+        self.text_scan_end = (time.monotonic() - self.text_scan_t0) * 1000 if self.text_scan_t0 else 0.0
+        self.text_scan_t0 = None
+        self.text_reveal_t0 = time.monotonic()
+        self._run_anim()
+
+    def cancel_text_anim(self, final=True):
+        """Interrompe a animação (saída do modo: instantânea, como no Windows)."""
+        self.text_scan_t0 = self.text_reveal_t0 = None
+        self.text_dim = 1.0
+        self.text_border = 0.0
+        if self._anim_id:
+            GLib.source_remove(self._anim_id)
+            self._anim_id = 0
+        if not self.in_destruction():
+            self.queue_draw()
+
+    def text_scanning(self):
+        return self.text_scan_t0 is not None
+
+    def _run_anim(self):
+        if not self._anim_id:
+            self._anim_id = GLib.timeout_add(16, self._anim_tick)
+
+    def _anim_tick(self):
+        now = time.monotonic()
+        if self.text_reveal_t0 is not None:
+            t = (now - self.text_reveal_t0) * 1000
+            self.text_border, self.text_dim, off = text_anim.reveal_state(t)
+            if self.on_reveal:
+                self.on_reveal(off)
+            if t >= text_anim.REVEAL_MS:
+                self.text_reveal_t0 = None
+                self.text_border, self.text_dim = 0.0, 1.0
+                if self.on_reveal:
+                    self.on_reveal(0.0)
+        self.queue_draw()
+        if self.text_scan_t0 is None and self.text_reveal_t0 is None:
+            self._anim_id = 0
+            return False
+        return True
+
     def selected_text(self):
         if self.tool != "text":
             return ""
@@ -221,6 +284,8 @@ class Canvas(Gtk.DrawingArea):
 
     def set_tool(self, tool):
         changed = tool != self.tool
+        if self.tool == "text" and tool != "text":
+            self.cancel_text_anim()
         self.tool = tool
         self.sel = None
         self.text_sel = []
@@ -279,6 +344,14 @@ class Canvas(Gtk.DrawingArea):
         if self.tool == "text":
             self.draw_text_layer(cr, iw, ih)
         cr.restore()
+        if self.tool == "text" and (self.text_scan_t0 is not None or self.text_border > 0):
+            if self.text_scan_t0 is not None:
+                t = (time.monotonic() - self.text_scan_t0) * 1000
+                thick, phase = text_anim.scan_thickness(t), text_anim.phase_at(t)
+            else:
+                thick = self.text_border
+                phase = text_anim.phase_at(self.text_scan_end + (time.monotonic() - self.text_reveal_t0) * 1000)
+            text_anim.draw_border(cr, ox, oy, ox + iw * self.zoom, oy + ih * self.zoom, thick, phase)
         if self.show_ruler:
             if self.ruler is None:
                 self.ruler = Ruler(a.width/2, a.height/2 + 60)
@@ -300,7 +373,10 @@ class Canvas(Gtk.DrawingArea):
         cr.save()
         cr.rectangle(0, 0, iw, ih)
         cr.clip()
-        cr.set_source_rgba(0, 0, 0, .431)
+        if self.text_dim <= 0.001 and not self.text_words:
+            cr.restore()
+            return
+        cr.set_source_rgba(0, 0, 0, .431 * self.text_dim)
         cr.paint()
         for line in textlayer.group_lines(self.text_words):
             x0, y0, x1, y1 = line.box

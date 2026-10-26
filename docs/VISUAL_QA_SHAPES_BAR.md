@@ -124,3 +124,24 @@ menu de formas; Esc fecha de imediato; barra de gravação 258×48 (pausar, para
 Mudanças de comportamento: pausar/continuar gravação de verdade (trechos unidos com concat), parar a gravação fora da thread da interface,
 janelas do app voltam ao fim da gravação, forma livre no modo vídeo trava o retângulo envolvente, tentativas de grab por overlay.
 Pendente: contagem regressiva 3-2-1 não comparada (o Windows pediu permissão de microfone na VM durante a captura); mic/áudio não alternam durante a gravação.
+
+# QA — Animação e comportamento do OCR (Ações de texto)
+
+Gravação do Windows quadro a quadro (~30 fps, `rec.ps1` + `upsrv.py` + `animrec.py`; análise `framediff.py`, `animcmp.py`) contra o nosso app no Xephyr (`animshot.py`).
+Medido e implementado (`captura/text_anim.py`):
+- **Varredura:** borda em gradiente cônico de 6 px (azul `#4a50ec` → violeta → coral `#fb7382`) girando no sentido horário, 1 volta a cada 1500 ms;
+  dura 1,155 s + 20,5 ms por linha reconhecida (1, 7 e 24 linhas medidas: 1155, 1265, 1621 ms).
+- **Revelação:** a borda some em ~250 ms, a imagem esmaece até `#919191` em ~860 ms (curva medida) e a barra de ações desce de 54 px acima em ~250 ms.
+- **Saída do modo:** instantânea, sem animação; a caneta fica selecionada.
+- **Imagem sem texto:** a varredura termina, o modo sai, "Copiar como tabela" e o botão de texto ficam desabilitados e aparece o aviso "Nenhum texto ou código QR foi detectado."
+- **Tabela:** células viram caixas separadas; "Copiar como tabela" copia `text/html` (mesmo HTML do Windows) + texto com tabulações.
+- **Menus:** abertura revelada de cima para baixo em ~250 ms (curva medida no menu Mais); balão da Redação rápida cresce a partir da ponta em ~160 ms.
+- **Parágrafos:** Tesseract em modo 4 gera as mesmas quebras de parágrafo do Windows ("Copiar todo o texto").
+
+| Comparação (MAE, janela de conteúdo) | valor |
+|---|---|
+| varredura (5 instantes) | 0,75–0,92 |
+| revelação (0–1000 ms) | 1,3–4,3 |
+
+Diferenças restantes: o Tesseract não lê dígitos soltos em tabelas ("4", "1"); a tarja da redação aparece de uma vez (o Windows faz fade de ~250 ms);
+animação de seleção/cópia (mudanças < 0,5 de MAE) não replicada; o OCR do Windows é mais rápido que o Tesseract em imagens grandes (a varredura espera o OCR).

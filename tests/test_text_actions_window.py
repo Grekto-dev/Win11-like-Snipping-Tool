@@ -50,7 +50,7 @@ class TextActionsWindowTests(unittest.TestCase):
     def enter(self, words=WORDS):
         with patch("captura.window.textlayer.ocr_surface", return_value=list(words)):
             self.w.btn_text.clicked()
-            self.assertTrue(drain(lambda: self.w.canvas.tool == "text" or not self.w.btn_text.get_active()))
+            self.assertTrue(drain(lambda: (self.w.canvas.tool == "text" and not self.w.canvas.text_scanning() and bool(self.w.canvas.text_words)) or not self.w.btn_text.get_active(), 4))
 
     def test_button_runs_ocr_and_enters_text_mode_with_actions(self):
         self.enter()

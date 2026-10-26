@@ -97,8 +97,12 @@ class CropBarTests(unittest.TestCase):
         self.assertEqual(self.w.crop_cancel.get_tooltip_text(), "Cancelar (Esc)")
 
     def test_zoom_menu_items_and_geometry(self):
-        self.w.crop_zoom.clicked(); drain(.4)
-        m = self.w._cur_menu
+        for _ in range(5):                      # um grab perdido pode fechar o menu: tenta de novo
+            self.w.crop_zoom.clicked(); drain(.4)
+            m = self.w._cur_menu
+            if m.get_window() is not None and m.frame.get_children():
+                break
+        self.assertTrue(m.frame.get_children(), "menu de zoom não abriu")
         rows = [b for b in m.frame.get_children()[0].get_children() if isinstance(b, Gtk.Button)]
         labels = [[c for c in b.get_child().get_children() if isinstance(c, Gtk.Label)] for b in rows]
         texts = [[l.get_text() for l in ls] for ls in labels]

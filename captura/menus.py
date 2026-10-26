@@ -1,7 +1,9 @@
 """Menus e flyouts como janelas POPUP próprias: posição exata em pixels, sem seta, sombra por CSS (Windows 11)."""
+import os
 import gi
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
+import time
 import cairo
 from gi.repository import Gtk, Gdk, GLib
 
@@ -30,6 +32,62 @@ def anchor_origin(widget):
     return ox + a.x, oy + a.y
 
 
+# Abertura dos menus do Windows 11 (medida quadro a quadro): a caixa é revelada de cima para baixo e o conteúdo
+# desliza junto (começa deslocado para cima). (ms, fração visível)
+OPEN_CURVE = [(0, 0.0), (32, .49), (62, .75), (94, .85), (141, .94), (188, .987), (250, 1.0)]
+ANIMATE = os.environ.get("CAPTURA_NO_ANIM") != "1"
+
+
+def _curve(t):
+    keys = OPEN_CURVE
+    if t >= keys[-1][0]:
+        return 1.0
+    for (t0, v0), (t1, v1) in zip(keys, keys[1:]):
+        if t <= t1:
+            return v0 + (v1 - v0) * (t - t0) / (t1 - t0)
+    return 1.0
+
+
+class RevealClip(Gtk.EventBox):
+    """Mostra só a parte de cima do filho (fração `progress`) e desliza o conteúdo para o lugar."""
+
+    def __init__(self):
+        super().__init__()
+        self.set_visible_window(False)
+        self.progress = 1.0
+
+    def do_draw(self, cr):
+        child = self.get_child()
+        if child is None:
+            return False
+        if self.progress >= 1.0:
+            self.propagate_draw(child, cr)
+            return False
+        a = self.get_allocation()
+        h = a.height
+        cr.save()
+        cr.rectangle(a.x, a.y, a.width, h * self.progress)
+        cr.clip()
+        cr.translate(0, -h * (1.0 - self.progress))
+        self.propagate_draw(child, cr)
+        cr.restore()
+        return False
+
+    def play(self, on_done=None):
+        self.progress = 0.0
+        t0 = time.monotonic()
+
+        def tick():
+            if not self.get_realized():
+                return GLib.SOURCE_REMOVE
+            self.progress = _curve((time.monotonic() - t0) * 1000)
+            self.queue_draw()
+            if self.progress >= 1.0:
+                return GLib.SOURCE_REMOVE
+            return GLib.SOURCE_CONTINUE
+        GLib.timeout_add(16, tick)
+
+
 class Popup(Gtk.Window):
     """Caixa flutuante sem decoração. `frame_class` define a aparência (wmenu | wflyout)."""
 
@@ -51,7 +109,10 @@ class Popup(Gtk.Window):
         self.frame = Gtk.Box()
         self.frame.get_style_context().add_class(frame_class)
         self.frame.add(content)
-        outer.add(self.frame)
+        self.clip = RevealClip()
+        self.clip.add(self.frame)
+        self._animate = ANIMATE and frame_class == "wmenu"
+        outer.add(self.clip)
         self.add(outer)
         self.get_style_context().add_class("popup-root")
         self.connect("draw", self._clear)
@@ -78,7 +139,11 @@ class Popup(Gtk.Window):
         x = max(area.x, min(int(x), area.x + area.width - natural_width))
         y = max(area.y, min(int(y), area.y + area.height - natural_height))
         self.move(x - SHADOW, y - SHADOW)
+        if self._animate:
+            self.clip.progress = 0.0
         self.show()
+        if self._animate:
+            self.clip.play()
         self.grab_add()
         GLib.idle_add(self._grab)
 

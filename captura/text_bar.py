@@ -128,12 +128,44 @@ class InfoTip(Gtk.DrawingArea):
         super().__init__()
         self.text = text
         self.set_size_request(self.W, self.H + self.ARROW)
+        self.scale = 1.0
         self.connect("draw", self._draw)
+
+    SCALE_CURVE = [(0, .30), (40, .36), (90, .85), (130, .98), (160, 1.0)]       # medido: abre crescendo a partir da ponta
+
+    def pop(self):
+        import time
+        from gi.repository import GLib
+        from . import menus
+        if not menus.ANIMATE:
+            self.scale = 1.0
+            return
+        t0 = time.monotonic()
+        self.scale = self.SCALE_CURVE[0][1]
+
+        def tick():
+            t = (time.monotonic() - t0) * 1000
+            keys = self.SCALE_CURVE
+            if t >= keys[-1][0]:
+                self.scale = 1.0
+                self.queue_draw()
+                return False
+            for (t0_, v0), (t1_, v1) in zip(keys, keys[1:]):
+                if t <= t1_:
+                    self.scale = v0 + (v1 - v0) * (t - t0_) / (t1_ - t0_)
+                    break
+            self.queue_draw()
+            return True
+        GLib.timeout_add(16, tick)
 
     def _draw(self, _w, cr):
         import textwrap
         pal = theme.palette()
         a, W, H, R = self.ARROW, self.W - 1, self.H, 8
+        if self.scale < 1.0:
+            cr.translate(155.5, 0)
+            cr.scale(self.scale, self.scale)
+            cr.translate(-155.5, 0)
         x0, y0, x1, y1 = .5, a + .5, W - .5, a + H - .5
         cr.new_path()
         cr.move_to(x0 + R, y0)
@@ -158,4 +190,46 @@ class InfoTip(Gtk.DrawingArea):
         cr.move_to(19.5, a + 31.2); cr.line_to(19.5, a + 36); cr.stroke()
         for n, line in enumerate(("Certifique-se de que todas as informações", "confidenciais foram editadas.")):
             draw_text(cr, line, 40, a + 29 + n * 18, c)
+        return False
+
+
+class Notice(Gtk.DrawingArea):
+    """Aviso informativo sob a barra de ferramentas (medido: 332x53, 83 px abaixo do topo, centrado)."""
+    W, H, TOP = 332, 53, 4
+
+    def __init__(self):
+        super().__init__()
+        self.text = ""
+        self.set_halign(Gtk.Align.CENTER)
+        self.set_valign(Gtk.Align.START)
+        self.set_margin_top(self.TOP)
+        self.set_size_request(self.W, self.H)
+        self.connect("draw", self._draw)
+
+    def set_text(self, text):
+        self.text = text
+        self.queue_draw()
+
+    def _draw(self, _w, cr):
+        pal = theme.palette()
+        R = 8
+        x0, y0, x1, y1 = .5, .5, self.W - .5, self.H - .5
+        cr.new_path()
+        cr.arc(x1 - R, y0 + R, R, -math.pi / 2, 0)
+        cr.arc(x1 - R, y1 - R, R, 0, math.pi / 2)
+        cr.arc(x0 + R, y1 - R, R, math.pi / 2, math.pi)
+        cr.arc(x0 + R, y0 + R, R, math.pi, 3 * math.pi / 2)
+        cr.close_path()
+        cr.set_source_rgb(*rgb(pal["menu_bg"]))
+        cr.fill_preserve()
+        cr.set_source_rgb(*rgb(pal["sbar_border"]))
+        cr.set_line_width(1)
+        cr.stroke()
+        cr.set_source_rgb(0, .47, .831)                     # #0078d4
+        cr.arc(24.5, self.H / 2, 7.4, 0, math.tau)
+        cr.fill()
+        cr.set_source_rgb(1, 1, 1)
+        cr.rectangle(23.9, self.H / 2 - 4.2, 1.3, 1.5); cr.fill()
+        cr.rectangle(23.9, self.H / 2 - 1.8, 1.3, 5.2); cr.fill()
+        draw_text(cr, self.text, 48, self.H / 2 + 5, text_rgb())
         return False

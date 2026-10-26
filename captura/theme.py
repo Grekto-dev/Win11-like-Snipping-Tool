@@ -151,6 +151,7 @@ button.sb-btn.crop-btn:hover { background: $crop_hover; }
 .wflyout2 button.emoji-cell { background: transparent; background-image: none; border: 0; border-radius: 4px; padding: 0; margin: 0; min-width: 0; min-height: 0; box-shadow: none; outline: none; }
 .wflyout2 button.emoji-cell:hover { background: $sbar_sel; }
 /* Overlay de captura */
+.text-holder { background: transparent; }
 .ov-bar { background: $ov_bar; border-radius: 8px; box-shadow: 0 0 0 1px rgba(0,0,0,.2); }
 button.ov-btn { background: transparent; background-image: none; border: 1px solid transparent; border-radius: 4px; padding: 0; margin: 0; min-width: 0; min-height: 0; box-shadow: none; outline: none; }
 button.ov-btn:hover { background: $ov_hover; }

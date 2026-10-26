@@ -43,13 +43,25 @@ def parse_tsv(tsv, scale=1):
 
 
 def words_text(words):
-    lines, order = {}, []
+    """Texto na ordem de leitura; uma linha em branco entre parágrafos do OCR (o Tesseract em modo 4 separa os
+    parágrafos da mesma forma que o Windows: medido com a mesma imagem nos dois)."""
+    out, last_line = [], None
+    cur = []
     for w in words:
-        if w.line not in lines:
-            lines[w.line] = []
-            order.append(w.line)
-        lines[w.line].append(w.text)
-    return "\n".join(" ".join(lines[k]) for k in order)
+        if last_line is not None and w.line != last_line:
+            out.append((last_line, " ".join(cur)))
+            cur = []
+        cur.append(w.text)
+        last_line = w.line
+    if cur:
+        out.append((last_line, " ".join(cur)))
+    text, prev = [], None
+    for line, s in out:
+        if prev is not None and line[:2] != prev[:2]:
+            text.append("")
+        text.append(s)
+        prev = line
+    return "\n".join(text)
 
 
 def _digits(text):
@@ -95,23 +107,33 @@ def words_in_rect(words, rect):
     return picked
 
 
+def _tesseract(path, psm, want):
+    cmd = ["tesseract", path, "stdout", "--psm", str(psm)] + (["-l", "+".join(want)] if want else []) + ["tsv"]
+    return subprocess.run(cmd, capture_output=True, text=True, timeout=60).stdout
+
+
 def ocr_surface(surface):
-    """Executa o Tesseract (TSV) e devolve as palavras em coordenadas da imagem."""
+    """Executa o Tesseract (TSV) e devolve as palavras em coordenadas da imagem.
+
+    Modo 4 (colunas de texto, imagem ampliada se pequena) segue os parágrafos como o Windows; o modo 11 (esparso, tamanho
+    original) lê célula por célula: se ele revelar uma tabela alinhada, é o resultado usado."""
     pb = services.surface_to_pixbuf(surface)
     from gi.repository import GdkPixbuf
-    scale = 1
-    w, h = pb.get_width(), pb.get_height()
-    if max(w, h) < 1200:
-        scale = 2
-        pb = pb.scale_simple(w * 2, h * 2, GdkPixbuf.InterpType.BILINEAR)
     langs = services.ocr_languages()
     want = [l for l in ("por", "eng") if l in langs] or langs[:1]
+    w, h = pb.get_width(), pb.get_height()
     with tempfile.TemporaryDirectory() as d:
-        src = os.path.join(d, "in.png")
-        pb.savev(src, "png", [], [])
-        cmd = ["tesseract", src, "stdout", "--psm", "6"] + (["-l", "+".join(want)] if want else []) + ["tsv"]
-        r = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
-    return parse_tsv(r.stdout, scale)
+        orig = os.path.join(d, "orig.png")
+        pb.savev(orig, "png", [], [])
+        sparse = parse_tsv(_tesseract(orig, 11, want), 1)
+        if sparse and detect_table(sparse) is not None:
+            return sparse
+        scale, src = 1, orig
+        if max(w, h) < 1200:
+            scale = 2
+            src = os.path.join(d, "x2.png")
+            pb.scale_simple(w * 2, h * 2, GdkPixbuf.InterpType.BILINEAR).savev(src, "png", [], [])
+        return parse_tsv(_tesseract(src, 4, want), scale)
 
 
 # ------------------------------------------------------------------ geometria (medida no Windows)
@@ -124,8 +146,25 @@ class Line:
     box: tuple          # caixa branca da linha no modo Ações de texto (x0, y0, x1, y1)
 
 
+CELL_GAP = 2.4          # um vazio horizontal maior que 2,4 alturas de letra separa células (tabelas)
+
+
+def _segments(ws):
+    """Divide as palavras de uma linha do OCR em trechos separados por vazios largos."""
+    ws = sorted(ws, key=lambda w: w.box[0])
+    segs = [[ws[0]]]
+    for w in ws[1:]:
+        prev = segs[-1][-1]
+        h = max(prev.box[3] - prev.box[1], w.box[3] - w.box[1])
+        if w.box[0] - prev.box[2] > CELL_GAP * h:
+            segs.append([w])
+        else:
+            segs[-1].append(w)
+    return segs
+
+
 def group_lines(words):
-    """Agrupa as palavras por linha do OCR (na ordem de leitura) e calcula a caixa de cada linha."""
+    """Agrupa as palavras por linha do OCR (na ordem de leitura) e calcula a caixa de cada linha/célula."""
     order, groups = [], {}
     for w in words:
         if w.line not in groups:
@@ -134,11 +173,11 @@ def group_lines(words):
         groups[w.line].append(w)
     lines = []
     for k in order:
-        ws = groups[k]
-        x0 = min(w.box[0] for w in ws); x1 = max(w.box[2] for w in ws)
-        top = min(w.box[1] for w in ws); base = min(w.box[3] for w in ws)
-        l, t, r, b = LINE_PAD
-        lines.append(Line(ws, (x0 - l, top - t, x1 + r, base + b)))
+        for ws in _segments(groups[k]):
+            x0 = min(w.box[0] for w in ws); x1 = max(w.box[2] for w in ws)
+            top = min(w.box[1] for w in ws); base = min(w.box[3] for w in ws)
+            l, t, r, b = LINE_PAD
+            lines.append(Line(ws, (x0 - l, top - t, x1 + r, base + b)))
     return lines
 
 
@@ -183,3 +222,55 @@ def select_between(words, p0, p1):
     b = _caret(words, lines, *p1)
     lo, hi = min(a, b), max(a, b)
     return words[lo:hi + 1]
+
+
+# ------------------------------------------------------------------ tabelas
+def detect_table(words):
+    """Linhas de células alinhadas em colunas -> [[texto, ...], ...] (>= 2 linhas e 2 colunas) ou None."""
+    if not words:
+        return None
+    rows = {}
+    for w in words:
+        rows.setdefault(round((w.box[1] + w.box[3]) / 2 / 6), []).append(w)
+    merged = []
+    for key in sorted(rows):
+        if merged and key - merged[-1][0] <= 1:
+            merged[-1][1].extend(rows[key])
+        else:
+            merged.append([key, list(rows[key])])
+    table = []
+    for _k, ws in merged:
+        segs = _segments(ws)
+        table.append([(" ".join(w.text for w in s), min(w.box[0] for w in s)) for s in segs])
+    table = [r for r in table if r]
+    multi = [r for r in table if len(r) >= 2]
+    if len(multi) < 2 or len(multi) < len(table) * 0.6:
+        return None
+    ncol = max(len(r) for r in multi)
+    anchors = [r for r in multi if len(r) == ncol]
+    if len(anchors) < 2:
+        return None
+    cols = [sum(r[c][1] for r in anchors) / len(anchors) for c in range(ncol)]
+    if not all(abs(r[c][1] - cols[c]) < 28 for r in anchors for c in range(ncol)):
+        return None
+    out = []
+    for r in table:
+        row = [""] * ncol
+        for text, x in r:
+            c = min(range(ncol), key=lambda i: abs(cols[i] - x))
+            row[c] = (row[c] + " " + text).strip()
+        out.append(row)
+    return out
+
+
+def table_html(rows):
+    """HTML no formato que o Windows coloca na área de transferência (tabela com bordas)."""
+    import html
+    cells = "".join("<tr>" + "".join("<td>%s</td>" % html.escape(c) for c in r) + "</tr>" for r in rows)
+    return ("<html><head><style>th, td { padding: 4px; font-family: Arial, Helvetica, sans-serif; }"
+            "table { border-collapse: collapse; } table, th, td { border: 1px solid black; }</style></head>"
+            "<body><table>%s</table></body></html>" % cells)
+
+
+def table_text(rows):
+    return "\n".join("\t".join(r) for r in rows)

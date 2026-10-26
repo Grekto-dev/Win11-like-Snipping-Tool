@@ -2,6 +2,7 @@
 import os
 import subprocess
 import threading
+import time
 import gi
 gi.require_version("Gtk", "3.0")
 gi.require_version("Gdk", "3.0")
@@ -9,7 +10,8 @@ import cairo
 from gi.repository import Gtk, Gdk, GLib, GdkPixbuf
 
 from . import APP_NAME, annot, chrome, icons, menus, metrics as M, services, textlayer, theme
-from .text_bar import BAR_H, BAR_W, InfoTip, TextBar
+from . import text_anim
+from .text_bar import BAR_H, BAR_W, InfoTip, Notice, TextBar
 from .canvas import Canvas
 from .config import settings
 from .emoji_picker import EmojiPicker
@@ -136,11 +138,16 @@ class EditorWindow(Gtk.ApplicationWindow):
         self.toast_overlay.set_overlay_pass_through(self.toast_rev, True)
         self.toast_overlay.add_overlay(self.build_text_bar())
         self.toast_overlay.add_overlay(self.infotip)
+        self.notice = Notice()
+        self.notice.set_no_show_all(True)
+        self.toast_overlay.add_overlay(self.notice)
+        self.toast_overlay.set_overlay_pass_through(self.notice, True)
         self.toast_overlay.set_overlay_pass_through(self.infotip, True)
         self._toast_id = 0
         main.pack_start(self.toast_overlay, True, True, 0)
         self.canvas = Canvas()
         self.canvas.on_text_context = self.popup_text_context
+        self.canvas.on_reveal = self.set_text_bar_offset
         for name in ("pen", "hl", "shape"):
             self.canvas.opts[name] = (settings[f"{name}_color"], settings[f"{name}_size"])
         self.canvas.opts["shape_kind"] = settings["shape_kind"]
@@ -293,6 +300,8 @@ class EditorWindow(Gtk.ApplicationWindow):
     # --------------------------------------------------------------- imagem
     def load_surface(self, surface, name=None, new_capture=False, path=None):
         self.canvas.set_image(surface)
+        self.btn_text.set_sensitive(True)
+        self.hide_notice()
         self.canvas_stack.set_visible_child_name("canvas")
         self.saved_path = path
         self.source_name = name
@@ -344,8 +353,12 @@ class EditorWindow(Gtk.ApplicationWindow):
         return True
 
     def select_tool(self, name):
-        if self.btn_text.get_active():
-            self.btn_text.set_active(False)
+        self._tool_switch = True                       # sair do modo de texto por outra ferramenta não seleciona a caneta
+        try:
+            if self.btn_text.get_active():
+                self.btn_text.set_active(False)
+        finally:
+            self._tool_switch = False
         for k, tb in self.tool_btns.items():
             tb.set_active(k == name)
         if self.btn_crop.get_active():
@@ -549,11 +562,24 @@ class EditorWindow(Gtk.ApplicationWindow):
 
     # ------------------------------------------------------- ações de texto
     def build_text_bar(self):
-        bar = TextBar(self.copy_all_text, lambda: None, self.quick_redact, self.popup_redact_menu)
-        bar.set_margin_top(M.SHAPEBAR_TOP)
+        bar = TextBar(self.copy_all_text, self.copy_table, self.quick_redact, self.popup_redact_menu)
         bar.set_no_show_all(True)
         bar.hide()
         self.text_bar = bar
+        # a barra desce de cima (animação): o suporte recorta o que ainda está acima do conteúdo
+        holder = Gtk.EventBox()
+        holder.set_visible_window(True)
+        holder.get_style_context().add_class("text-holder")
+        holder.set_size_request(BAR_W, BAR_H + M.SHAPEBAR_TOP)
+        holder.set_halign(Gtk.Align.CENTER)
+        holder.set_valign(Gtk.Align.START)
+        self.text_fixed = Gtk.Fixed()
+        holder.add(self.text_fixed)
+        self.text_fixed.put(bar, 0, M.SHAPEBAR_TOP)
+        self.text_fixed.show()          # o suporte tem no_show_all: o filho precisa ser exibido à parte
+        holder.set_no_show_all(True)
+        holder.hide()
+        self.text_holder = holder
         self.btn_copy_all, self.btn_table = bar.btn_copy_all, bar.btn_table
         self.btn_redact, self.btn_chev = bar.btn_redact, bar.btn_chev
         tip = InfoTip("Certifique-se de que todas as informações confidenciais foram editadas.")
@@ -563,7 +589,23 @@ class EditorWindow(Gtk.ApplicationWindow):
         tip.hide()
         self.infotip = tip
         self._tip_id = 0
-        return bar
+        return holder
+
+    # ---------------------------------------------------------- aviso (balão sob a barra)
+    def show_notice(self, text):
+        n = self.notice
+        n.set_text(text)
+        n.show()
+        if getattr(self, "_notice_id", 0):
+            GLib.source_remove(self._notice_id)
+        self._notice_id = GLib.timeout_add(8000, lambda: (self.hide_notice(), False)[1])
+
+    def hide_notice(self):
+        if getattr(self, "_notice_id", 0):
+            GLib.source_remove(self._notice_id)
+            self._notice_id = 0
+        if hasattr(self, "notice"):
+            self.notice.hide()
 
     def show_redact_tip(self):
         total = self.toast_overlay.get_allocated_width()
@@ -571,6 +613,7 @@ class EditorWindow(Gtk.ApplicationWindow):
             return
         self.infotip.set_margin_start((total - BAR_W) // 2 + 276)       # a barra é centrada; o balão aponta para a Redação rápida
         self.infotip.set_margin_top(M.SHAPEBAR_TOP + BAR_H + 1)
+        self.infotip.pop()
         self.infotip.show()
         if self._tip_id:
             GLib.source_remove(self._tip_id)
@@ -583,20 +626,34 @@ class EditorWindow(Gtk.ApplicationWindow):
 
     def toggle_text_mode(self, btn):
         if not btn.get_active():
-            if self.canvas.tool == "text":
-                self.canvas.set_tool(None)
+            was_text = self.canvas.tool == "text"
+            if was_text:
+                self.canvas.set_tool(None)                 # cancela a animação: a saída é instantânea
+            self._text_job = None
             self.text_bar.hide()
+            self.text_holder.hide()
+            self.set_text_bar_offset(0)
             self._hide_tip()
+            if was_text and not getattr(self, "_tool_switch", False) and not self.btn_crop.get_active():
+                self.select_tool("pen")                    # medido no Windows: ao sair, a caneta fica selecionada
             return
         s = self.current_surface()
         if s is None:
             btn.set_active(False)
+            return
+        if not services.ocr_available():
+            btn.set_active(False)
+            self.app.run_ocr(services.surface_to_pixbuf(s), self)      # mostra a orientação de instalação
             return
         if self.btn_crop.get_active():
             self.btn_crop.set_active(False)
         for tb in self.tool_btns.values():
             tb.set_active(False)
         self._text_job = job = object()
+        self.text_bar.hide()
+        self.text_holder.hide()
+        self.canvas.begin_text_scan()
+        t0 = time.monotonic()
 
         def work():
             try:
@@ -609,25 +666,46 @@ class EditorWindow(Gtk.ApplicationWindow):
         def done(words, err):
             if self._text_job is not job or not self.btn_text.get_active():
                 return False
+            lines = len(textlayer.group_lines(words)) if words else 1
+            wait = max(0.0, text_anim.scan_duration(lines) - (time.monotonic() - t0))     # duração medida no Windows
+            GLib.timeout_add(int(wait * 1000) + 1, lambda: (finish(words, err), False)[1])
+            return False
+
+        def finish(words, err):
+            if self._text_job is not job or not self.btn_text.get_active():
+                return
             if err or not words:
+                self.canvas.cancel_text_anim()
                 self.btn_text.set_active(False)
-                self.show_toast("Falha ao reconhecer o texto" if err else "Nenhum texto foi encontrado na imagem")
-                return False
-            self.canvas.set_tool("text")
-            self.canvas.set_text_words(words)
+                self.btn_text.set_sensitive(False)         # sem texto: o botão fica desabilitado para esta imagem
+                self.show_notice("Falha ao reconhecer o texto." if err else "Nenhum texto ou código QR foi detectado.")
+                return
+            self.set_text_bar_offset(text_anim.BAR_OFFSET[0][1])
+            self.text_holder.show()
             self.text_bar.show()
             self.text_bar.show_all()
-            return False
-        if not services.ocr_available():
-            btn.set_active(False)
-            self.app.run_ocr(services.surface_to_pixbuf(s), self)      # mostra a orientação de instalação
-            return
+            self.btn_table.set_sensitive(textlayer.detect_table(words) is not None)
+            self.canvas.end_text_scan(words)
         threading.Thread(target=work, daemon=True).start()
+
+    def set_text_bar_offset(self, off):
+        """Desloca a barra de ações para cima `off` px (animação de entrada)."""
+        if self.text_bar.get_parent() is None or self.in_destruction():
+            return
+        self.text_fixed.move(self.text_bar, 0, int(round(M.SHAPEBAR_TOP - off)))
 
     def copy_all_text(self):
         text = textlayer.words_text(self.canvas.text_words)
         if text:
             services.copy_text(text)
+
+    def copy_table(self):
+        rows = textlayer.detect_table(self.canvas.text_words)
+        if rows:
+            services.copy_html_table(textlayer.table_html(rows), textlayer.table_text(rows))
+
+    def update_table_button(self):
+        self.btn_table.set_sensitive(textlayer.detect_table(self.canvas.text_words) is not None)
 
     def copy_selected_text(self):
         text = self.canvas.selected_text()

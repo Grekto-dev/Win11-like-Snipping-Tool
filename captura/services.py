@@ -72,6 +72,21 @@ def copy_surface(surface):
     _clipboard_keep[:] = [pb]
 
 
+def copy_html_table(html, text):
+    """Coloca a tabela como text/html + texto simples (colar em planilhas/editores)."""
+    cb = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
+    targets = [Gtk.TargetEntry.new("text/html", 0, 0), Gtk.TargetEntry.new("UTF8_STRING", 0, 1),
+               Gtk.TargetEntry.new("text/plain;charset=utf-8", 0, 1), Gtk.TargetEntry.new("TEXT", 0, 1)]
+
+    def get(_cb, sel, info, _data):
+        if info == 0:
+            sel.set(Gdk.Atom.intern("text/html", False), 8, html.encode("utf-8"))
+        else:
+            sel.set_text(text, -1)
+    cb.set_with_data(targets, get, lambda *_: None, None)
+    cb.store()
+
+
 def copy_text(text):
     cb = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
     cb.set_text(text, -1)

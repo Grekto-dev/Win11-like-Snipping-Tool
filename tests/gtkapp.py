@@ -1,5 +1,7 @@
 """One registered Gtk.Application per test process (several registrations in one process abort)."""
 import atexit
+import os
+os.environ.setdefault("CAPTURA_NO_ANIM", "1")      # testes medem a geometria final dos menus
 import uuid
 import gi
 gi.require_version("Gtk", "3.0")

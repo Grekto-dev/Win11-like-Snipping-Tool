@@ -53,3 +53,20 @@ class RealOcrTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+@unittest.skipUnless(os.path.exists(os.path.expanduser("~/snip-tool-research/shots/ocr-table.png")) and textlayer.services.ocr_available(), "tesseract/imagem ausentes")
+class RealTableTests(unittest.TestCase):
+    def test_real_ocr_reads_a_table_cell_by_cell_and_detects_it(self):
+        import cairo
+        from gi.repository import Gdk, GdkPixbuf
+        pb = GdkPixbuf.Pixbuf.new_from_file(os.path.expanduser("~/snip-tool-research/shots/ocr-table.png"))
+        s = cairo.ImageSurface(cairo.FORMAT_ARGB32, pb.get_width(), pb.get_height())
+        cr = cairo.Context(s); Gdk.cairo_set_source_pixbuf(cr, pb, 0, 0); cr.paint()
+        words = textlayer.ocr_surface(s)
+        rows = textlayer.detect_table(words)
+        self.assertIsNotNone(rows)
+        self.assertEqual(rows[0], ["Produto", "Qtd", "Preço"])
+        self.assertEqual(rows[-1][0], "Mochila")
+        self.assertEqual(rows[-1][2], "R$ 120,00")                        # o Tesseract às vezes não lê dígitos soltos ("1")
+        self.assertGreaterEqual(len(textlayer.group_lines(words)), 10)    # uma caixa por célula (o Windows acha as 12)
