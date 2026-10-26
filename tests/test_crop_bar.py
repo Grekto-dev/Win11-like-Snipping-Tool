@@ -128,8 +128,12 @@ class CropBarTests(unittest.TestCase):
 
     def test_more_menu_zoom_submenu_sits_right_of_main_menu_5px_lower(self):
         self.w.btn_crop.set_active(False); drain(.3)
-        self.w.popup_more(self.w.btn_more); drain(.4)
-        main = self.w._cur_menu
+        for _ in range(5):                      # um grab perdido pode fechar o menu: tenta de novo
+            self.w.popup_more(self.w.btn_more); drain(.4)
+            main = self.w._cur_menu
+            if main.get_window() is not None:
+                break
+        self.assertIsNotNone(main.get_window(), "menu Mais não abriu")
         _, mx, my = main.get_window().get_origin()
         mfr = main.frame.get_allocation()
         rows = [b for b in main.frame.get_children()[0].get_children() if isinstance(b, Gtk.Button)]

@@ -650,8 +650,10 @@ class EditorWindow(Gtk.ApplicationWindow):
             ("gear", "Configurações", None, lambda: self.show_page("settings")),
         ]
         m = self._menu(items, menus.MORE, right=M.W, top=78)
-        _, wx, wy = m.get_window().get_origin()
-        self._more_geom = (wx + menus.SHADOW, wy + menus.SHADOW, m.frame.get_preferred_width()[1])
+        gw = m.get_window()
+        if gw is not None:
+            _, wx, wy = gw.get_origin()
+            self._more_geom = (wx + menus.SHADOW, wy + menus.SHADOW, m.frame.get_preferred_width()[1])
 
     # -------------------------------------------------------------- zoom
     def zoom_items(self):

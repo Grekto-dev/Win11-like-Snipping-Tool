@@ -17,6 +17,9 @@ def _label(text, cls=None, xalign=0.0, wrap=False):
     return l
 
 
+RIGHT_W = 177          # do x do interruptor até a borda direita do cartão
+
+
 def _card(inner=False):
     f = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
     f.get_style_context().add_class("cap-card")
@@ -27,16 +30,17 @@ class SettingsPage(Gtk.Box):
     def __init__(self, on_back, on_theme_changed):
         super().__init__(orientation=Gtk.Orientation.VERTICAL)
         self.on_theme_changed = on_theme_changed
-        head = Gtk.Box(spacing=12)
-        head.set_margin_start(40)
-        head.set_margin_top(14)
-        head.set_margin_bottom(6)
+        head = Gtk.Fixed()
+        head.set_size_request(-1, 76)           # título com tinta em y=62..81 (relativo à janela, topo da página y=32)
         back = Gtk.Button()
         back.get_style_context().add_class("tbtn")
-        back.add(icons.image("back", 18, theme.icon_color()))
+        back.set_size_request(32, 32)
+        back.set_can_focus(False)
+        back.add(icons.image("back", 16, theme.icon_color()))
         back.connect("clicked", lambda *_: on_back())
-        head.pack_start(back, False, False, 0)
-        head.pack_start(_label("Configurações", "pagetitle"), False, False, 0)
+        head.put(back, 3, 27)                    # seta com tinta em x=16..31
+        title = _label("Configurações", "pagetitle")
+        head.put(title, 56, 25)
         self.pack_start(head, False, False, 0)
 
         sw = Gtk.ScrolledWindow()
@@ -44,16 +48,16 @@ class SettingsPage(Gtk.Box):
         self.pack_start(sw, True, True, 0)
         outer = Gtk.Box()
         outer.set_halign(Gtk.Align.FILL)
-        outer.set_margin_start(56)
+        outer.set_margin_start(56)               # cartões: x=56..927 (872 px)
         outer.set_margin_end(56)
-        outer.set_margin_bottom(32)
+        outer.set_margin_bottom(28)
         sw.add(outer)
-        col = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
+        col = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)     # 4 px entre cartões
         col.set_hexpand(True)
         outer.pack_start(col, True, True, 0)
         self.col = col
 
-        self.section("Captura")
+        self.section("Captura", first=True)
         self.switch_row("Copiar as alterações automaticamente", "As edições na sua captura de tela são copiadas automaticamente para a área de transferência", "shot_autocopy_edits")
         self.switch_row("Salvar automaticamente as capturas de tela originais", None, "shot_autosave",
                         expander=lambda: self.dir_row("As capturas de tela são salvas em", "shot_dir", settings.shot_directory))
@@ -70,78 +74,91 @@ class SettingsPage(Gtk.Box):
         self.switch_row("Incluir áudio do sistema por padrão quando uma gravação de tela for iniciada", None, "rec_system_audio", icon="speaker")
 
         self.section("Atalhos")
-        self.switch_row("Use a tecla Imprimir tela para abrir a Ferramenta de Captura", "Super + Shift + S sempre abre a captura", "use_print_key", on_change=self._print_key)
+        self.switch_row("Use a tecla Imprimir tela para abrir a Ferramenta de Captura", None, "use_print_key", on_change=self._print_key)
 
         self.section("Aparência")
         card = _card()
         row = Gtk.Box(spacing=12)
         row.get_style_context().add_class("cap-row")
+        row.set_size_request(-1, 62)
         row.pack_start(_label("Tema do aplicativo"), True, True, 0)
         combo = Gtk.ComboBoxText()
         for key, label in (("system", "Usar configuração do sistema"), ("light", "Claro"), ("dark", "Escuro")):
             combo.append(key, label)
         combo.set_active_id(settings["theme"])
         combo.connect("changed", self._theme_changed)
+        combo.set_valign(Gtk.Align.CENTER)
         row.pack_end(combo, False, False, 0)
         card.pack_start(row, False, False, 0)
         col.pack_start(card, False, False, 0)
 
-        self.section("Sobre este aplicativo")
-        card = _card()
-        row = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
-        row.get_style_context().add_class("cap-row")
-        row.pack_start(_label(f"Ferramenta de Captura {__version__}"), False, False, 0)
-        row.pack_start(_label("Recriação livre para o Linux Mint (Cinnamon/X11) da Ferramenta de Captura do Windows 11. "
-                              "Software livre sob GPL-3.0-or-later; não contém código nem recursos da Microsoft.", "subtle", wrap=True), False, False, 0)
-        card.pack_start(row, False, False, 0)
-        col.pack_start(card, False, False, 0)
+        self.section("Sobre este app", about=True)
+        about = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+        about.set_margin_start(32)
+        for text, cls in ((f"Ferramenta de Captura {__version__}", "about-line"),
+                          ("Recriação livre para Linux Mint (Cinnamon/X11). Software livre sob GPL-3.0-or-later.", "about-line"),
+                          ("Não contém código nem recursos da Microsoft.", "about-line")):
+            about.pack_start(_label(text, cls), False, False, 0)
+        for text, url in (("Termos de licença deste software", "https://www.gnu.org/licenses/gpl-3.0.html"),
+                          ("Ícones Fluent UI System Icons (MIT)", "https://github.com/microsoft/fluentui-system-icons"),
+                          ("Fonte Selawik (SIL OFL 1.1)", "https://github.com/microsoft/Selawik"),
+                          ("Avisos de software de terceiros", "https://github.com/Grekto-dev")):
+            b = Gtk.Button(label=text)
+            b.get_style_context().add_class("linkbtn")
+            b.get_style_context().add_class("about-link")
+            b.set_halign(Gtk.Align.START)
+            b.set_can_focus(False)
+            b.connect("clicked", lambda _b, u=url: subprocess.Popen(["xdg-open", u]))
+            about.pack_start(b, False, False, 0)
+        col.pack_start(about, False, False, 0)
 
-    def section(self, title):
-        l = _label(title, "section")
-        l.set_margin_top(22)
+    def section(self, title, first=False, about=False):
+        l = _label(title, "section-about" if about else "section")
+        l.set_margin_top(0 if first else (22 if not about else 22))
         l.set_margin_bottom(6)
-        l.set_margin_start(2)
+        l.set_margin_start(1 if not about else 32)
         self.col.pack_start(l, False, False, 0)
 
     def switch_row(self, title, desc, key, expander=None, on_change=None, icon=None):
         card = _card()
-        row = Gtk.Box(spacing=12)
+        row = Gtk.Box(spacing=0)
         row.get_style_context().add_class("cap-row")
+        row.set_size_request(-1, 64 if expander else 62)     # linhas com seta são 2 px mais altas (medido)
         if icon:
             im = icons.image(icon, 18, theme.icon_color())
             im.set_valign(Gtk.Align.CENTER)
+            im.set_margin_start(0)
+            im.set_margin_end(14)
             row.pack_start(im, False, False, 0)
-        tb = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
+        tb = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=3)
         tb.set_valign(Gtk.Align.CENTER)
+        if not desc:
+            tb.set_margin_bottom(1)
         tb.pack_start(_label(title, wrap=True), False, False, 0)
         if desc:
             tb.pack_start(_label(desc, "subtle", wrap=True), False, False, 0)
         row.pack_start(tb, True, True, 0)
 
-        right = Gtk.Box(spacing=12)
-        right.set_valign(Gtk.Align.CENTER)
+        # grupo direito de largura fixa: interruptor em x=750 (40x20), rótulo em +52, seta com centro em +153 (medido)
+        right = Gtk.Fixed()
+        right.set_size_request(RIGHT_W, -1)
         sw = Gtk.Switch()
         sw.set_active(bool(settings[key]))
-        sw.set_valign(Gtk.Align.CENTER)
+        sw.set_size_request(40, 20)
+        right.put(sw, 0, 21 if not expander else 22)
         state = _label("Ativado" if settings[key] else "Desativado")
-        state.set_size_request(76, -1)
-        right.pack_start(sw, False, False, 0)
-        right.pack_start(state, False, False, 0)
-        slot = Gtk.Box()
-        slot.set_size_request(48, -1)
-        right.pack_start(slot, False, False, 0)
+        right.put(state, 52, 23 if not expander else 24)
         row.pack_end(right, False, False, 0)
 
         revealer = None
         if expander:
             chev = Gtk.Button()
             chev.get_style_context().add_class("tbtn")
-            chev.set_valign(Gtk.Align.CENTER)
+            chev.set_can_focus(False)
             chev.set_size_request(32, 32)
-            chev.set_halign(Gtk.Align.CENTER)
             img = icons.image("chevron_up" if settings[key] else "chevron_down", 12, theme.icon_color())
             chev.add(img)
-            slot.pack_start(chev, True, True, 0)
+            right.put(chev, 132, 14)
             revealer = Gtk.Revealer()
             revealer.add(expander())
             revealer.set_reveal_child(bool(settings[key]))
@@ -167,29 +184,29 @@ class SettingsPage(Gtk.Box):
         if revealer is not None:
             card.pack_start(revealer, False, False, 0)
         self.col.pack_start(card, False, False, 0)
+        return card
 
     def dir_row(self, title, key, current):
-        box = Gtk.Box(spacing=12)
-        box.get_style_context().add_class("cap-card")
-        box.get_style_context().add_class("inner")
-        box.get_style_context().add_class("cap-row")
-        box.set_margin_start(0)
-        tb = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
-        tb.set_margin_start(16)
-        tb.pack_start(_label(title), False, False, 0)
-        path_l = Gtk.Box(spacing=6)
+        box = Gtk.Fixed()
+        box.get_style_context().add_class("cap-inner")
+        box.set_size_request(-1, 63)
+        t = _label(title)
+        box.put(t, 32, 15)                                # texto em x=89 (cartão em 56, +1 borda, +32)
+        path_l = Gtk.Box(spacing=5)
         path = _label(current, "subtle")
         path.set_ellipsize(3)
+        path.set_max_width_chars(70)
         path_l.pack_start(path, False, False, 0)
         change = Gtk.Button(label="Alterar")
         change.get_style_context().add_class("linkbtn")
+        change.set_can_focus(False)
         path_l.pack_start(change, False, False, 0)
-        tb.pack_start(path_l, False, False, 0)
-        box.pack_start(tb, True, True, 0)
+        box.put(path_l, 32, 35)
         openb = Gtk.Button(label="Abrir pasta")
-        openb.get_style_context().add_class("plain")
-        openb.set_valign(Gtk.Align.CENTER)
-        box.pack_end(openb, False, False, 0)
+        openb.get_style_context().add_class("fluent-btn")
+        openb.set_can_focus(False)
+        openb.set_size_request(84, 32)
+        box.put(openb, 710, 17)                           # x=767..850, y=285..316 na referência
 
         def cur():
             return settings.shot_directory if key == "shot_dir" else settings.rec_directory

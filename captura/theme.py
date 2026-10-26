@@ -14,7 +14,7 @@ LIGHT = dict(
     accent="#0067c0", accent_hover="#1975c5", accent_text="#ffffff", infobar="#ffffff", flyout="#fcfcfc",
     shadow="rgba(0,0,0,0.28)", bar="#e9e9e9", crop_bg="#656565", toast_bg="#ffffff", link="#003e92", segbg="#ececec",
     menu_bg="#f9f9f9", menu_border="#dbdbdb", menu_top="#c0c0c0", menu_sel="#eaeaea", menu_sep="#e5e5e5",
-    crop_hover="#eaeaea", sbar_border="#ededed", sbar_sep="#eaeaea", sbar_sel="#f0f0f0", sbar_inner="#ffffff", fly2_border="#eaeaea",
+    crop_hover="#eaeaea", set_card="#fbfbfb", set_border="#e5e5e5", set_inner="#f4f4f4", set_btn="#fcfcfc", set_btn_top="#e6e6e6", set_btn_bot="#cdcdcd", sbar_border="#ededed", sbar_sep="#eaeaea", sbar_sel="#f0f0f0", sbar_inner="#ffffff", fly2_border="#eaeaea",
 )
 DARK = dict(
     dark=True, bg0="#202020", surface="#2b2b2b", canvas="#1c1c1c", text="#ffffff", subtle="#c8c8c8", disabled="#6f6f6f",
@@ -23,7 +23,7 @@ DARK = dict(
     accent="#60cdff", accent_hover="#7ad6ff", accent_text="#000000", infobar="#2b2b2b", flyout="#2c2c2c",
     shadow="rgba(0,0,0,0.6)", bar="#2c2c2c", crop_bg="#1a1a1a", toast_bg="#2b2b2b", link="#99ebff", segbg="#2d2d2d",
     menu_bg="#2c2c2c", menu_border="#383838", menu_top="#454545", menu_sel="#383838", menu_sep="#414141",
-    crop_hover="#333333", sbar_border="#3a3a3a", sbar_sep="#404040", sbar_sel="#383838", sbar_inner="#2c2c2c", fly2_border="#3a3a3a",
+    crop_hover="#333333", set_card="#2b2b2b", set_border="#383838", set_inner="#262626", set_btn="#323232", set_btn_top="#3d3d3d", set_btn_bot="#2a2a2a", sbar_border="#3a3a3a", sbar_sep="#404040", sbar_sel="#383838", sbar_inner="#2c2c2c", fly2_border="#3a3a3a",
 )
 
 CSS = string.Template(r"""
@@ -37,7 +37,7 @@ headerbar.cap-header .title { color: $subtle; font-size: 9pt; }
 .cap-window label { color: $text; }
 .cap-window label.subtle { color: $subtle; font-size: 12px; }
 .cap-window label.section { font-weight: 400; font-size: 14px; }
-.cap-window label.pagetitle { font-size: 24px; font-weight: 600; }
+.cap-window label.pagetitle { font-size: 19.5px; font-weight: 600; }
 .cap-canvas-bg { background: #f9f9f9; }
 .cap-canvas-bg.cropping { background: $crop_bg; }
 
@@ -159,11 +159,18 @@ button.sb-btn.crop-btn:hover { background: $crop_hover; }
 .snip-toolbar .sep { margin: 8px 6px; }
 
 /* Configurações */
-.cap-card { background: $card; border: 1px solid $border; border-radius: 5px; }
+.cap-card { background: $set_card; border: 1px solid $set_border; border-radius: 4px; }
 .cap-card.inner { border-radius: 0; border-width: 1px 0 0 0; background: $bg0; }
-.cap-row { padding: 10px 16px; min-height: 40px; }
-switch { background: transparent; border: 1px solid $subtle; border-radius: 99px; min-width: 40px; min-height: 20px; }
-switch slider { background: $subtle; border-radius: 99px; min-width: 12px; min-height: 12px; margin: 3px; border: none; }
+.cap-inner { background: $set_inner; border-top: 1px solid $set_border; }
+.cap-row { padding: 0 0 0 16px; }
+.cap-window label.section { font-weight: 400; font-size: 14px; }
+.cap-window label.section-about { font-weight: 600; font-size: 14px; }
+.cap-window label.about-line { margin: 0 0 8px 0; }
+.cap-window button.about-link { margin: 10px 0 0 12px; }
+.cap-window button.fluent-btn { background: $set_btn; background-image: none; border: 1px solid $set_btn_top; border-bottom-color: $set_btn_bot; border-radius: 4px; padding: 0; box-shadow: none; min-height: 0; min-width: 0; color: $text; }
+.cap-window button.fluent-btn:hover { background: $hover; }
+switch { background: transparent; border: 1px solid $subtle; border-radius: 99px; min-width: 38px; min-height: 18px; padding: 0; margin: 0; }
+switch slider { background: $subtle; border-radius: 99px; min-width: 12px; min-height: 12px; margin: 2px; border: none; }
 switch:checked { background: $accent; border-color: $accent; }
 switch:checked slider { background: $accent_text; }
 .cap-window scrolledwindow, .cap-window viewport { background: transparent; }
