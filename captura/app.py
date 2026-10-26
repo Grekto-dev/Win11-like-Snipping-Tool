@@ -86,6 +86,11 @@ class RecordingBar(Gtk.Window):
     def __init__(self, on_stop, on_discard, rect):
         super().__init__(type=Gtk.WindowType.POPUP)
         self.t0 = time.time()
+        self.set_app_paintable(True)
+        vis = self.get_screen().get_rgba_visual()
+        if vis is not None:
+            self.set_visual(vis)
+        self.set_accept_focus(False)
         self.set_keep_above(True)
         self.get_style_context().add_class("cap-window")
         frame = Gtk.Box(spacing=8)
@@ -265,6 +270,11 @@ class CapturaApp(Gtk.Application):
         self.overlay = Overlay(surf, lambda kind, payload: self._on_overlay(kind, payload, surf), tool)
         self.overlay.present_grabbed()
 
+    def _restore_rec_windows(self):
+        for w in getattr(self, "_rec_hidden", []):
+            w.show()
+        self._rec_hidden = []
+
     def _restore_windows(self):
         for w in self._hidden:
             w.show()
@@ -306,7 +316,7 @@ class CapturaApp(Gtk.Application):
             self.run_ocr(payload)
             return
         if kind == "video":
-            self._restore_windows_if_app(False)
+            self._rec_hidden, self._hidden = list(self._hidden), []      # reaparecem quando a gravação terminar
             self.start_recording(payload)
             return
         self.handle_image(payload)
@@ -472,7 +482,30 @@ class CapturaApp(Gtk.Application):
             return
         dest = self.rec_dest
         self._teardown_rec()
-        r.stop()
+        self._restore_rec_windows()
+        self._stop_job = job = threading.Thread(target=r.stop, daemon=True)     # o ffmpeg leva um instante para fechar o arquivo
+        job.start()
+        self._finish_stop_pending = True
+
+        def poll():
+            if job.is_alive():
+                return GLib.SOURCE_CONTINUE
+            self._finish_stop_pending = False
+            self._finish_recording(dest, discard)
+            return GLib.SOURCE_REMOVE
+        GLib.timeout_add(40, poll)
+
+    def wait_stop(self):
+        """Usado nos testes: espera a thread de parada e a finalização."""
+        job = getattr(self, "_stop_job", None)
+        if job is not None:
+            job.join()
+        end = time.monotonic() + 3
+        while getattr(self, "_finish_stop_pending", False) and time.monotonic() < end:
+            GLib.MainContext.default().iteration(False)
+            time.sleep(.005)
+
+    def _finish_recording(self, dest, discard):
         if discard or not os.path.exists(dest):
             self._remove_quietly(dest)
             return

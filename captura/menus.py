@@ -14,6 +14,7 @@ SHAPE = dict(width=128, row_h=37, icon_x=18, text_x=43, right_pad=12, text_dy=-1
 SINGLE = dict(width=226, row_h=42, icon_x=12, text_x=42, right_pad=12, text_dy=-2)      # borracha
 TEXTCHK = dict(width=226, row_h=32, pad=1, sep_m=1, icon_x=12, text_x=43, right_pad=16, text_dy=-1)      # chevron da Redação rápida
 TEXTCTX = dict(width=212, row_h=33, pad=1, sep_m=1, icon_x=12, text_x=43, right_pad=16, text_dy=-1)      # clique direito no texto
+OVSHAPE = dict(width=134, row_h=37, pad=5, sel_m=(1, 2), sel_lite=True, icon_x=18, text_x=43, right_pad=12, text_dy=-1)   # forma do overlay de captura
 ZOOM = dict(width=182, row_h=32, icon_x=12, text_x=16, right_pad=16, text_dy=-1)    # submenu/menu de zoom (184 px externos)
 PAD = 4
 SHADOW = 2          # margem transparente ao redor da caixa para a sombra
@@ -162,8 +163,11 @@ class Menu(Popup):
         surface = Gtk.Box()
         if selected:
             surface.get_style_context().add_class("wmenu-selection")
-            surface.set_margin_top(2)
-            surface.set_margin_bottom(2)
+            sm = s.get("sel_m", (2, 2))
+            surface.set_margin_top(sm[0])
+            surface.set_margin_bottom(sm[1])
+            if s.get("sel_lite"):
+                surface.get_style_context().add_class("lite")
         ov.add(surface)
         if icon:
             glyph = {"zoom": "menu_zoom", "folder_open": "menu_open", "folder_shots": "menu_folder",

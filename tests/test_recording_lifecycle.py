@@ -53,6 +53,7 @@ class RecordingLifecycleTests(unittest.TestCase):
             p.start(); self.addCleanup(p.stop)
         self.app.start_recording((0, 0, 100, 100))
         self.app.stop_recording()
+        self.app.wait_stop()
         return created['dest']
 
     def test_autosave_on_keeps_recording_in_configured_folder(self):
@@ -108,6 +109,7 @@ class RecordingLifecycleTests(unittest.TestCase):
              patch('captura.app.OutlineWindow'), patch('captura.app.RecordingBar'):
             self.app.start_recording((0, 0, 100, 100))
             self.app.stop_recording(discard=True)
+            self.app.wait_stop()
             self.app.start_recording((0, 0, 100, 100))
             try:
                 drain(.5)
@@ -115,6 +117,7 @@ class RecordingLifecycleTests(unittest.TestCase):
                 self.assertEqual(second.start.call_count, 1)
             finally:
                 self.app.stop_recording(discard=True)
+                self.app.wait_stop()
 
     def test_begin_after_teardown_is_a_noop(self):
         self.app.recorder = None

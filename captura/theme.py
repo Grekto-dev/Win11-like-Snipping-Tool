@@ -13,8 +13,8 @@ LIGHT = dict(
     border="#e0e0e0", border2="#d1d1d1", hover="rgba(0,0,0,0.055)", press="rgba(0,0,0,0.085)", card="#fdfdfd",
     accent="#0067c0", accent_hover="#1975c5", accent_text="#ffffff", infobar="#ffffff", flyout="#fcfcfc",
     shadow="rgba(0,0,0,0.28)", bar="#e9e9e9", crop_bg="#656565", toast_bg="#ffffff", link="#003e92", segbg="#ececec",
-    menu_bg="#f9f9f9", menu_border="#dbdbdb", menu_top="#c0c0c0", menu_sel="#eaeaea", menu_sep="#e5e5e5",
-    crop_hover="#eaeaea", radio_fill="#eeeeee", radio_ring="#878787", set_card="#fbfbfb", set_border="#e5e5e5", set_inner="#f4f4f4", set_btn="#fcfcfc", set_btn_top="#e6e6e6", set_btn_bot="#cdcdcd", sbar_border="#ededed", sbar_sep="#eaeaea", sbar_sel="#f0f0f0", sbar_inner="#ffffff", fly2_border="#eaeaea",
+    menu_bg="#f9f9f9", menu_border="#dbdbdb", menu_top="#c0c0c0", menu_sel="#eaeaea", menu_sel_lite="#f0f0f0", menu_sep="#e5e5e5",
+    crop_hover="#eaeaea", ov_bar="#e6e6e6", ov_on="#f6f6f6", ov_on_b="#bfbfbf", ov_off="#e1e1e1", ov_off_b="#d4d4d4", ov_sep="#d4d4d4", ov_hover="#dadada", ov_time="#767676", radio_fill="#eeeeee", radio_ring="#878787", set_card="#fbfbfb", set_border="#e5e5e5", set_inner="#f4f4f4", set_btn="#fcfcfc", set_btn_top="#e6e6e6", set_btn_bot="#cdcdcd", sbar_border="#ededed", sbar_sep="#eaeaea", sbar_sel="#f0f0f0", sbar_inner="#ffffff", fly2_border="#eaeaea",
 )
 DARK = dict(
     dark=True, bg0="#202020", surface="#2b2b2b", canvas="#1c1c1c", text="#ffffff", subtle="#c8c8c8", disabled="#6f6f6f",
@@ -22,8 +22,8 @@ DARK = dict(
     border="#333333", border2="#454545", hover="rgba(255,255,255,0.07)", press="rgba(255,255,255,0.05)", card="#2b2b2b",
     accent="#60cdff", accent_hover="#7ad6ff", accent_text="#000000", infobar="#2b2b2b", flyout="#2c2c2c",
     shadow="rgba(0,0,0,0.6)", bar="#2c2c2c", crop_bg="#1a1a1a", toast_bg="#2b2b2b", link="#99ebff", segbg="#2d2d2d",
-    menu_bg="#2c2c2c", menu_border="#383838", menu_top="#454545", menu_sel="#383838", menu_sep="#414141",
-    crop_hover="#333333", radio_fill="#2f2f2f", radio_ring="#9a9a9a", set_card="#2b2b2b", set_border="#383838", set_inner="#262626", set_btn="#323232", set_btn_top="#3d3d3d", set_btn_bot="#2a2a2a", sbar_border="#3a3a3a", sbar_sep="#404040", sbar_sel="#383838", sbar_inner="#2c2c2c", fly2_border="#3a3a3a",
+    menu_bg="#2c2c2c", menu_border="#383838", menu_top="#454545", menu_sel="#383838", menu_sel_lite="#343434", menu_sep="#414141",
+    crop_hover="#333333", ov_bar="#2c2c2c", ov_on="#3d3d3d", ov_on_b="#5a5a5a", ov_off="#333333", ov_off_b="#444444", ov_sep="#4a4a4a", ov_hover="#3a3a3a", ov_time="#9a9a9a", radio_fill="#2f2f2f", radio_ring="#9a9a9a", set_card="#2b2b2b", set_border="#383838", set_inner="#262626", set_btn="#323232", set_btn_top="#3d3d3d", set_btn_bot="#2a2a2a", sbar_border="#3a3a3a", sbar_sep="#404040", sbar_sel="#383838", sbar_inner="#2c2c2c", fly2_border="#3a3a3a",
 )
 
 CSS = string.Template(r"""
@@ -124,6 +124,7 @@ window.popup-root, .popup-root { background: transparent; }
 button.wmi { background: transparent; background-image: none; border: 0; border-radius: 4px; padding: 0; margin: 0; box-shadow: none; min-width: 0; min-height: 0; text-shadow: none; outline: none; }
 button.wmi:hover { background: $hover; }
 .wmenu-selection { background: $menu_sel; border-radius: 4px; }
+.wmenu-selection.lite { background: $menu_sel_lite; }
 .wmenu label, .wflyout label { color: $text; }
 button.wmi:disabled label { color: $disabled_icon; }
 .wmenu-bar { background: $accent; border-radius: 2px; }
@@ -150,6 +151,19 @@ button.sb-btn.crop-btn:hover { background: $crop_hover; }
 .wflyout2 button.emoji-cell { background: transparent; background-image: none; border: 0; border-radius: 4px; padding: 0; margin: 0; min-width: 0; min-height: 0; box-shadow: none; outline: none; }
 .wflyout2 button.emoji-cell:hover { background: $sbar_sel; }
 /* Overlay de captura */
+.ov-bar { background: $ov_bar; border-radius: 8px; box-shadow: 0 0 0 1px rgba(0,0,0,.2); }
+button.ov-btn { background: transparent; background-image: none; border: 1px solid transparent; border-radius: 4px; padding: 0; margin: 0; min-width: 0; min-height: 0; box-shadow: none; outline: none; }
+button.ov-btn:hover { background: $ov_hover; }
+button.ov-btn:disabled { opacity: .4; }
+button.ov-seg { background: $ov_off; border-color: $ov_off_b; }
+button.ov-seg:hover { background: $ov_off; }
+button.ov-seg:checked { background: $ov_on; border-color: $ov_on_b; }
+button.ov-toggle.on { background: $ov_on; border-color: $ov_on_b; }
+button.ov-start { background: $accent; border: 1px solid $accent; border-bottom: 2px solid #003e73; border-radius: 4px; }
+button.ov-start:hover { background: $accent_hover; }
+button.ov-start label { color: $accent_text; font-size: 14px; }
+.ov-sep { background: $ov_sep; min-width: 1px; }
+label.ov-time { color: $ov_time; font-size: 14px; }
 .snip-toolbar { background: $bar; border: 1px solid $border; border-radius: 12px; padding: 3px 8px; box-shadow: 0 6px 24px $shadow; }
 .snip-toolbar .seg { background: transparent; border: none; }
 .snip-toolbar .seg button.tbtn { background: $hover; border-radius: 6px; margin: 0 1px; }

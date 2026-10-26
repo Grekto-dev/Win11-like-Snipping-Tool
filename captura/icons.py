@@ -90,7 +90,7 @@ _NEW = {
     "mic": ("f", "mic"), "speaker": ("f", "speaker_2"), "record": ("f", "record"), "stop": ("f", "stop"),
     "line": ("f", "line"), "arrow": ("f", "arrow_up_right"), "ellipse": ("f", "circle"), "square": ("f", "square"), "emoji": ("f", "emoji"),
     "share_mail": ("f", "mail"), "openwith": ("f", "open"), "check": ("f", "checkmark"), "edit": ("f", "edit"),
-    "copy_select": ("f", "copy_select"), "checksm": ("c", "checksm"), "selall": ("c", "selall"), "redact": ("c", "redact"), "markup": ("f", "image_edit"), "markup_img": ("f", "image_edit"),
+    "copy_select": ("f", "copy_select"), "checksm": ("c", "checksm"), "ov_record": ("c", "ov_record"), "mic_on": ("c", "mic_on"), "mic_off": ("c", "mic_off"), "screen_audio": ("c", "screen_audio"), "screen_audio_off": ("c", "screen_audio_off"),  "selall": ("c", "selall"), "redact": ("c", "redact"), "markup": ("f", "image_edit"), "markup_img": ("f", "image_edit"),
     "chev": ("c", "chev"), "folder_open": ("f", "folder_open"), "ruler": ("f", "ruler"), "visualsearch": ("f", "search_visual"), "timer5": ("f", "timer_5"), "pen": ("c", "pen"), "hl": ("c", "hl"), "paint": ("f", "paint_brush"), "info15": ("c", "info15"),
 }
 

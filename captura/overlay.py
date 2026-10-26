@@ -6,9 +6,11 @@ gi.require_version("Gdk", "3.0")
 import cairo
 from gi.repository import Gtk, Gdk, GLib
 
-from . import grab, icons, theme
+from . import grab, icons, menus, theme
+from .overlay_bar import BTN_Y, MAIN_W, REC_W, SHAPE as _SHAPE, SnipBar, TOP
 from .config import settings
 
+SHAPE_X = _SHAPE[0]
 DIM = 0.6          # medido no Windows 11: preto a 60% sobre a tela
 SHAPES = [("rectangle", "rect", "Retângulo"), ("window", "window", "Janela"),
           ("fullscreen", "fullscreen", "Tela inteira"), ("freeform", "freeform", "Forma livre")]
@@ -46,6 +48,7 @@ class Overlay(Gtk.Window):
         self.shape = settings["shape"]
         self.mode = settings["mode"]
         self._done = False
+        self._grab_tries = 0
         self.sel = None                        # (x0, y0, x1, y1) normalizado
         self.anchor = None
         self.free_pts = []
@@ -79,166 +82,64 @@ class Overlay(Gtk.Window):
         self.connect("key-press-event", self.on_key)
 
         self.build_toolbar(overlay)
-        self.start_btn = None
         self.update_cursor()
 
     # ------------------------------------------------------------------ barra
     def build_toolbar(self, overlay):
-        col = theme.icon_color()
-        self.toolbar_ev = Gtk.EventBox()
-        self.toolbar_ev.add_events(Gdk.EventMask.ENTER_NOTIFY_MASK | Gdk.EventMask.LEAVE_NOTIFY_MASK)
-        self.toolbar_ev.connect("enter-notify-event", lambda *a: self.get_window().set_cursor(self.cur_arrow))
-        self.toolbar_ev.connect("leave-notify-event", lambda *a: self.update_cursor())
-        box = Gtk.Box(spacing=2)
-        box.get_style_context().add_class("snip-toolbar")
-        self.toolbar_ev.add(box)
-
-        # foto | vídeo (com barra azul sob o modo ativo, como no Windows)
-        seg = Gtk.Box(spacing=2)
-        seg.get_style_context().add_class("seg")
-        self.btn_photo = self._seg_toggle("camera", "Captura de tela", col)
-        self.btn_video = self._seg_toggle("video", "Gravação de tela", col)
-        for b in (self.btn_photo, self.btn_video):
-            seg.pack_start(b, False, False, 0)
-        (self.btn_video if self.mode == "video" else self.btn_photo).set_active(True)
-        self.btn_photo.connect("clicked", lambda b: self.set_mode("photo") if b.get_active() else self._keep(b))
-        self.btn_video.connect("clicked", lambda b: self.set_mode("video") if b.get_active() else self._keep(b))
-        box.pack_start(seg, False, False, 2)
-
-        # forma
-        self.shape_btn = Gtk.Button()
-        self.shape_btn.get_style_context().add_class("tbtn")
-        self.shape_btn.set_tooltip_text("Modo de captura")
-        self.shape_img = Gtk.Image()
-        row = Gtk.Box(spacing=6)
-        row.pack_start(self.shape_img, False, False, 0)
-        row.pack_start(icons.image("chevron_down", 12, col), False, False, 0)
-        self.shape_btn.add(row)
-        self.shape_btn.connect("clicked", self.show_shape_menu)
-        box.pack_start(self.shape_btn, False, False, 2)
-        self._refresh_shape_icon()
-
-        # marcação rápida, seletor de cores, extrator de texto
-        self.btn_markup = self._toggle("markup_img", "Marcação rápida (Ctrl+E)", col)
-        self.btn_markup.set_active(settings["quick_markup"])
-        self.btn_markup.connect("toggled", lambda b: settings.__setitem__("quick_markup", b.get_active()))
-        box.pack_start(self.btn_markup, False, False, 2)
-        box.pack_start(self._sep(), False, False, 2)
-        self.btn_color = self._toggle("eyedropper", "Seletor de cores", col)
-        self.btn_color.set_active(self.tool == "color")
-        self.btn_color.connect("toggled", lambda b: self._tool_toggled(b, "color"))
-        self.btn_ocr = self._toggle("textscan", "Extrator de Texto", col)
-        self.btn_ocr.set_active(self.tool == "ocr")
-        self.btn_ocr.connect("toggled", lambda b: self._tool_toggled(b, "ocr"))
-        box.pack_start(self.btn_color, False, False, 2)
-        box.pack_start(self.btn_ocr, False, False, 2)
-        box.pack_start(self._sep(), False, False, 2)
-        close = Gtk.Button()
-        close.get_style_context().add_class("tbtn")
-        close.add(icons.image("close", 18, col))
-        close.set_tooltip_text("Fechar")
-        close.connect("clicked", lambda *_: self.finish("cancel", None))
-        box.pack_start(close, False, False, 2)
-
-        self.toolbar_ev.set_halign(Gtk.Align.START)
-        self.toolbar_ev.set_valign(Gtk.Align.START)
+        handlers = dict(mode=self.set_mode, shape_menu=self.show_shape_menu, markup=self._toggle_markup,
+                        tool=self._tool_clicked, close=lambda: self.finish("cancel", None), start=self._start_clicked)
+        self.bar = bar = SnipBar(handlers)
+        bar.add_events(Gdk.EventMask.ENTER_NOTIFY_MASK | Gdk.EventMask.LEAVE_NOTIFY_MASK)
+        bar.connect("enter-notify-event", lambda *a: self.get_window().set_cursor(self.cur_arrow))
+        bar.connect("leave-notify-event", lambda *a: self.update_cursor())
+        self.toolbar_ev = bar
+        self.btn_photo, self.btn_video, self.shape_btn = bar.btn_photo, bar.btn_video, bar.shape_btn
+        self.btn_markup, self.btn_color, self.btn_ocr, self.shape_img = bar.btn_markup, bar.btn_color, bar.btn_ocr, bar.shape_img
         px, py = self.pointer
         self._mon = grab.monitor_at(px, py)
-        self.toolbar_ev.set_margin_top(self._mon[1] + 13)
+        bar.set_margin_top(self._mon[1] + TOP)
+        bar.set_margin_start(self._bar_x(MAIN_W))
+        bar.set_mode(self.mode)
+        bar.set_tool(self.tool)
+        bar.btn_markup.get_style_context().add_class("on") if settings["quick_markup"] else None
+        self._refresh_shape_icon()
+        overlay.add_overlay(bar)
 
-        def place(w, alloc):
-            mx, my, mw, mh = self._mon
-            want = max(0, mx + (mw - alloc.width) // 2)
-            if abs(w.get_margin_start() - want) > 0:
-                w.set_margin_start(want)
-        self.toolbar_ev.connect("size-allocate", place)
-        overlay.add_overlay(self.toolbar_ev)
-        self.toolbar_box = box
+    def _menu_closed(self):
+        self._grab_tries = 0
+        GLib.idle_add(self._grab)
 
-    def _seg_toggle(self, icon, tip, col):
-        b = Gtk.ToggleButton()
-        b.get_style_context().add_class("tbtn")
-        ov = Gtk.Overlay()
-        ov.add(icons.image(icon, 20, col))
-        ind = Gtk.Box()
-        ind.get_style_context().add_class("ind-bar")
-        ind.set_halign(Gtk.Align.CENTER)
-        ind.set_valign(Gtk.Align.END)
-        ind.set_margin_bottom(1)
-        ind.set_opacity(0.0)
-        ov.add_overlay(ind)
-        b.add(ov)
-        b.connect("toggled", lambda x: ind.set_opacity(1.0 if x.get_active() else 0.0))
-        b.set_tooltip_text(tip)
-        b.set_can_focus(False)
-        return b
+    def _bar_x(self, width):
+        mx, _my, mw, _mh = self._mon
+        return max(0, mx + (mw - width) // 2)
 
-    def _toggle(self, icon, tip, col):
-        b = Gtk.ToggleButton()
-        b.get_style_context().add_class("tbtn")
-        b.add(icons.image(icon, 20, col))
-        b.set_tooltip_text(tip)
-        b.set_can_focus(False)
-        return b
+    def _toggle_markup(self):
+        settings["quick_markup"] = not settings["quick_markup"]
+        ctx = self.btn_markup.get_style_context()
+        (ctx.add_class if settings["quick_markup"] else ctx.remove_class)("on")
 
-    def _keep(self, b):
-        b.set_active(True)
-
-    def _sep(self):
-        s = Gtk.Box()
-        s.get_style_context().add_class("sep")
-        s.set_valign(Gtk.Align.CENTER)
-        return s
+    def _tool_clicked(self, tool):
+        self.set_tool("snip" if self.tool == tool else tool)
 
     def _refresh_shape_icon(self):
         name = [i for k, i, _ in SHAPES if k == self.shape][0]
         self.shape_img.set_from_pixbuf(icons.pixbuf(name, 20, theme.icon_color()))
 
     def show_shape_menu(self, btn):
-        pop = Gtk.Popover.new(btn)
-        pop.get_style_context().add_class("cap-pop")
-        pop.set_position(Gtk.PositionType.BOTTOM)
-        vb = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
-        vb.set_margin_top(4)
-        vb.set_margin_bottom(4)
-        vb.set_margin_start(4)
-        vb.set_margin_end(4)
-        col = theme.icon_color()
-        for key, icon, label in SHAPES:
-            row = Gtk.Button()
-            row.get_style_context().add_class("tbtn")
-            row.get_style_context().add_class("menuitem")
-            hb = Gtk.Box(spacing=10)
-            bar = Gtk.Box()
-            bar.set_size_request(3, 16)
-            bar.set_valign(Gtk.Align.CENTER)
-            if key == self.shape:
-                bar.get_style_context().add_class("selbar")
-                bar.override_background_color(Gtk.StateFlags.NORMAL, Gdk.RGBA(*self._accent_rgba()))
-            hb.pack_start(bar, False, False, 0)
-            hb.pack_start(icons.image(icon, 18, col), False, False, 0)
-            lb = Gtk.Label(label=label, xalign=0)
-            hb.pack_start(lb, True, True, 0)
-            hb.set_size_request(160, -1)
-            row.add(hb)
-            row.connect("clicked", lambda _b, k=key: (pop.popdown(), self.set_shape(k)))
-            vb.pack_start(row, False, False, 0)
-        pop.add(vb)
-        pop.show_all()
-        pop.popup()
-
-    def _accent_rgba(self):
-        c = Gdk.RGBA()
-        c.parse(theme.palette()["accent"])
-        return (c.red, c.green, c.blue, 1.0)
+        items = [(i, l, None, (lambda k=k: self.set_shape(k)), True, False, k == self.shape) for k, i, l in SHAPES]
+        idx = [k for k, _, _ in SHAPES].index(self.shape)
+        bx = int(self.bar.get_margin_start()) + SHAPE_X
+        by = int(self.bar.get_margin_top()) + BTN_Y
+        m = menus.Menu(items, menus.OVSHAPE)
+        m.on_close = self._menu_closed
+        self._cur_menu = m
+        m.open_at(self.get_window().get_origin()[1] + bx - 4, self.get_window().get_origin()[2] + by - 6 - idx * menus.OVSHAPE["row_h"])
 
     # ------------------------------------------------------------- estados
     def set_mode(self, mode):
         self.mode = mode
         settings["mode"] = mode
-        for b, m in ((self.btn_photo, "photo"), (self.btn_video, "video")):
-            if b.get_active() != (m == mode):
-                b.set_active(m == mode)
+        self.bar.set_mode(mode)
         self.clear_selection()
 
     def set_shape(self, shape):
@@ -250,20 +151,9 @@ class Overlay(Gtk.Window):
         self.da.queue_draw()
         self.update_cursor()
 
-    _busy = False
-
-    def _tool_toggled(self, b, t):
-        if self._busy:
-            return
-        self.set_tool(t if b.get_active() else "snip")
-
     def set_tool(self, tool):
         self.tool = tool
-        self._busy = True
-        for b, t in ((self.btn_color, "color"), (self.btn_ocr, "ocr")):
-            if b.get_active() != (tool == t):
-                b.set_active(tool == t)
-        self._busy = False
+        self.bar.set_tool(tool)
         self.clear_selection()
         self.update_cursor()
         self.da.queue_draw()
@@ -273,9 +163,9 @@ class Overlay(Gtk.Window):
         self.anchor = None
         self.free_pts = []
         self.sel_locked = False
-        if self.start_btn is not None:
-            self.start_btn.destroy()
-            self.start_btn = None
+        if self.bar.mode_name == "record":
+            self.bar.show_main()
+            self.bar.set_margin_start(self._bar_x(MAIN_W))
         self.da.queue_draw()
 
     def update_cursor(self):
@@ -318,7 +208,9 @@ class Overlay(Gtk.Window):
                     cr.close_path()
                 cr.set_fill_rule(cairo.FILL_RULE_EVEN_ODD)
             cr.fill()
-            if h:
+            if h and self.sel_locked and h[0] == "rect":
+                self.draw_locked_selection(cr, h[1])
+            elif h:
                 cr.set_source_rgba(1, 1, 1, 0.95)
                 cr.set_line_width(1.0)
                 if h[0] == "rect":
@@ -334,6 +226,33 @@ class Overlay(Gtk.Window):
         else:
             self.draw_loupe(cr)
         return False
+
+    def draw_locked_selection(self, cr, rect):
+        """Região de gravação já escolhida (medido no Windows): borda tracejada 4/3 de 1 px logo fora da área e
+        alças brancas de 6 px (cantos em L de 32 px e barras de 32 px no meio dos lados), encostadas por fora."""
+        x0, y0, x1, y1 = rect
+        cr.save()
+        cr.set_source_rgb(1, 1, 1)
+        cr.set_line_width(1)
+        cr.set_dash([4, 3], 5)
+        L, T, R, B = x0 - 1, y0 - 1, x1, y1
+        for (ax, ay, bx, by) in ((L, T, R + 1, T), (L, T, L, B + 1), (R, T, R, B + 1), (L, B, R + 1, B)):
+            cr.move_to(ax + (.5 if ax == bx else 0), ay + (.5 if ay == by else 0))
+            cr.line_to(bx + (.5 if ax == bx else 0), by + (.5 if ay == by else 0))
+            cr.stroke()
+        cr.set_dash([])
+        t, n = 6, 32
+        mx, my = (x0 + x1) // 2, (y0 + y1) // 2
+        bars = [(x0 - t, y0 - t, n, t), (x0 - t, y0 - t, t, n),                    # canto superior esquerdo
+                (x1 - n + t, y0 - t, n, t), (x1, y0 - t, t, n),                    # superior direito
+                (x0 - t, y1, n, t), (x0 - t, y1 - n + t, t, n),                    # inferior esquerdo
+                (x1 - n + t, y1, n, t), (x1, y1 - n + t, t, n),                    # inferior direito
+                (mx - n // 2, y0 - t, n, t), (mx - n // 2, y1, n, t),              # meio de cima / de baixo
+                (x0 - t, my - n // 2, t, n), (x1, my - n // 2, t, n)]              # meio da esquerda / da direita
+        for bx, by, w, hh in bars:
+            self._round_rect(cr, bx, by, w, hh, 2.5)
+            cr.fill()
+        cr.restore()
 
     def draw_loupe(self, cr):
         px, py = self.pointer
@@ -513,6 +432,11 @@ class Overlay(Gtk.Window):
         self.finish("ocr" if self.tool == "ocr" else "image", pb)
 
     def commit_freeform(self):
+        if self.tool == "snip" and self.mode == "video":
+            self.sel_locked = True                  # gravação usa o retângulo envolvente da forma
+            self.show_start_button()
+            self.da.queue_draw()
+            return
         pb = grab.crop_freeform(self.surface, self.free_pts)
         if pb is None:
             self.clear_selection()
@@ -520,34 +444,23 @@ class Overlay(Gtk.Window):
         self.finish("ocr" if self.tool == "ocr" else "image", pb)
 
     def show_start_button(self):
-        x0, y0, x1, y1 = self.sel
-        b = Gtk.Button()
-        b.get_style_context().add_class("tbtn")
-        b.get_style_context().add_class("accentbtn")
-        hb = Gtk.Box(spacing=8)
-        hb.pack_start(icons.image("record", 14, theme.palette()["accent_text"]), False, False, 0)
-        hb.pack_start(Gtk.Label(label="Iniciar"), False, False, 0)
-        b.add(hb)
-        b.set_halign(Gtk.Align.START)
-        b.set_valign(Gtk.Align.START)
-        b.set_margin_start(int((x0 + x1) / 2 - 45))
-        b.set_margin_top(int((y0 + y1) / 2 - 16))
-        b.connect("clicked", lambda *_: self.finish("video", (x0, y0, x1 - x0, y1 - y0)))
-        self.get_child().add_overlay(b)
-        b.show_all()
-        self.start_btn = b
+        """Modo vídeo, região escolhida: a barra vira [● Iniciar] 00:00:00 [mic] [áudio] | [fechar]."""
+        self.bar.show_record()
+        self.bar.set_margin_start(self._bar_x(REC_W))
+
+    def _start_clicked(self):
+        if self.sel:
+            x0, y0, x1, y1 = self.sel
+            self.finish("video", (x0, y0, x1 - x0, y1 - y0))
 
     def on_key(self, win, ev):
         key = ev.keyval
         ctrl = ev.state & Gdk.ModifierType.CONTROL_MASK
         if key == Gdk.KEY_Escape:
-            if self.sel_locked or self.anchor is not None:
-                self.clear_selection()
-            else:
-                self.finish("cancel", None)
+            self.finish("cancel", None)              # medido no Windows: um Esc fecha a sobreposição
             return True
         if ctrl and key in (Gdk.KEY_e, Gdk.KEY_E):
-            self.btn_markup.set_active(not self.btn_markup.get_active())
+            self._toggle_markup()
             return True
         if key in (Gdk.KEY_Return, Gdk.KEY_KP_Enter) and self.sel_locked:
             x0, y0, x1, y1 = self.sel
@@ -561,14 +474,14 @@ class Overlay(Gtk.Window):
         self.update_cursor()
         GLib.idle_add(self._grab)
 
-    def _grab(self, tries=[0]):
+    def _grab(self):
         win = self.get_window()
-        if win is None:
+        if win is None or self._done:
             return False
         seat = self.display.get_default_seat()
         st = seat.grab(win, Gdk.SeatCapabilities.ALL, True, self.cur_cross, None, None)
-        if st != Gdk.GrabStatus.SUCCESS and tries[0] < 20:
-            tries[0] += 1
+        if st != Gdk.GrabStatus.SUCCESS and self._grab_tries < 20:
+            self._grab_tries += 1
             GLib.timeout_add(30, self._grab)
         return False
 
