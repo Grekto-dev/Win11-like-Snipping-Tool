@@ -243,12 +243,14 @@ class Menu(Popup):
             im.set_margin_bottom(2)
             im.set_margin_start(s["icon_x"] - self.pad - 2)
             ov.add_overlay(im)
+            ov.set_overlay_pass_through(im, True)      # os filhos do botão não podem engolir o clique
         lb = Gtk.Label(label=label, xalign=0)
         lb.set_halign(Gtk.Align.START)
         lb.set_valign(Gtk.Align.CENTER)
         lb.set_margin_start(s["text_x"] - self.pad - 1)
         lb.set_margin_bottom(max(0, -2 * s.get("text_dy", 0)))
         ov.add_overlay(lb)
+        ov.set_overlay_pass_through(lb, True)      # os filhos do botão não podem engolir o clique
         if accel:
             al = Gtk.Label(label=accel)
             al.get_style_context().add_class("wmenu-accel")
@@ -257,12 +259,14 @@ class Menu(Popup):
             al.set_margin_end(s["right_pad"] - 2)
             al.set_margin_bottom(max(0, -2 * s.get("text_dy", 0)))
             ov.add_overlay(al)
+            ov.set_overlay_pass_through(al, True)      # os filhos do botão não podem engolir o clique
         if arrow:
             ch = icons.role_image("chevron_right", 20, "chev")
             ch.set_halign(Gtk.Align.END)
             ch.set_valign(Gtk.Align.CENTER)
             ch.set_margin_end(s["right_pad"] - 6)
             ov.add_overlay(ch)
+            ov.set_overlay_pass_through(ch, True)      # os filhos do botão não podem engolir o clique
         if selected:
             bar = Gtk.Box()
             bar.get_style_context().add_class("wmenu-bar")
@@ -271,6 +275,7 @@ class Menu(Popup):
             bar.set_margin_start(1)
             bar.set_valign(Gtk.Align.CENTER)
             ov.add_overlay(bar)
+            ov.set_overlay_pass_through(bar, True)      # os filhos do botão não podem engolir o clique
         b.set_sensitive(enabled)
         def activate(_button):
             self.close_popup()

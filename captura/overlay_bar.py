@@ -92,6 +92,7 @@ class SnipBar(Gtk.EventBox):
         ind.set_valign(Gtk.Align.END)
         ind.set_opacity(1.0 if active else 0.0)
         ov.add_overlay(ind)
+        ov.set_overlay_pass_through(ind, True)      # os filhos do botão não podem engolir o clique
         b.add(ov)
         b.ind = ind
         b.set_active(active)

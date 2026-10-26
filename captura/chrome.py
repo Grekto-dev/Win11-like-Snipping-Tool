@@ -171,6 +171,7 @@ def build_toolbar(win, shapes, delays):
     win.new_label.set_margin_bottom(1)
     win.new_label.set_no_show_all(True)
     ov_new.add_overlay(win.new_label)
+    ov_new.set_overlay_pass_through(win.new_label, True)      # os filhos do botão não podem engolir o clique
 
     win.b_photo, _, ov_p = px_button(M.PHOTO["tile"], M.PHOTO["canvas"], "camera", toggle=True, cls=("segl",),
                                      tip="Captura de tela")
@@ -186,6 +187,7 @@ def build_toolbar(win, shapes, delays):
         bar_ind.set_margin_top(27)
         bar_ind.set_opacity(0.0)
         ov.add_overlay(bar_ind)
+        ov.set_overlay_pass_through(bar_ind, True)      # os filhos do botão não podem engolir o clique
         b.connect("toggled", lambda x, ind=bar_ind: ind.set_opacity(1.0 if x.get_active() else 0.0))
     (win.b_video if settings["mode"] == "video" else win.b_photo).set_active(True)
     put(left, win.b_photo, *M.PHOTO["tile"][:2], origin=o)
@@ -195,12 +197,14 @@ def build_toolbar(win, shapes, delays):
     ch = icons.role_image("chev", 20, "chev")
     _place(ch, M.SHAPE["tile"], M.SHAPE["chev"])
     ov.add_overlay(ch)
+    ov.set_overlay_pass_through(ch, True)      # os filhos do botão não podem engolir o clique
     put(left, win.shape_btn, *M.SHAPE["tile"][:2], origin=o)
 
     win.delay_btn, win.delay_img, ov = px_button(M.DELAY["tile"], M.DELAY["canvas"], "timer0", tip="Atraso de captura")
     ch = icons.role_image("chev", 20, "chev")
     _place(ch, M.DELAY["tile"], M.DELAY["chev"])
     ov.add_overlay(ch)
+    ov.set_overlay_pass_through(ch, True)      # os filhos do botão não podem engolir o clique
     put(left, win.delay_btn, *M.DELAY["tile"][:2], origin=o)
 
     win.btn_ocr_empty, _, _ = px_button(M.OCR["tile"], M.OCR["canvas"], "textscan", tip="Extrator de Texto")
@@ -233,6 +237,7 @@ def build_toolbar(win, shapes, delays):
         _place(ch, g["tile"], (g["tile"][0] + M.TOOL_CHEV_DX, g["tile"][1] + M.TOOL_CHEV_DY))
         ch.set_opacity(0.0)
         ov.add_overlay(ch)
+        ov.set_overlay_pass_through(ch, True)      # os filhos do botão não podem engolir o clique
         b.connect("toggled", lambda x, c=ch: c.set_opacity(1.0 if x.get_active() else 0.0))
         b.connect("button-press-event", win.on_tool_press, key)
         put(edit, b, *g["tile"][:2], origin=co)
