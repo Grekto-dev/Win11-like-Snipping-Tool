@@ -163,6 +163,7 @@ button.ov-start { background: $accent; border: 1px solid $accent; border-bottom:
 button.ov-start:hover { background: $accent_hover; }
 button.ov-start label { color: $accent_text; font-size: 14px; }
 .ov-sep { background: $ov_sep; min-width: 1px; }
+label.ov-time.rec { color: $text; }
 label.ov-time { color: $ov_time; font-size: 14px; }
 .snip-toolbar { background: $bar; border: 1px solid $border; border-radius: 12px; padding: 3px 8px; box-shadow: 0 6px 24px $shadow; }
 .snip-toolbar .seg { background: transparent; border: none; }

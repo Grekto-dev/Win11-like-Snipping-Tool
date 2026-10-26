@@ -164,7 +164,9 @@ def pulse_sources():
 
 
 class Recorder:
-    """Grava uma região da tela com ffmpeg (x11grab) + áudio PulseAudio/PipeWire."""
+    """Grava uma região da tela com ffmpeg (x11grab) + áudio PulseAudio/PipeWire.
+
+    Pausar fecha o trecho atual; continuar abre outro. Ao parar, os trechos são unidos (concat, sem recodificar)."""
 
     def __init__(self, rect, mic, system_audio, out_path):
         self.rect = rect
@@ -173,8 +175,17 @@ class Recorder:
         self.path = out_path
         self.proc = None
         self.log = None
+        self.parts = []             # trechos já fechados
+        self.paused = False
+
+    def _segment_path(self, n):
+        root, ext = os.path.splitext(self.path)
+        return f"{root}.parte{n}{ext}"
 
     def start(self):
+        self._spawn(self.path)
+
+    def _spawn(self, out_path):
         x, y, w, h = [int(v) for v in self.rect]
         w -= w % 2
         h -= h % 2
@@ -194,15 +205,16 @@ class Recorder:
         cmd += ["-c:v", "libx264", "-preset", "ultrafast", "-crf", "20", "-pix_fmt", "yuv420p"]
         if n_audio:
             cmd += ["-c:a", "aac", "-b:a", "160k"]
-        os.makedirs(os.path.dirname(self.path), exist_ok=True)
-        cmd.append(self.path)
+        os.makedirs(os.path.dirname(out_path), exist_ok=True)
+        cmd.append(out_path)
+        self.current = out_path
         self.log = tempfile.TemporaryFile()
         self.proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=self.log, stderr=self.log)
 
     def alive(self):
         return self.proc is not None and self.proc.poll() is None
 
-    def stop(self):
+    def _halt(self):
         if self.proc is None:
             return
         try:
@@ -216,6 +228,62 @@ class Recorder:
                 self.proc.wait(timeout=5)
             except Exception:
                 self.proc.kill()
+
+    def pause(self):
+        if self.paused or not self.alive():
+            return False
+        self._halt()
+        first = self._segment_path(len(self.parts))
+        if os.path.exists(self.current):
+            os.replace(self.current, first)
+            self.parts.append(first)
+        self.paused = True
+        return True
+
+    def resume(self):
+        if not self.paused:
+            return False
+        self.paused = False
+        self._spawn(self.path)
+        return True
+
+    def stop(self):
+        if self.paused:                                    # parado em pausa: só falta unir
+            self._merge()
+            return
+        self._halt()
+        if self.parts:
+            seg = self._segment_path(len(self.parts))
+            if os.path.exists(self.current):
+                os.replace(self.current, seg)
+                self.parts.append(seg)
+            self._merge()
+
+    def _merge(self):
+        parts = [p for p in self.parts if os.path.exists(p)]
+        try:
+            if not parts:
+                return
+            if len(parts) == 1:
+                os.replace(parts[0], self.path)
+                return
+            listing = self.path + ".txt"
+            with open(listing, "w", encoding="utf-8") as f:
+                for p in parts:
+                    f.write("file '" + p.replace("'", "'\\''") + "'\n")
+            subprocess.run([ffmpeg_path(), "-y", "-hide_banner", "-loglevel", "error", "-f", "concat", "-safe", "0",
+                            "-i", listing, "-c", "copy", self.path], capture_output=True, timeout=120)
+            try:
+                os.remove(listing)
+            except OSError:
+                pass
+        finally:
+            for p in self.parts:
+                try:
+                    os.remove(p)
+                except OSError:
+                    pass
+            self.parts = []
 
     def error_text(self):
         try:

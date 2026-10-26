@@ -83,9 +83,16 @@ def annot_rgb(h):
 
 
 class RecordingBar(Gtk.Window):
-    def __init__(self, on_stop, on_discard, rect):
+    """Barra de gravação (medida no Windows 11): [pausar] [parar] 00:00:00 [mic] [áudio] | [descartar]; 258x48."""
+    W, H = 258, 48
+    BOXES = dict(pause=(4, 8, 32, 32), stop=(44, 8, 32, 32), mic=(148, 8, 32, 32), audio=(180, 8, 32, 32), trash=(221, 8, 32, 32))
+
+    def __init__(self, on_stop, on_discard, rect, on_pause=None):
         super().__init__(type=Gtk.WindowType.POPUP)
-        self.t0 = time.time()
+        self.elapsed = 0.0
+        self.t_run = time.time()
+        self.paused = False
+        self.on_pause = on_pause
         self.set_app_paintable(True)
         vis = self.get_screen().get_rgba_visual()
         if vis is not None:
@@ -93,36 +100,71 @@ class RecordingBar(Gtk.Window):
         self.set_accept_focus(False)
         self.set_keep_above(True)
         self.get_style_context().add_class("cap-window")
-        frame = Gtk.Box(spacing=8)
-        frame.get_style_context().add_class("rec-bar")
+        frame = Gtk.EventBox()
+        frame.set_visible_window(True)
+        frame.get_style_context().add_class("ov-bar")
+        frame.set_size_request(self.W, self.H)
+        fx = Gtk.Fixed()
+        frame.add(fx)
         self.add(frame)
-        dot = icons.image("record", 14, "#e81123")
-        frame.pack_start(dot, False, False, 0)
-        self.lbl = Gtk.Label(label="00:00")
-        self.lbl.get_style_context().add_class("rec-time")
-        frame.pack_start(self.lbl, False, False, 0)
-        stop = Gtk.Button()
-        stop.get_style_context().add_class("tbtn")
-        stop.add(icons.image("stop", 16, "#e81123"))
-        stop.set_tooltip_text("Parar gravação")
-        stop.connect("clicked", lambda *_: on_stop())
-        frame.pack_start(stop, False, False, 0)
-        trash = Gtk.Button()
-        trash.get_style_context().add_class("tbtn")
-        trash.add(icons.image("trash", 16, theme.icon_color()))
-        trash.set_tooltip_text("Descartar")
-        trash.connect("clicked", lambda *_: on_discard())
-        frame.pack_start(trash, False, False, 0)
+        col = theme.icon_color()
+        self.col = col
+
+        def mk(name, icon, tip, cb, css=()):
+            x, y, w, h = self.BOXES[name]
+            btn = Gtk.Button()
+            ctx = btn.get_style_context()
+            ctx.add_class("ov-btn")
+            for c in css:
+                ctx.add_class(c)
+            btn.set_size_request(w, h)
+            btn.set_can_focus(False)
+            btn.add(icons.image(icon, 20, "#b4b4b4" if icon.endswith("_off") and name == "mic" else col))
+            btn.set_tooltip_text(tip)
+            btn.get_accessible().set_name(tip)
+            btn.connect("clicked", lambda *_: cb())
+            fx.put(btn, x, y)
+            return btn
+        self.btn_pause = mk("pause", "pause", "Pausar", self.toggle_pause)
+        self.btn_stop = mk("stop", "rec_stop", "Parar gravação", on_stop)
+        self.lbl = Gtk.Label(label="00:00:00")
+        self.lbl.get_style_context().add_class("ov-time")
+        self.lbl.get_style_context().add_class("rec")
+        fx.put(self.lbl, 85, 14)
+        mic_on, sys_on = settings["rec_mic"], settings["rec_system_audio"]
+        self.btn_mic = mk("mic", "mic_on" if mic_on else "mic_off", "Microfone", lambda: None)
+        self.btn_audio = mk("audio", "screen_audio" if sys_on else "screen_audio_off", "Áudio do computador", lambda: None)
+        sep = Gtk.Box()
+        sep.get_style_context().add_class("ov-sep")
+        sep.set_size_request(1, 24)
+        fx.put(sep, 217, 12)
+        self.btn_trash = mk("trash", "trash", "Descartar", on_discard)
         self.show_all()
         x, y, w, h = rect
         mx, my, mw, mh = grab.monitor_at(x + w // 2, y + h // 2)
-        _, nat = self.get_preferred_width()
-        self.move(mx + (mw - nat) // 2, my + 14)
-        self.timer = GLib.timeout_add(500, self.tick)
+        self.move(mx + (mw - self.W) // 2, my + 13)
+        self.timer = GLib.timeout_add(250, self.tick)
+
+    def seconds(self):
+        return int(self.elapsed + (0 if self.paused else time.time() - self.t_run))
+
+    def toggle_pause(self):
+        if self.on_pause is not None and not self.on_pause(not self.paused):
+            return
+        if self.paused:
+            self.paused = False
+            self.t_run = time.time()
+        else:
+            self.elapsed += time.time() - self.t_run
+            self.paused = True
+        icon = "play" if self.paused else "pause"
+        self.btn_pause.get_child().set_from_pixbuf(icons.pixbuf(icon, 20, self.col))
+        self.btn_pause.set_tooltip_text("Continuar" if self.paused else "Pausar")
+        self.tick()
 
     def tick(self):
-        s = int(time.time() - self.t0)
-        self.lbl.set_text(f"{s // 60:02d}:{s % 60:02d}")
+        s = self.seconds()
+        self.lbl.set_text(f"{s // 3600:02d}:{s % 3600 // 60:02d}:{s % 60:02d}")
         return True
 
     def close_bar(self):
@@ -131,31 +173,54 @@ class RecordingBar(Gtk.Window):
 
 
 class OutlineWindow(Gtk.Window):
-    """Moldura vermelha ao redor da região gravada (fora da área capturada)."""
+    """Moldura pontilhada rosa de 2 px ao redor da região gravada, fora da área capturada (medido no Windows 11)."""
+    PAD = 2
 
     def __init__(self, rect):
         super().__init__(type=Gtk.WindowType.POPUP)
         x, y, w, h = rect
+        p = self.PAD
         self.set_app_paintable(True)
         self.set_visual(self.get_screen().get_rgba_visual())
         self.set_keep_above(True)
         self.set_accept_focus(False)
-        self.set_default_size(w + 6, h + 6)
-        self.W, self.H = w + 6, h + 6
+        self.set_default_size(w + 2 * p, h + 2 * p)
+        self.W, self.H = w + 2 * p, h + 2 * p
         self.connect("draw", self.draw)
-        self.move(x - 3, y - 3)
+        self.move(x - p, y - p)
         self.show_all()
         reg = cairo.Region()
         self.input_shape_combine_region(reg)
+        # formato real da janela: sem compositor o interior transparente viraria um retângulo preto sobre a gravação
+        shape = cairo.Region()
+        for x, y, w_, h_ in self.rects():
+            shape.union(cairo.RectangleInt(x, y, w_, h_))
+        self.shape_combine_region(shape)
+
+    def rects(self):
+        """Pixels ligados da moldura: 2 px ligado / 2 px desligado nas quatro bordas."""
+        p, W, H = self.PAD, self.W, self.H
+        out = []
+        for k in range(W):
+            if (k + 3) % 4 < 2 or k < p or k >= W - p:
+                out.append((k, 0, 1, p))
+                out.append((k, H - p, 1, p))
+        for k in range(p, H - p):
+            if (k + 1) % 4 < 2:
+                out.append((0, k, p, 1))
+                out.append((W - p, k, p, 1))
+        return out
 
     def draw(self, w, cr):
         cr.set_operator(cairo.OPERATOR_SOURCE)
         cr.set_source_rgba(0, 0, 0, 0)
         cr.paint()
-        cr.set_source_rgba(0.91, 0.07, 0.14, 1)
-        cr.set_line_width(2)
-        cr.rectangle(1, 1, self.W - 2, self.H - 2)
-        cr.stroke()
+        cr.set_operator(cairo.OPERATOR_OVER)
+        cr.set_source_rgb(0.749, 0.408, 0.506)             # #bf6881
+        cr.set_antialias(cairo.ANTIALIAS_NONE)
+        for x, y, w_, h_ in self.rects():
+            cr.rectangle(x, y, w_, h_)
+        cr.fill()
 
 
 class CapturaApp(Gtk.Application):
@@ -400,7 +465,7 @@ class CapturaApp(Gtk.Application):
         self.recorder = services.Recorder(rect, settings["rec_mic"], settings["rec_system_audio"], self.rec_dest)
         self.rec_rect = rect
         self.rec_outline = OutlineWindow(rect)
-        self.rec_bar = RecordingBar(self.stop_recording, lambda: self.stop_recording(discard=True), rect)
+        self.rec_bar = RecordingBar(self.stop_recording, lambda: self.stop_recording(discard=True), rect, on_pause=self._pause_rec)
         self._rec_begin_id = GLib.timeout_add(350, self._begin_rec)
 
     def _begin_rec(self):
@@ -419,9 +484,21 @@ class CapturaApp(Gtk.Application):
         self._rec_check_id = GLib.timeout_add(1200, self._check_rec)
         return False
 
+    def _pause_rec(self, pause):
+        """Barra de gravação: pausa/continua. Devolve False se não foi possível."""
+        r = self.recorder
+        if r is None:
+            return False
+        if pause:
+            return r.pause()
+        ok = r.resume()
+        if ok and self._rec_check_id == 0:
+            self._rec_check_id = GLib.timeout_add(1200, self._check_rec)
+        return ok
+
     def _check_rec(self):
         self._rec_check_id = 0
-        if self.recorder is not None and not self.recorder.alive():
+        if self.recorder is not None and not self.recorder.paused and not self.recorder.alive():
             err = self.recorder.error_text()
             self._teardown_rec()
             self.msg(None, "A gravação falhou", err[-600:] or "O FFmpeg encerrou inesperadamente.")

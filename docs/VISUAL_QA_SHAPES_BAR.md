@@ -105,3 +105,22 @@ duplo clique seleciona palavra, Ctrl+A / Ctrl+C / Ctrl+R, menu de contexto (Copi
 
 Diferenças restantes: o Windows usa o OCR dele (caixas de linha ±1–2 px diferentes do Tesseract); "Copiar como tabela" fica desabilitado
 (o Windows só o habilita quando detecta tabela; não implementado); ícones redesenhados (não são os da Microsoft).
+
+# QA visual — Overlay de captura e gravação
+
+Referência: Windows 11 (`ovwin*.py`, `shots/ref/ov-*.png`); nosso lado renderizado em Xephyr 1440×900 sobre a área de trabalho do Windows (`ovrun.sh`, `ovshot.py`, `recshot.py`, `ovcmp.py`).
+Medido: escurecimento 60%; barra principal 330×48 (13 px do topo, centrada) com segmento foto/vídeo; estado "Iniciar" 284×44
+([● Iniciar] 00:00:00 [mic] [áudio] | [fechar]); região de vídeo travada com borda tracejada 4/3 e 12 alças brancas de 6 px;
+menu de formas; Esc fecha de imediato; barra de gravação 258×48 (pausar, parar, tempo, mic, áudio | descartar); moldura rosa pontilhada de 2 px (#bf6881).
+
+| Estado | MAE |
+|---|---|
+| barra ociosa (região da barra) | 6,9 |
+| região de vídeo travada | 0,43 |
+| menu de formas | 8,6 |
+| moldura de gravação | 0,07 |
+| barra de gravação | 13,9 (região pequena; deslocamentos de 1–2 px nos ícones) |
+
+Mudanças de comportamento: pausar/continuar gravação de verdade (trechos unidos com concat), parar a gravação fora da thread da interface,
+janelas do app voltam ao fim da gravação, forma livre no modo vídeo trava o retângulo envolvente, tentativas de grab por overlay.
+Pendente: contagem regressiva 3-2-1 não comparada (o Windows pediu permissão de microfone na VM durante a captura); mic/áudio não alternam durante a gravação.
