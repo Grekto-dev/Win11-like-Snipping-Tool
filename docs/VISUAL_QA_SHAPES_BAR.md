@@ -66,3 +66,22 @@ o conteúdo vira um `ScrollViewer` com margens. Aqui a vista continua fixa.
 
 Fechar a janela com um menu/flyout aberto deixava o `grab` do popup ativo no processo (testes seguintes falhavam de
 forma intermitente). `EditorWindow` agora fecha `_cur_menu`, `_emoji_picker` e `_tool_pop` ao destruir.
+
+# QA visual — Configurações
+
+Referência: `shots/ref/set-*.png` (`setstates*.py`). Medido e reproduzido: cabeçalho que rola junto com o conteúdo
+(seta com tinta em x=16–31, título Semibold 19,5 px em x=56), cartões de 872 px em x=56 com 4 px de intervalo,
+linhas de 62/63 px, interruptor 40×20 em x=750 + rótulo "Ativado/Desativado" em x=802, seta de expansão centrada em x≈903,
+painel interno (path + "Alterar" + botão "Abrir pasta" 84×32 em x=767), seção "Sobre este app" em negrito,
+cartão **Tema do aplicativo** recolhido com painel de três botões de opção (Claro, Escuro, Usar configuração do sistema; 20 px, passo 40).
+
+| Estado | MAE (janela inteira) |
+|---|---|
+| Topo (`set-top`) | 4,98 (antes 9,87) |
+| Tema aberto (`set-theme-open2`, cartão alinhado em y=244) | 4,99 |
+
+## Diferenças deliberadas / pendentes
+- Linha "Atalhos": o Windows mostra um link para as configurações do Windows; aqui continua um interruptor funcional para a tecla Imprimir.
+- O Windows tem "Corretor de cores para capturas de tela HDR"; não se aplica ao Linux e foi omitido.
+- Seção "Sobre": textos, links e licenças são os do projeto (GPL, Fluent, Selawik), sem botão "Enviar comentários" (não há remoto público).
+- Painel de borda: sem seletor de cor/slider da referência medido (cor de swatch 38×38 e slider ainda do GTK).

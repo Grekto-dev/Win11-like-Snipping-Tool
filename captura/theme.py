@@ -14,7 +14,7 @@ LIGHT = dict(
     accent="#0067c0", accent_hover="#1975c5", accent_text="#ffffff", infobar="#ffffff", flyout="#fcfcfc",
     shadow="rgba(0,0,0,0.28)", bar="#e9e9e9", crop_bg="#656565", toast_bg="#ffffff", link="#003e92", segbg="#ececec",
     menu_bg="#f9f9f9", menu_border="#dbdbdb", menu_top="#c0c0c0", menu_sel="#eaeaea", menu_sep="#e5e5e5",
-    crop_hover="#eaeaea", set_card="#fbfbfb", set_border="#e5e5e5", set_inner="#f4f4f4", set_btn="#fcfcfc", set_btn_top="#e6e6e6", set_btn_bot="#cdcdcd", sbar_border="#ededed", sbar_sep="#eaeaea", sbar_sel="#f0f0f0", sbar_inner="#ffffff", fly2_border="#eaeaea",
+    crop_hover="#eaeaea", radio_fill="#eeeeee", radio_ring="#878787", set_card="#fbfbfb", set_border="#e5e5e5", set_inner="#f4f4f4", set_btn="#fcfcfc", set_btn_top="#e6e6e6", set_btn_bot="#cdcdcd", sbar_border="#ededed", sbar_sep="#eaeaea", sbar_sel="#f0f0f0", sbar_inner="#ffffff", fly2_border="#eaeaea",
 )
 DARK = dict(
     dark=True, bg0="#202020", surface="#2b2b2b", canvas="#1c1c1c", text="#ffffff", subtle="#c8c8c8", disabled="#6f6f6f",
@@ -23,7 +23,7 @@ DARK = dict(
     accent="#60cdff", accent_hover="#7ad6ff", accent_text="#000000", infobar="#2b2b2b", flyout="#2c2c2c",
     shadow="rgba(0,0,0,0.6)", bar="#2c2c2c", crop_bg="#1a1a1a", toast_bg="#2b2b2b", link="#99ebff", segbg="#2d2d2d",
     menu_bg="#2c2c2c", menu_border="#383838", menu_top="#454545", menu_sel="#383838", menu_sep="#414141",
-    crop_hover="#333333", set_card="#2b2b2b", set_border="#383838", set_inner="#262626", set_btn="#323232", set_btn_top="#3d3d3d", set_btn_bot="#2a2a2a", sbar_border="#3a3a3a", sbar_sep="#404040", sbar_sel="#383838", sbar_inner="#2c2c2c", fly2_border="#3a3a3a",
+    crop_hover="#333333", radio_fill="#2f2f2f", radio_ring="#9a9a9a", set_card="#2b2b2b", set_border="#383838", set_inner="#262626", set_btn="#323232", set_btn_top="#3d3d3d", set_btn_bot="#2a2a2a", sbar_border="#3a3a3a", sbar_sep="#404040", sbar_sel="#383838", sbar_inner="#2c2c2c", fly2_border="#3a3a3a",
 )
 
 CSS = string.Template(r"""
@@ -161,6 +161,7 @@ button.sb-btn.crop-btn:hover { background: $crop_hover; }
 /* Configurações */
 .cap-card { background: $set_card; border: 1px solid $set_border; border-radius: 4px; }
 .cap-card.inner { border-radius: 0; border-width: 1px 0 0 0; background: $bg0; }
+button.radio-row { background: transparent; background-image: none; border: 0; padding: 0; margin: 0; min-width: 0; min-height: 0; box-shadow: none; outline: none; }
 .cap-inner { background: $set_inner; border-top: 1px solid $set_border; }
 .cap-row { padding: 0 0 0 16px; }
 .cap-window label.section { font-weight: 400; font-size: 14px; }
