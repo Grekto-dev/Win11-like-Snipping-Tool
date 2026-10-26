@@ -171,6 +171,12 @@ class EditorWindow(Gtk.ApplicationWindow):
         self.refresh_capture_icons()
         self.refresh_tool_icons()
         self.btn_hl.connect("toggled", lambda *_: self.refresh_tool_icons())
+        self.btn_new.connect("clicked", lambda *_: self.app.start_capture(self.app_tool_for_new(), settings["delay"], from_app=True))
+        self.btn_ocr_empty.connect("clicked", lambda *_: self.app.start_capture("ocr", settings["delay"], from_app=True))
+        self.b_photo.connect("clicked", lambda b: self.set_mode("photo"))
+        self.b_video.connect("clicked", lambda b: self.set_mode("video"))
+        self.shape_btn.connect("clicked", self.popup_shape_menu)
+        self.delay_btn.connect("clicked", self.popup_delay_menu)
         return bar
 
     def build_infobar(self):
@@ -193,10 +199,16 @@ class EditorWindow(Gtk.ApplicationWindow):
         return "snip"
 
     def set_mode(self, mode):
-        settings["mode"] = mode
-        for b, m in ((self.b_photo, "photo"), (self.b_video, "video")):
-            if b.get_active() != (m == mode):
-                b.set_active(m == mode)
+        if getattr(self, "_mode_busy", False):         # set_active() também emite "clicked": evita recursão
+            return
+        self._mode_busy = True
+        try:
+            settings["mode"] = mode
+            for b, m in ((self.b_photo, "photo"), (self.b_video, "video")):
+                if b.get_active() != (m == mode):
+                    b.set_active(m == mode)
+        finally:
+            self._mode_busy = False
 
     def refresh_capture_icons(self):
         name = [i for k, i, _ in SHAPES if k == settings["shape"]][0]
