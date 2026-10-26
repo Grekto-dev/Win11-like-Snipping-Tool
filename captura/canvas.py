@@ -10,6 +10,8 @@ from . import annot, theme
 from .ruler import Ruler
 from . import textlayer
 
+TEXT_RADIUS = 4.0          # cantos das caixas de linha do modo Ações de texto (medido)
+
 HANDLE_R = 5.5
 
 
@@ -43,6 +45,7 @@ class Canvas(Gtk.DrawingArea):
         self.ruler_drag = None
         self.text_words = []
         self.text_sel = []
+        self.on_text_context = None
         self.text_drag = None
         self.opts = {"pen": ("#e61b1b", 4), "hl": ("#ffe600", 12), "shape": ("#e61b1b", 3), "shape_kind": "rect"}
         self.crop_rect = None            # (x0, y0, x1, y1) em px da imagem
@@ -179,22 +182,42 @@ class Canvas(Gtk.DrawingArea):
             return ""
         return textlayer.words_text(self.text_sel)
 
-    def redact(self, words, pad=2):
-        """Cobre palavras com retângulos pretos opacos (anotações desfazíveis)."""
+    def redact(self, words):
+        """Cobre palavras com tarjas pretas opacas (anotações desfazíveis); uma tarja por linha."""
         words = [w for w in words if w in self.text_words]
         if not words or self.base is None:
             return 0
         self.push_undo()
-        for w in words:
-            x0, y0, x1, y1 = w.box
-            s = annot.Shape("rect", x0 - pad, y0 - pad, x1 + pad, y1 + pad, "#000000", 1)
-            s.fill = "#000000"
-            self.items.append(s)
-        self.text_words = [w for w in self.text_words if w not in words]
-        self.text_sel = [w for w in self.text_sel if w not in words]
+        for x0, y0, x1, y1 in textlayer.sel_rects(words):
+            sh = annot.Shape("rect", x0, y0, x1, y1, "#000000", 1)
+            sh.fill = "#000000"
+            sh.color = None                         # sem contorno: a tarja tem exatamente o tamanho da seleção
+            sh.redaction = True
+            self.items.append(sh)
         self.queue_draw()
         self.emit("changed")
         return len(words)
+
+    def redact_selection(self):
+        return self.redact(list(self.text_sel))
+
+    def has_redactions(self):
+        return any(getattr(i, "redaction", False) for i in self.items)
+
+    def remove_redactions(self):
+        if not self.has_redactions():
+            return 0
+        self.push_undo()
+        n = len([i for i in self.items if getattr(i, "redaction", False)])
+        self.items = [i for i in self.items if not getattr(i, "redaction", False)]
+        self.queue_draw()
+        self.emit("changed")
+        return n
+
+    def select_all_text(self):
+        self.text_sel = list(self.text_words)
+        self.queue_draw()
+        self.emit("changed")
 
     def set_tool(self, tool):
         changed = tool != self.tool
@@ -272,34 +295,67 @@ class Canvas(Gtk.DrawingArea):
         return False
 
     def draw_text_layer(self, cr, iw, ih):
-        """Esmaece a imagem e mantém as palavras reconhecidas em destaque."""
+        """Modo Ações de texto (medido no Windows): imagem esmaecida a 57 %, cada linha reconhecida numa caixa
+        branca de cantos arredondados que mostra a imagem original, seleção azul-clara atrás do texto."""
         cr.save()
         cr.rectangle(0, 0, iw, ih)
-        for w in self.text_words:
-            x0, y0, x1, y1 = w.box
-            cr.rectangle(x0 - 2, y0 - 1, x1 - x0 + 4, y1 - y0 + 2)
-        cr.set_fill_rule(cairo.FILL_RULE_EVEN_ODD)
-        cr.set_source_rgba(0, 0, 0, .5)
-        cr.fill()
+        cr.clip()
+        cr.set_source_rgba(0, 0, 0, .431)
+        cr.paint()
+        for line in textlayer.group_lines(self.text_words):
+            x0, y0, x1, y1 = line.box
+            cr.save()
+            self._round_rect(cr, x0, y0, x1, y1, TEXT_RADIUS)
+            cr.clip()
+            cr.set_source_rgb(1, 1, 1)
+            cr.paint()
+            cr.set_source_surface(self.base, 0, 0)
+            cr.paint()
+            annot.draw_all(cr, self.items)
+            cr.restore()
+        picked = self.text_sel
+        if picked:
+            for x0, y0, x1, y1 in textlayer.sel_rects(picked):
+                self._draw_selection(cr, x0, y0, x1, y1)
         cr.restore()
-        pal = theme.palette()
-        r, g, b = annot.hex_rgb(pal.get("accent", "#0067c0"))
-        cr.set_line_width(1.2 / self.zoom)
-        for w in self.text_words:
-            x0, y0, x1, y1 = w.box
-            cr.rectangle(x0 - 2, y0 - 1, x1 - x0 + 4, y1 - y0 + 2)
-            if w in self.text_sel:
-                cr.set_source_rgba(r, g, b, .35)
-                cr.fill_preserve()
-            cr.set_source_rgba(r, g, b, .9)
-            cr.stroke()
-        if self.text_drag:
-            x0, y0, x1, y1 = self.text_drag
-            cr.rectangle(min(x0, x1), min(y0, y1), abs(x1 - x0), abs(y1 - y0))
-            cr.set_source_rgba(r, g, b, .15)
-            cr.fill_preserve()
-            cr.set_source_rgba(r, g, b, .9)
-            cr.stroke()
+
+    def _draw_selection(self, cr, x0, y0, x1, y1):
+        """Fundo #b2d6f2 com o texto em #0e324e: resultado = A*(1-base) + B*base, sendo base a imagem original."""
+        cr.save()
+        self._round_rect(cr, x0, y0, x1, y1, 1.5)
+        cr.clip()
+        cr.push_group()                                            # B * base
+        cr.set_source_rgb(.698, .839, .949)
+        cr.paint()
+        cr.set_operator(cairo.OPERATOR_MULTIPLY)
+        cr.set_source_surface(self.base, 0, 0)
+        cr.paint()
+        light = cr.pop_group()
+        cr.push_group()                                            # A * (1 - base)
+        cr.set_source_rgb(1, 1, 1)
+        cr.paint()
+        cr.set_operator(cairo.OPERATOR_DIFFERENCE)
+        cr.set_source_surface(self.base, 0, 0)
+        cr.paint()
+        cr.set_operator(cairo.OPERATOR_MULTIPLY)
+        cr.set_source_rgb(.055, .196, .306)                        # #0e324e
+        cr.paint()
+        dark = cr.pop_group()
+        cr.set_source(dark)
+        cr.paint()
+        cr.set_operator(cairo.OPERATOR_ADD)
+        cr.set_source(light)
+        cr.paint()
+        cr.restore()
+
+    @staticmethod
+    def _round_rect(cr, x0, y0, x1, y1, r):
+        cr.new_sub_path()
+        cr.arc(x1 - r, y0 + r, r, -math.pi / 2, 0)
+        cr.arc(x1 - r, y1 - r, r, 0, math.pi / 2)
+        cr.arc(x0 + r, y1 - r, r, math.pi / 2, math.pi)
+        cr.arc(x0 + r, y0 + r, r, math.pi, 3 * math.pi / 2)
+        cr.close_path()
 
     def draw_handles(self, cr, s):
         z = self.zoom
@@ -425,6 +481,10 @@ class Canvas(Gtk.DrawingArea):
 
     def on_press(self, w, ev):
         self.grab_focus()
+        if self.base is not None and ev.button == 3 and self.tool == "text":
+            if self.on_text_context:
+                self.on_text_context(ev.x_root, ev.y_root)
+            return True
         if self.base is None or ev.button != 1:
             return False
         if self.show_ruler and self.ruler and self.ruler.contains(ev.x, ev.y, inset=3):
@@ -434,6 +494,11 @@ class Canvas(Gtk.DrawingArea):
         t = self.tool
         if t == "text":
             self.text_drag = (ix, iy, ix, iy)
+            if getattr(ev, "type", None) == Gdk.EventType._2BUTTON_PRESS:                       # duplo clique seleciona a palavra
+                hit = textlayer.select_between(self.text_words, (ix, iy), (ix, iy))
+                self.text_sel = hit
+                self.text_drag = None
+                self.emit("changed")
             self.queue_draw()
             return True
         if t in ("pen", "hl"):
@@ -490,6 +555,10 @@ class Canvas(Gtk.DrawingArea):
         ix, iy = self.to_img(ev.x, ev.y)
         if self.text_drag:
             self.text_drag = (self.text_drag[0], self.text_drag[1], ix, iy)
+            x0, y0, x1, y1 = self.text_drag
+            if abs(x1 - x0) * self.zoom >= 3 or abs(y1 - y0) * self.zoom >= 3:
+                self.text_sel = textlayer.select_between(self.text_words, (x0, y0), (x1, y1))
+                self.emit("changed")
             self.queue_draw()
             return True
         if self.cur_stroke:
@@ -550,10 +619,9 @@ class Canvas(Gtk.DrawingArea):
             x0, y0, x1, y1 = self.text_drag
             self.text_drag = None
             if abs(x1 - x0) * self.zoom < 3 and abs(y1 - y0) * self.zoom < 3:
-                hit = [w for w in self.text_words if w.box[0] <= x0 <= w.box[2] and w.box[1] <= y0 <= w.box[3]]
-                self.text_sel = hit[:1]
+                self.text_sel = []                                           # clique simples limpa a seleção
             else:
-                self.text_sel = textlayer.words_in_rect(self.text_words, (x0, y0, x1, y1))
+                self.text_sel = textlayer.select_between(self.text_words, (x0, y0), (x1, y1))
             self.queue_draw()
             self.emit("changed")
             return True

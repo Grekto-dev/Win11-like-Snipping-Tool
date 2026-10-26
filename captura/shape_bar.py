@@ -197,7 +197,7 @@ def _setup_button(btn, w, h, painter, label, plain):
 
     def draw(_area, cr):
         cr.translate(-1, -1)          # a borda CSS de 1 px desloca a área de desenho
-        painter(cr)
+        btn.painter(cr)
         return False
     area.connect("draw", draw)
     btn.add(area)

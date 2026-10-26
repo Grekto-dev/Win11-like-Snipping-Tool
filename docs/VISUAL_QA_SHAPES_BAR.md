@@ -85,3 +85,23 @@ cartão **Tema do aplicativo** recolhido com painel de três botões de opção 
 - O Windows tem "Corretor de cores para capturas de tela HDR"; não se aplica ao Linux e foi omitido.
 - Seção "Sobre": textos, links e licenças são os do projeto (GPL, Fluent, Selawik), sem botão "Enviar comentários" (não há remoto público).
 - Painel de borda: sem seletor de cor/slider da referência medido (cor de swatch 38×38 e slider ainda do GTK).
+
+# QA visual — Ações de texto (OCR)
+
+Referência: Windows 11, imagem `ocr-input.png` aberta com Ctrl+O (`ocrwin5.py`, `ocrwin6.py`), estados em `shots/ref/ocr-*.png`.
+Medido e reproduzido: barra de 550×48 (Copiar todo o texto | Copiar como tabela [desabilitado] | Redação rápida ▾), imagem esmaecida a #919191,
+uma caixa branca de cantos arredondados por linha (padding 11/12/10/11 px), seleção por arrasto em ordem de leitura (#b2d6f2 com texto #0e324e),
+duplo clique seleciona palavra, Ctrl+A / Ctrl+C / Ctrl+R, menu de contexto (Copiar texto, Selecionar tudo, Redigir texto), menu ▾ com
+"Endereços de email" / "Números de telefone" (marcados) / "Remover todas as redações", balão "Certifique-se de que todas as informações confidenciais foram editadas."
+
+| Estado | MAE (janela inteira) |
+|---|---|
+| barra | 1,30 |
+| seleção parcial | 1,70 |
+| redigido (parcial) | 1,75 |
+| menu ▾ | 1,60 |
+| Redação rápida + balão | 2,19 |
+| menu de contexto | 2,39 |
+
+Diferenças restantes: o Windows usa o OCR dele (caixas de linha ±1–2 px diferentes do Tesseract); "Copiar como tabela" fica desabilitado
+(o Windows só o habilita quando detecta tabela; não implementado); ícones redesenhados (não são os da Microsoft).

@@ -12,6 +12,8 @@ MORE = dict(width=323, row_h=32, icon_x=12, text_x=38, right_pad=16, text_dy=-2)
 CHOICE = dict(width=197, row_h=37, icon_x=18, text_x=42, right_pad=12, text_dy=-1)      # atraso
 SHAPE = dict(width=128, row_h=37, icon_x=18, text_x=43, right_pad=12, text_dy=-1)       # modo de captura
 SINGLE = dict(width=226, row_h=42, icon_x=12, text_x=42, right_pad=12, text_dy=-2)      # borracha
+TEXTCHK = dict(width=226, row_h=32, pad=1, sep_m=1, icon_x=12, text_x=43, right_pad=16, text_dy=-1)      # chevron da Redação rápida
+TEXTCTX = dict(width=212, row_h=33, pad=1, sep_m=1, icon_x=12, text_x=43, right_pad=16, text_dy=-1)      # clique direito no texto
 ZOOM = dict(width=182, row_h=32, icon_x=12, text_x=16, right_pad=16, text_dy=-1)    # submenu/menu de zoom (184 px externos)
 PAD = 4
 SHADOW = 2          # margem transparente ao redor da caixa para a sombra
@@ -128,15 +130,19 @@ class Menu(Popup):
     def __init__(self, items, style):
         self.style = style
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
-        box.set_size_request(style["width"] - 2 * PAD, -1)
-        box.set_margin_start(PAD)
-        box.set_margin_end(PAD)
-        box.set_margin_top(PAD)
-        box.set_margin_bottom(PAD)
+        pad = style.get("pad", PAD)
+        self.pad = pad
+        box.set_size_request(style["width"] - 2 * pad, -1)
+        box.set_margin_start(pad)
+        box.set_margin_end(pad)
+        box.set_margin_top(pad)
+        box.set_margin_bottom(pad)
         for it in items:
             if it is None:
                 s = Gtk.Box()
                 s.get_style_context().add_class("wmenu-sep")
+                if style.get("sep_m", 3) < 3:
+                    s.get_style_context().add_class("tight")
                 box.pack_start(s, False, False, 0)
                 continue
             box.pack_start(self._row(*it), False, False, 0)
@@ -162,16 +168,16 @@ class Menu(Popup):
         if icon:
             glyph = {"zoom": "menu_zoom", "folder_open": "menu_open", "folder_shots": "menu_folder",
                      "window": "menu_window", "fullscreen": "menu_fullscreen", "freeform": "menu_freeform"}.get(icon, icon)
-            im = icons.role_image(glyph, 20, "text" if enabled else "disabled")
+            im = icons.role_image(glyph, 20, "chev" if glyph == "checksm" else ("text" if enabled else "disabled"))
             im.set_halign(Gtk.Align.START)
             im.set_valign(Gtk.Align.CENTER)
             im.set_margin_bottom(2)
-            im.set_margin_start(s["icon_x"] - PAD - 2)
+            im.set_margin_start(s["icon_x"] - self.pad - 2)
             ov.add_overlay(im)
         lb = Gtk.Label(label=label, xalign=0)
         lb.set_halign(Gtk.Align.START)
         lb.set_valign(Gtk.Align.CENTER)
-        lb.set_margin_start(s["text_x"] - PAD - 1)
+        lb.set_margin_start(s["text_x"] - self.pad - 1)
         lb.set_margin_bottom(max(0, -2 * s.get("text_dy", 0)))
         ov.add_overlay(lb)
         if accel:

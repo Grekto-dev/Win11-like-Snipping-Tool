@@ -64,21 +64,40 @@ class TextActionsWindowTests(unittest.TestCase):
         self.w.copy_all_text()
         self.assertEqual(self.copied, ["Contato: ana@example.com\nTel 11999990000"])
 
-    def test_copy_selection_is_disabled_without_selection(self):
+    def test_copy_selected_text_only_copies_the_selection(self):
         self.enter()
-        self.assertFalse(self.w.btn_copy_sel.get_sensitive())
+        self.assertFalse(self.w.copy_selected_text())
         self.w.canvas.text_sel = [WORDS[1]]
-        self.w.canvas.emit("changed")
-        self.assertTrue(self.w.btn_copy_sel.get_sensitive())
-        self.w.copy_selected_text()
+        self.assertTrue(self.w.copy_selected_text())
         self.assertEqual(self.copied, ["ana@example.com"])
+
+    def test_bar_has_the_windows_buttons_and_table_is_disabled(self):
+        self.enter()
+        labels = [b.get_tooltip_text() for b in (self.w.btn_copy_all, self.w.btn_table, self.w.btn_redact)]
+        self.assertEqual(labels, ["Copiar todo o texto", "Copiar como tabela", "Redação rápida"])
+        self.assertFalse(self.w.btn_table.get_sensitive())
+
+    def test_quick_redact_uses_the_checked_kinds_and_shows_the_tip(self):
+        self.enter()
+        settings["redact_phones"] = False
+        self.addCleanup(lambda: settings.__setitem__("redact_phones", True))
+        self.w.btn_redact.clicked()
+        self.assertEqual(len(self.w.canvas.items), 1)                 # só o e-mail
+        self.assertTrue(self.w.canvas.has_redactions())
+
+    def test_ctrl_r_redacts_the_selection_in_text_mode(self):
+        self.enter()
+        self.w.canvas.text_sel = [WORDS[1]]
+        self.w.redact_selected_text()
+        self.assertEqual(len(self.w.canvas.items), 1)
+        self.assertEqual(self.w.canvas.text_sel, [])
 
     def test_hide_sensitive_redacts_emails_and_phones_only(self):
         self.enter()
         n = self.w.hide_sensitive(("email", "phone"))
         self.assertEqual(n, 2)
-        self.assertEqual(len(self.w.canvas.items), 2)
-        self.assertEqual([w.text for w in self.w.canvas.text_words], ["Contato:", "Tel"])
+        self.assertEqual(len(self.w.canvas.items), 2)               # uma tarja por linha
+        self.assertEqual(len(self.w.canvas.text_words), 4)
 
     def test_no_text_found_leaves_text_mode_off(self):
         self.enter([])

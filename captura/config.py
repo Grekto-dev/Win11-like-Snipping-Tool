@@ -22,6 +22,9 @@ def default_recordings_dir():
 
 
 DEFAULTS = {
+    # Ações de texto
+    "redact_emails": True,
+    "redact_phones": True,
     # Captura
     "shot_autocopy_edits": True,        # Copiar as alterações automaticamente
     "shot_autosave": True,              # Salvar automaticamente as capturas originais

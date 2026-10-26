@@ -9,6 +9,7 @@ import cairo
 from gi.repository import Gtk, Gdk, GLib, GdkPixbuf
 
 from . import APP_NAME, annot, chrome, icons, menus, metrics as M, services, textlayer, theme
+from .text_bar import BAR_H, BAR_W, InfoTip, TextBar
 from .canvas import Canvas
 from .config import settings
 from .emoji_picker import EmojiPicker
@@ -134,9 +135,12 @@ class EditorWindow(Gtk.ApplicationWindow):
         self.toast_overlay.add_overlay(self.toast_rev)
         self.toast_overlay.set_overlay_pass_through(self.toast_rev, True)
         self.toast_overlay.add_overlay(self.build_text_bar())
+        self.toast_overlay.add_overlay(self.infotip)
+        self.toast_overlay.set_overlay_pass_through(self.infotip, True)
         self._toast_id = 0
         main.pack_start(self.toast_overlay, True, True, 0)
         self.canvas = Canvas()
+        self.canvas.on_text_context = self.popup_text_context
         for name in ("pen", "hl", "shape"):
             self.canvas.opts[name] = (settings[f"{name}_color"], settings[f"{name}_size"])
         self.canvas.opts["shape_kind"] = settings["shape_kind"]
@@ -247,7 +251,6 @@ class EditorWindow(Gtk.ApplicationWindow):
     def on_canvas_changed(self, *a):
         self.update_edit_group()
         self.sync_shape_bar()
-        self.btn_copy_sel.set_sensitive(bool(self.canvas.text_sel))
         if self.canvas.base is not None and settings["shot_autocopy_edits"] and self.canvas.dirty:
             if self._copy_timer:
                 GLib.source_remove(self._copy_timer)
@@ -534,32 +537,44 @@ class EditorWindow(Gtk.ApplicationWindow):
 
     # ------------------------------------------------------- ações de texto
     def build_text_bar(self):
-        bar = Gtk.Box(spacing=6)
-        bar.get_style_context().add_class("textbar")
-        bar.set_halign(Gtk.Align.CENTER)
-        bar.set_valign(Gtk.Align.START)
-        bar.set_margin_top(12)
-        specs = (("btn_copy_all", "Copiar todo o texto", self.copy_all_text),
-                 ("btn_copy_sel", "Copiar seleção", self.copy_selected_text),
-                 ("btn_hide", "Ocultar dados ▾", self.popup_hide_menu))
-        for attr, label, cb in specs:
-            b = Gtk.Button(label=label)
-            b.get_style_context().add_class("tbtn")
-            b.set_can_focus(False)
-            b.connect("clicked", lambda _b, cb=cb: cb() if cb != self.popup_hide_menu else cb(_b))
-            bar.pack_start(b, False, False, 0)
-            setattr(self, attr, b)
-        self.btn_copy_sel.set_sensitive(False)
+        bar = TextBar(self.copy_all_text, lambda: None, self.quick_redact, self.popup_redact_menu)
+        bar.set_margin_top(M.SHAPEBAR_TOP)
         bar.set_no_show_all(True)
         bar.hide()
         self.text_bar = bar
+        self.btn_copy_all, self.btn_table = bar.btn_copy_all, bar.btn_table
+        self.btn_redact, self.btn_chev = bar.btn_redact, bar.btn_chev
+        tip = InfoTip("Certifique-se de que todas as informações confidenciais foram editadas.")
+        tip.set_halign(Gtk.Align.START)
+        tip.set_valign(Gtk.Align.START)
+        tip.set_no_show_all(True)
+        tip.hide()
+        self.infotip = tip
+        self._tip_id = 0
         return bar
+
+    def show_redact_tip(self):
+        total = self.toast_overlay.get_allocated_width()
+        if total <= 1:
+            return
+        self.infotip.set_margin_start((total - BAR_W) // 2 + 276)       # a barra é centrada; o balão aponta para a Redação rápida
+        self.infotip.set_margin_top(M.SHAPEBAR_TOP + BAR_H + 1)
+        self.infotip.show()
+        if self._tip_id:
+            GLib.source_remove(self._tip_id)
+        self._tip_id = GLib.timeout_add(6000, self._hide_tip)
+
+    def _hide_tip(self):
+        self._tip_id = 0
+        self.infotip.hide()
+        return False
 
     def toggle_text_mode(self, btn):
         if not btn.get_active():
             if self.canvas.tool == "text":
                 self.canvas.set_tool(None)
             self.text_bar.hide()
+            self._hide_tip()
             return
         s = self.current_surface()
         if s is None:
@@ -588,10 +603,8 @@ class EditorWindow(Gtk.ApplicationWindow):
                 return False
             self.canvas.set_tool("text")
             self.canvas.set_text_words(words)
-            self.btn_copy_sel.set_sensitive(False)
-            for child in self.text_bar.get_children():
-                child.show()
             self.text_bar.show()
+            self.text_bar.show_all()
             return False
         if not services.ocr_available():
             btn.set_active(False)
@@ -603,36 +616,58 @@ class EditorWindow(Gtk.ApplicationWindow):
         text = textlayer.words_text(self.canvas.text_words)
         if text:
             services.copy_text(text)
-            self.show_toast("Texto copiado")
 
     def copy_selected_text(self):
         text = self.canvas.selected_text()
         if text:
             services.copy_text(text)
-            self.show_toast("Texto copiado")
+            return True
+        return False
 
-    def hide_sensitive(self, kinds=("email", "phone", "url")):
+    def redact_kinds(self):
+        return tuple(k for k, key in (("email", "redact_emails"), ("phone", "redact_phones")) if settings[key])
+
+    def hide_sensitive(self, kinds=None):
+        kinds = self.redact_kinds() if kinds is None else kinds
         found = textlayer.sensitive(self.canvas.text_words)
         words = [w for k in kinds for w in found.get(k, [])]
         n = self.canvas.redact(words)
-        self.show_toast(f"{n} item(ns) ocultado(s)" if n else "Nenhum dado confidencial encontrado")
         return n
 
-    def popup_hide_menu(self, b):
-        sel = bool(self.canvas.text_sel)
-        items = [("eye", "Ocultar e-mails", None, lambda: self.hide_sensitive(("email",))),
-                 ("eye", "Ocultar números de telefone", None, lambda: self.hide_sensitive(("phone",))),
-                 ("eye", "Ocultar endereços da web", None, lambda: self.hide_sensitive(("url",))),
-                 ("eye", "Ocultar tudo isso", None, self.hide_sensitive),
-                 None,
-                 ("eye", "Ocultar seleção", None, self.hide_selection, sel)]
-        x, y = b.translate_coordinates(self.toolbar, 0, 0)
-        self._menu(items, menus.SINGLE, left=x + 4, top=y + b.get_allocated_height() + M.TB_Y + 4)
+    def quick_redact(self):
+        self.hide_sensitive()
+        self.show_redact_tip()
 
-    def hide_selection(self):
-        n = self.canvas.redact(list(self.canvas.text_sel))
+    def redact_selected_text(self):
+        n = self.canvas.redact_selection()
         if n:
-            self.show_toast(f"{n} item(ns) ocultado(s)")
+            self.canvas.text_sel = []
+            self.canvas.queue_draw()
+        return n
+
+    def remove_redactions(self):
+        self.canvas.remove_redactions()
+
+    def toggle_redact_kind(self, key):
+        settings[key] = not settings[key]
+
+    def popup_redact_menu(self, b):
+        items = [("checksm" if settings["redact_emails"] else None, "Endereços de email", None,
+                  lambda: self.toggle_redact_kind("redact_emails")),
+                 ("checksm" if settings["redact_phones"] else None, "Números de telefone", None,
+                  lambda: self.toggle_redact_kind("redact_phones")),
+                 None,
+                 (None, "Remover todas as redações", None, self.remove_redactions, self.canvas.has_redactions())]
+        bx, by = menus.anchor_origin(self.text_bar)
+        self._menu_at(items, menus.TEXTCHK, bx + BAR_W - menus.TEXTCHK["width"] - 2 - 4, by + BAR_H + 1)
+
+    def popup_text_context(self, x_root, y_root):
+        has = bool(self.canvas.text_sel)
+        items = [("copy", "Copiar texto", "Ctrl+C", self.copy_selected_text, has),
+                 ("selall", "Selecionar tudo", "Ctrl+A", self.canvas.select_all_text),
+                 None,
+                 ("redact", "Redigir texto", "Ctrl+R", self.redact_selected_text, has)]
+        self._menu_at(items, menus.TEXTCTX, x_root, y_root)
 
     def popup_eraser_menu(self, b):
         self._menu([("trash", "Apagar todas as marcações", None, self.canvas.clear_markup)],
@@ -839,6 +874,16 @@ class EditorWindow(Gtk.ApplicationWindow):
         k = ev.keyval
         if ctrl and k in (Gdk.KEY_s, Gdk.KEY_S):
             self.save_as(); return True
+        if self.canvas.tool == "text" and ctrl and k in (Gdk.KEY_c, Gdk.KEY_C):
+            self.copy_selected_text(); return True
+        if self.canvas.tool == "text" and ctrl and k in (Gdk.KEY_a, Gdk.KEY_A):
+            self.canvas.select_all_text(); return True
+        if ctrl and k in (Gdk.KEY_r, Gdk.KEY_R):
+            if self.canvas.tool == "text":
+                self.redact_selected_text()
+            elif self.canvas.base is not None:
+                self.toggle_ruler()
+            return True
         if ctrl and k in (Gdk.KEY_c, Gdk.KEY_C) and self.canvas.base is not None and not self.is_text_focus():
             self.copy_image(); return True
         if ctrl and k in (Gdk.KEY_z, Gdk.KEY_Z) and not shift:
@@ -860,6 +905,8 @@ class EditorWindow(Gtk.ApplicationWindow):
         if ctrl and k in (Gdk.KEY_n, Gdk.KEY_N):
             self.btn_new.clicked(); return True
         if k == Gdk.KEY_Escape:
+            if self.canvas.tool == "text":
+                self.btn_text.set_active(False); return True
             if self.canvas.tool == "crop":
                 self.toggle_crop(False, apply=False); return True
             if self.stack.get_visible_child_name() == "settings":

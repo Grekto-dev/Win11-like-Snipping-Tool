@@ -129,6 +129,7 @@ button.wmi:disabled label { color: $disabled_icon; }
 .wmenu-bar { background: $accent; border-radius: 2px; }
 .wmenu label.wmenu-accel { color: $subtle; font-size: 12px; }
 .wmenu-sep { background: $menu_sep; min-height: 1px; margin: 3px 0; }
+.wmenu-sep.tight { margin: 1px 0; }
 /* measured tool palettes */
 .wflyout { border-color: #c4c4c4; border-radius: 4px; }
 button.palette-swatch { background: transparent; background-image: none; border: 0; border-radius: 20px; padding: 0; margin: 0; min-width: 0; min-height: 0; box-shadow: none; outline: none; }

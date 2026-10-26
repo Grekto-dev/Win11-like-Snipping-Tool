@@ -3,7 +3,7 @@ gi.require_version("Gtk", "3.0")
 import unittest
 from types import SimpleNamespace
 import cairo
-from gi.repository import Gtk
+from gi.repository import Gtk, Gdk
 from captura.canvas import Canvas
 from captura.textlayer import Word
 
@@ -30,9 +30,10 @@ class TextModeTests(unittest.TestCase):
         self.canvas.set_tool("text")
         self.canvas.set_text_words(words())
 
-    def pointer(self, a, b):
+    def pointer(self, a, b, double=False):
         ox, oy = self.canvas.origin(); z = self.canvas.zoom
-        ev = lambda p: SimpleNamespace(x=ox + p[0] * z, y=oy + p[1] * z, button=1, state=0)
+        kind = Gdk.EventType._2BUTTON_PRESS if double else Gdk.EventType.BUTTON_PRESS
+        ev = lambda p: SimpleNamespace(x=ox + p[0] * z, y=oy + p[1] * z, button=1, state=0, type=kind)
         self.canvas.on_press(self.canvas, ev(a))
         self.canvas.on_motion(self.canvas, ev(b))
         self.canvas.on_release(self.canvas, ev(b))
@@ -41,11 +42,26 @@ class TextModeTests(unittest.TestCase):
         self.pointer((10, 10), (240, 45))
         self.assertEqual(self.canvas.selected_text(), "Nome: ana@example.com")
 
-    def test_click_selects_one_word_and_empty_click_clears(self):
-        self.pointer((100, 30), (100, 30))
+    def test_double_click_selects_one_word_and_single_click_clears(self):
+        self.pointer((100, 30), (100, 30), double=True)
         self.assertEqual(self.canvas.selected_text(), "ana@example.com")
         self.pointer((5, 100), (5, 100))
         self.assertEqual(self.canvas.selected_text(), "")
+
+    def test_drag_follows_reading_order_across_lines(self):
+        self.pointer((100, 30), (30, 70))             # do meio da 1ª linha ao começo da 2ª
+        self.assertEqual(self.canvas.selected_text(), "ana@example.com\nFone")
+
+    def test_select_all_text(self):
+        self.canvas.select_all_text()
+        self.assertEqual(len(self.canvas.text_sel), 4)
+
+    def test_remove_redactions_only_removes_black_boxes(self):
+        self.canvas.redact([words()[1]])
+        self.assertTrue(self.canvas.has_redactions())
+        self.assertEqual(self.canvas.remove_redactions(), 1)
+        self.assertFalse(self.canvas.has_redactions())
+        self.assertEqual(self.canvas.items, [])
 
     def test_redaction_adds_undoable_opaque_boxes_that_are_exported(self):
         before = bytes(self.canvas.rendered().get_data())
@@ -59,10 +75,9 @@ class TextModeTests(unittest.TestCase):
         self.assertEqual(px(150, 30), (0, 0, 0))
         self.assertEqual(px(10, 100), (255, 255, 255))
         self.assertNotEqual(bytes(out.get_data()), before)
-        self.assertNotIn("ana@example.com", [w.text for w in self.canvas.text_words])
+        self.assertEqual(len(self.canvas.items), 1)
         self.canvas.undo()
         self.assertEqual(self.canvas.items, [])
-        self.assertIn("ana@example.com", [w.text for w in self.canvas.text_words])
 
     def test_leaving_text_mode_clears_selection_but_keeps_words_cache(self):
         self.pointer((10, 10), (240, 45))
@@ -78,8 +93,9 @@ class TextModeTests(unittest.TestCase):
         def px(ix, iy):
             x, y = int(ox + ix * z), int(oy + iy * z)
             return tuple(data[y * stride + x * 4:y * stride + x * 4 + 3])
-        inside, outside = px(150, 30), px(10, 100)
-        self.assertGreater(sum(inside), sum(outside) + 60)
+        inside, outside = px(150, 30), px(10, 100)       # dentro da caixa da linha: branco; fora: imagem esmaecida (#919191)
+        self.assertEqual(inside, (255, 255, 255))
+        self.assertEqual(outside, (145, 145, 145))
 
 
 if __name__ == "__main__":
