@@ -180,3 +180,20 @@ continua escuro. Linhas totalmente fora não aparecem. Alças/cantos: cantos em 
   centrado sob a barra (x 602–838 ≈ meio da barra 558–881; topo em y 73, a 11 px da barra que termina em 62).
   Entra **subindo ~23 px com fade em ~200 ms** (y 96→73 em 8,47→8,62 s), fica **≈2,9 s** e sai **descendo ~22 px com fade em ~150 ms** (11,53→11,62 s; some em 11,62 s). Total ≈3,15 s.
 - A barra permanece `←  Copiar todo o texto (cinza/desabilitado)  ⋯  ✕`. **Nada** da seleção sobra: sem tracejado, sem alças. A tela fica só escurecida e o usuário pode arrastar de novo.
+
+# Implementação — Extrator de texto na sobreposição (`captura/overlay_text.py`)
+
+Medido contra `shots/ref/ov-ocr-*.png` (Xephyr 1440×900, `snip-tool-research/ovtext.py` + `ovcmp.py`):
+
+| Estado | MAE |
+|---|---|
+| pronto (barra + caixas + alças), janela inteira | 0,70 |
+| seleção de texto + mini barra | 1,16 |
+| anel de varredura (área sem texto, ≈250 ms) | 1,74 |
+| área sem texto, aviso + barra (tela toda) | 0,64 |
+
+Fluxo implementado: barra `← | Copiar todo o texto | ⋯ | ✕` (324×50), arrasto sem escurecimento, anel de gradiente ao soltar, caixas recortadas 5 px dentro da seleção,
+alças, seleção palavra a palavra, mini barra [copiar | QR] no ponto final, aviso "Nenhum texto foi detectado" (sobe/desce com fade), clique fora recomeça,
+Ctrl+C/Ctrl+A, menu ⋯ (copiar automaticamente / remover quebras de linha), copiar fecha a sobreposição e mostra o toast "Texto copiado".
+E2E real (`snip-tool-research/e2e.sh`): app aberto com `--ocr`, cliques/arrastos XTEST, clipboard conferido.
+Não verificado/diferenças: ícone QR é só visual (a leitura de QR não está implementada); o toast só é translúcido com compositor.

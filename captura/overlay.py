@@ -9,6 +9,7 @@ from gi.repository import Gtk, Gdk, GLib
 from . import grab, icons, menus, theme
 from .overlay_bar import BTN_Y, MAIN_W, REC_W, SHAPE as _SHAPE, SnipBar, TOP
 from .config import settings
+from . import overlay_text as OT
 
 SHAPE_X = _SHAPE[0]
 DIM = 0.6          # medido no Windows 11: preto a 60% sobre a tela
@@ -61,6 +62,9 @@ class Overlay(Gtk.Window):
         self.cur_cross = make_crosshair_cursor(self.display)
         self.cur_blank = blank_cursor(self.display)
         self.cur_arrow = Gdk.Cursor.new_from_name(self.display, "default")
+        self.cur_text = Gdk.Cursor.new_from_name(self.display, "text")
+        self.ts = OT.TextSession(self)
+        self._anim_id = 0
 
         self.set_decorated(False)
         self.set_app_paintable(True)
@@ -104,6 +108,32 @@ class Overlay(Gtk.Window):
         bar.btn_markup.get_style_context().add_class("on") if settings["quick_markup"] else None
         self._refresh_shape_icon()
         overlay.add_overlay(bar)
+        self.bar_ocr = OT.OcrBar(lambda: self.set_tool("snip"), self.copy_all_text, self.show_text_menu,
+                                 lambda: self.finish("cancel", None))
+        self.bar_ocr.set_margin_top(self._mon[1] + OT.BAR_TOP)
+        self.bar_ocr.set_margin_start(self._bar_x(OT.BAR_W))
+        self.bar_ocr.set_no_show_all(True)
+        overlay.add_overlay(self.bar_ocr)
+        self.mini = OT.MiniBar(self.copy_selected_text, lambda: None)
+        self.mini.set_no_show_all(True)
+        overlay.add_overlay(self.mini)
+        self.notice = OT.Notice()
+        self.notice.set_no_show_all(True)
+        self.notice.set_margin_top(self._mon[1] + OT.NOTICE_TOP)
+        self.notice.set_margin_start(self._bar_x(OT.NOTICE_W) + 1)
+        overlay.add_overlay(self.notice)
+        overlay.set_overlay_pass_through(self.notice, True)
+        self._show_bar_for_tool()
+
+    def _show_bar_for_tool(self):
+        ocr = self.tool == "ocr"
+        self.bar.set_visible(not ocr)
+        self.bar.set_no_show_all(ocr)
+        self.bar_ocr.set_no_show_all(not ocr)
+        self.bar_ocr.set_visible(ocr)
+        if not ocr:
+            self.mini.hide()
+            self.notice.stop()
 
     def _menu_closed(self):
         self._grab_tries = 0
@@ -154,11 +184,15 @@ class Overlay(Gtk.Window):
     def set_tool(self, tool):
         self.tool = tool
         self.bar.set_tool(tool)
+        self.ts.reset()
+        self._show_bar_for_tool()
         self.clear_selection()
         self.update_cursor()
         self.da.queue_draw()
 
     def clear_selection(self):
+        if hasattr(self, "mini"):
+            self.mini.hide()
         self.sel = None
         self.anchor = None
         self.free_pts = []
@@ -172,6 +206,7 @@ class Overlay(Gtk.Window):
         if self.get_window() is None:
             return
         self.get_window().set_cursor(self.cur_blank if self.tool == "color" else self.cur_cross)
+        self._cursor_kind = "cross"
 
     # -------------------------------------------------------------- desenho
     def hole(self):
@@ -192,6 +227,11 @@ class Overlay(Gtk.Window):
     def on_draw(self, da, cr):
         cr.set_source_surface(self.surface, 0, 0)
         cr.paint()
+        if self.tool == "ocr" and self.ts.phase != "none":
+            cr.set_source_rgba(0, 0, 0, DIM)
+            cr.paint()
+            self.ts.draw(cr)
+            return False
         h = self.hole()
         if self.tool != "color":
             cr.set_source_rgba(0, 0, 0, DIM)
@@ -357,6 +397,12 @@ class Overlay(Gtk.Window):
             self._inval(old_loupe, (x - 10, y - 10, 300, 280), (x - 300, y - 300, 300, 600))
             self.da.queue_draw()
             return True
+        if self.tool == "ocr" and self.ts.phase != "none":
+            if self.ts.dragging:
+                self.ts.drag_select(x, y)
+                self.da.queue_draw()
+            self._set_cursor_kind("text" if self.ts.inside(x, y) else "cross")
+            return True
         if self.sel_locked:
             return True
         if self.anchor is not None:
@@ -379,6 +425,18 @@ class Overlay(Gtk.Window):
             rgb = grab.pixel_at(self.surface, x, y)
             self.finish("color", "#%02X%02X%02X" % rgb)
             return True
+        if self.tool == "ocr" and self.ts.phase == "scan":
+            return True
+        if self.tool == "ocr" and self.ts.phase == "ready":
+            if self.ts.inside(x, y):
+                self.mini.hide()
+                self.ts.begin_select(x, y)
+                self.da.queue_draw()
+                return True
+            self.ts.reset()                         # clicar fora da seleção começa outra
+            self.bar_ocr.set_copy_enabled(False)
+            self.mini.hide()
+            self.clear_selection()
         if self.sel_locked:
             return True
         if self.shape == "rectangle" or (self.shape == "freeform" and self.tool != "color"):
@@ -396,6 +454,13 @@ class Overlay(Gtk.Window):
         return True
 
     def on_release(self, da, ev):
+        if ev.button == 1 and self.tool == "ocr" and self.ts.dragging:
+            x, y = int(ev.x), int(ev.y)
+            self.ts.drag_select(x, y)
+            if self.ts.end_select(x, y):
+                self.place_mini(x, y)
+            self.da.queue_draw()
+            return True
         if ev.button != 1 or self.anchor is None:
             return True
         x, y = int(ev.x), int(ev.y)
@@ -425,11 +490,14 @@ class Overlay(Gtk.Window):
             self.show_start_button()
             self.da.queue_draw()
             return
+        if self.tool == "ocr":
+            self.start_text_scan(self.sel)
+            return
         pb = grab.crop_pixbuf(self.surface, x0, y0, x1 - x0, y1 - y0)
         if pb is None:
             self.clear_selection()
             return
-        self.finish("ocr" if self.tool == "ocr" else "image", pb)
+        self.finish("image", pb)
 
     def commit_freeform(self):
         if self.tool == "snip" and self.mode == "video":
@@ -437,11 +505,87 @@ class Overlay(Gtk.Window):
             self.show_start_button()
             self.da.queue_draw()
             return
+        if self.tool == "ocr":
+            self.start_text_scan(self.sel)
+            return
         pb = grab.crop_freeform(self.surface, self.free_pts)
         if pb is None:
             self.clear_selection()
             return
-        self.finish("ocr" if self.tool == "ocr" else "image", pb)
+        self.finish("image", pb)
+
+    # ------------------------------------------------------- extrator de texto
+    def start_text_scan(self, rect):
+        x0, y0, x1, y1 = [int(v) for v in rect]
+        x0, y0 = max(0, x0), max(0, y0)
+        x1, y1 = min(self.W, x1), min(self.H, y1)
+        self.sel = None
+        self.anchor = None
+        self.free_pts = []
+        if x1 - x0 < 3 or y1 - y0 < 3:
+            self.clear_selection()
+            return
+        self.ts.start((x0, y0, x1, y1))
+        self.da.queue_draw()
+
+    def start_anim(self):
+        if not self._anim_id:
+            self._anim_id = GLib.timeout_add(16, self._anim_tick)
+
+    def _anim_tick(self):
+        if self._done:
+            self._anim_id = 0
+            return False
+        running = self.ts.tick()
+        self.da.queue_draw()
+        if not running:
+            self._anim_id = 0
+        return running
+
+    def text_ready(self):
+        self.sel_locked = False
+        self._set_cursor_kind("cross")
+        if settings["ocr_auto_copy"]:
+            GLib.idle_add(lambda: (self.copy_all_text(), False)[1])
+
+    def text_empty(self, message):
+        self.clear_selection()
+        self.bar_ocr.set_copy_enabled(False)
+        self.notice.show_text(message)
+
+    def place_mini(self, x, y):
+        mx, my, mw, mh = self._mon
+        px = max(mx, min(x, mx + mw - OT.MINI_W))
+        py = y if y + OT.MINI_H <= my + mh else y - OT.MINI_H
+        self.mini.set_margin_start(px)
+        self.mini.set_margin_top(max(my, py))
+        self.mini.show()
+
+    def copy_all_text(self):
+        if self.ts.phase == "ready" and self.ts.words:
+            self.finish("textcopy", self.ts.text(self.ts.words))
+
+    def copy_selected_text(self):
+        if self.ts.phase == "ready" and self.ts.sel:
+            self.finish("textcopy", self.ts.text(self.ts.sel))
+
+    def show_text_menu(self):
+        items = [("checksm" if settings["ocr_auto_copy"] else None, "Copiar texto automaticamente", None,
+                  lambda: settings.__setitem__("ocr_auto_copy", not settings["ocr_auto_copy"])),
+                 ("checksm" if settings["ocr_remove_breaks"] else None, "Remover quebras de linha", None,
+                  lambda: settings.__setitem__("ocr_remove_breaks", not settings["ocr_remove_breaks"]))]
+        ox, oy = self.get_window().get_origin()[1:]
+        m = menus.Menu(items, menus.OVTEXT)
+        self.bar_ocr.hold("more")                       # o botão ⋯ fica realçado enquanto o menu está aberto
+        m.on_close = lambda: (self.bar_ocr.hold(None), self._menu_closed())
+        self._cur_menu = m
+        m.open_at(ox + int(self.bar_ocr.get_margin_start()) + OT.MENU_DX, oy + int(self.bar_ocr.get_margin_top()) + OT.MENU_DY)
+
+    def _set_cursor_kind(self, kind):
+        if getattr(self, "_cursor_kind", None) == kind or self.get_window() is None:
+            return
+        self._cursor_kind = kind
+        self.get_window().set_cursor(self.cur_text if kind == "text" else self.cur_cross)
 
     def show_start_button(self):
         """Modo vídeo, região escolhida: a barra vira [● Iniciar] 00:00:00 [mic] [áudio] | [fechar]."""
@@ -458,6 +602,14 @@ class Overlay(Gtk.Window):
         ctrl = ev.state & Gdk.ModifierType.CONTROL_MASK
         if key == Gdk.KEY_Escape:
             self.finish("cancel", None)              # medido no Windows: um Esc fecha a sobreposição
+            return True
+        if self.tool == "ocr" and ctrl and key in (Gdk.KEY_c, Gdk.KEY_C):
+            self.copy_selected_text()
+            return True
+        if self.tool == "ocr" and ctrl and key in (Gdk.KEY_a, Gdk.KEY_A) and self.ts.phase == "ready":
+            self.ts.select_all()
+            self.place_mini(self.ts.rect[2] - OT.MINI_W, self.ts.rect[3])
+            self.da.queue_draw()
             return True
         if ctrl and key in (Gdk.KEY_e, Gdk.KEY_E):
             self._toggle_markup()
@@ -493,6 +645,7 @@ class Overlay(Gtk.Window):
             self.display.get_default_seat().ungrab()
         except Exception:
             pass
+        self.notice.stop()
         self.hide()
         self.destroy()
         GLib.timeout_add(60, lambda: (self.on_result(kind, payload), False)[1])

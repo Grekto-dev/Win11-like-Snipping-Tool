@@ -376,6 +376,12 @@ class CapturaApp(Gtk.Application):
             self._restore_windows_if_app()
             services.notify("Seletor de cores", f"A cor {payload} foi copiada para a área de transferência.", "applications-graphics")
             return
+        if kind == "textcopy":
+            self._restore_windows_if_app()
+            services.copy_text(payload)
+            from . import overlay_text
+            overlay_text.show_toast("Texto copiado", grab.monitor_at(*grab.pointer_position()))
+            return
         if kind == "ocr":
             self._restore_windows_if_app()
             self.run_ocr(payload)

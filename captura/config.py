@@ -24,6 +24,8 @@ def default_recordings_dir():
 DEFAULTS = {
     # Ações de texto
     "redact_emails": True,
+    "ocr_auto_copy": False,
+    "ocr_remove_breaks": False,
     "redact_phones": True,
     # Captura
     "shot_autocopy_edits": True,        # Copiar as alterações automaticamente
