@@ -183,7 +183,6 @@
 "Pressione <b>⊞</b> + <b>Shift</b> + <b>S</b> para iniciar uma captura": "按 <b>⊞</b> + <b>Shift</b> + <b>S</b> 开始截图",
 "Certifique-se de que todas as informações confidenciais foram editadas.": "请确保已遮盖所有敏感信息。",
 "Pesquisa visual": "视觉搜索",
-"A pesquisa visual envia a imagem a um serviço da web. Salve a captura e use o serviço de sua escolha.": "视觉搜索会将图像发送到网络服务。请保存截图，并使用您选择的服务。",
 "Imagens": "图片",
 "Abrir com…": "打开方式…",
 "Endereços de email": "电子邮件地址",
@@ -234,5 +233,10 @@
 "O FFmpeg não gravou nenhum quadro.": "FFmpeg 没有录制任何帧。",
 "Nenhum trecho foi gravado.": "没有录制任何片段。",
 "Não foi possível unir os trechos da gravação.": "无法合并录制片段。",
-"ffmpeg saiu com código {codigo}": "ffmpeg 已退出，代码 {codigo}"
+"ffmpeg saiu com código {codigo}": "ffmpeg 已退出，代码 {codigo}",
+"Copiar o conteúdo do código QR": "复制二维码内容",
+"A pesquisa visual envia a imagem ao Bing (serviço da web da Microsoft). Deseja continuar?": "视觉搜索会将图像发送到 Bing（Microsoft 网络服务）。是否继续？",
+"Pesquisar": "搜索",
+"Não foi possível iniciar a pesquisa visual": "无法启动视觉搜索",
+"Falha ao codificar a imagem.": "无法编码图像。"
 }

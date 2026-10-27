@@ -17,7 +17,7 @@ gi.require_version("Gdk", "3.0")
 import cairo
 from gi.repository import Gdk, GLib, Gtk
 
-from . import icons, text_anim, textlayer, theme
+from . import i18n, icons, qr, text_anim, textlayer, theme
 from .config import settings
 from .shape_bar import draw_text, rgb, text_rgb
 from .text_bar import icon_copy
@@ -186,6 +186,7 @@ class MiniBar(Gtk.DrawingArea):
         super().__init__()
         self.cb = dict(copy=on_copy, qr=on_qr)
         self.hover = None
+        self.qr_enabled = False
         self.set_size_request(MINI_W, MINI_H)
         self.set_halign(Gtk.Align.START)
         self.set_valign(Gtk.Align.START)
@@ -200,7 +201,7 @@ class MiniBar(Gtk.DrawingArea):
         self.connect("query-tooltip", self._tip)
 
     def _which(self, x, y):
-        return "copy" if hit(MINI_COPY, x, y) else "qr" if hit(MINI_QR, x, y) else None
+        return "copy" if hit(MINI_COPY, x, y) else "qr" if hit(MINI_QR, x, y) and self.qr_enabled else None
 
     def _set(self, v):
         if v != self.hover:
@@ -214,8 +215,12 @@ class MiniBar(Gtk.DrawingArea):
         return True
 
     def _tip(self, _w, x, y, _kb, tip):
-        if self._which(x, y) == "copy":
-            tip.set_text("Copiar texto (Ctrl + C)")
+        which = self._which(x, y)
+        if which == "copy":
+            tip.set_text(i18n.tr("Copiar texto (Ctrl + C)"))
+            return True
+        if which == "qr":
+            tip.set_text(i18n.tr("Copiar o conteúdo do código QR"))
             return True
         return False
 
@@ -234,7 +239,7 @@ class MiniBar(Gtk.DrawingArea):
                 cr.fill()
         c = text_rgb()
         cr.save(); cr.translate(MINI_COPY[0] + 8, MINI_COPY[1] + 8); icon_copy(cr, c); cr.restore()
-        cr.save(); cr.translate(MINI_QR[0] + 8, MINI_QR[1] + 8); icon_qr(cr, c); cr.restore()
+        cr.save(); cr.translate(MINI_QR[0] + 8, MINI_QR[1] + 8); icon_qr(cr, c if self.qr_enabled else muted(c)); cr.restore()
         return False
 
 
@@ -408,6 +413,7 @@ class TextSession:
         self.scan_end = 0.0
         self.job = 0
         self.result = None
+        self.qr = []                   # textos dos códigos QR dentro da seleção
 
     # ---- início
     def start(self, rect):
@@ -429,17 +435,25 @@ class TextSession:
 
         def work():
             try:
+                codes = qr.decode(crop)
+            except Exception:
+                codes = []
+            try:
                 words = textlayer.ocr_surface(crop) if textlayer.services.ocr_available() else None
             except Exception:
                 words = None
-            GLib.idle_add(self._done, job, words)
+            GLib.idle_add(self._done, job, words, codes)
         threading.Thread(target=work, daemon=True).start()
         ov.start_anim()
 
-    def _done(self, job, words):
+    def _done(self, job, words, codes=()):
         if job != self.job or self.phase != "scan":
             return False
-        if words is None:
+        self.qr = list(codes)
+        if not words and self.qr:
+            self.result = ("qr", [])                   # só código QR: não há caixas de texto, mas a seleção fica pronta
+            self.scan_end = max(self.scan_end, self.t0 + MIN_SCAN)
+        elif words is None:
             self.result = ("error", [])
         else:
             lines = textlayer.group_lines(words)
@@ -452,7 +466,7 @@ class TextSession:
         """Chamado a cada quadro; encerra a varredura quando o OCR terminou e o tempo mínimo passou."""
         if self.phase == "scan" and self.result is not None and time.monotonic() >= self.scan_end:
             kind, words = self.result
-            if kind == "ok":
+            if kind in ("ok", "qr"):
                 self.phase = "ready"
                 self.lines = textlayer.group_lines(words)
                 self.ov.bar_ocr.set_copy_enabled(True)
@@ -489,6 +503,9 @@ class TextSession:
 
     def select_all(self):
         self.sel = list(self.words)
+
+    def qr_text(self):
+        return "\n".join(self.qr)
 
     def text(self, picked=None):
         words = self.sel if picked is None and self.sel else (self.words if picked is None else picked)

@@ -183,7 +183,6 @@
 "Pressione <b>⊞</b> + <b>Shift</b> + <b>S</b> para iniciar uma captura",
 "Certifique-se de que todas as informações confidenciais foram editadas.",
 "Pesquisa visual",
-"A pesquisa visual envia a imagem a um serviço da web. Salve a captura e use o serviço de sua escolha.",
 "Imagens",
 "Abrir com…",
 "Endereços de email",
@@ -234,5 +233,10 @@
 "O FFmpeg não gravou nenhum quadro.",
 "Nenhum trecho foi gravado.",
 "Não foi possível unir os trechos da gravação.",
-"ffmpeg saiu com código {codigo}"
+"ffmpeg saiu com código {codigo}",
+"Copiar o conteúdo do código QR",
+"A pesquisa visual envia a imagem ao Bing (serviço da web da Microsoft). Deseja continuar?",
+"Pesquisar",
+"Não foi possível iniciar a pesquisa visual",
+"Falha ao codificar a imagem."
 ]

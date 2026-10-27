@@ -90,6 +90,32 @@ def copy_html_table(html, text):
     cb.store()
 
 
+BING_UPLOAD = "https://www.bing.com/images/search?view=detailv2&iss=sbiupload&FORM=SBIHMP&sbisrc=ImgDropper&idpbck=1"
+
+
+def visual_search_page(surface):
+    """Cria um HTML temporário com um formulário que envia a imagem (PNG em base64) ao Bing assim que abre no navegador."""
+    import base64
+    pb = surface_to_pixbuf(surface)
+    ok, data = pb.save_to_bufferv("png", [], [])
+    if not ok:
+        raise RuntimeError(i18n.tr("Falha ao codificar a imagem."))
+    d = tempfile.mkdtemp(prefix="captura-bing-")
+    path = os.path.join(d, "pesquisa-visual.html")
+    html = ('<!doctype html><meta charset="utf-8"><title>Bing</title><body onload="document.forms[0].submit()">'
+            '<form method="post" action="%s" enctype="multipart/form-data"><input type="hidden" name="imageBin" value="%s"></form>'
+            '<noscript><button form="x">JavaScript necessário</button></noscript></body>' % (BING_UPLOAD, base64.b64encode(bytes(data)).decode()))
+    with open(path, "w", encoding="utf-8") as f:
+        f.write(html)
+    os.chmod(path, 0o600)
+
+    def cleanup():                                                   # a página já foi lida pelo navegador
+        shutil.rmtree(d, ignore_errors=True)
+        return False
+    GLib.timeout_add_seconds(120, cleanup)
+    return path
+
+
 def copy_text(text):
     cb = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
     cb.set_text(text, -1)

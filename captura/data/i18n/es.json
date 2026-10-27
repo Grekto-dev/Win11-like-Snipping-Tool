@@ -183,7 +183,6 @@
 "Pressione <b>⊞</b> + <b>Shift</b> + <b>S</b> para iniciar uma captura": "Pulse <b>⊞</b> + <b>Shift</b> + <b>S</b> para iniciar una captura",
 "Certifique-se de que todas as informações confidenciais foram editadas.": "Asegúrese de que se hayan editado todos los datos confidenciales.",
 "Pesquisa visual": "Búsqueda visual",
-"A pesquisa visual envia a imagem a um serviço da web. Salve a captura e use o serviço de sua escolha.": "La búsqueda visual envía la imagen a un servicio web. Guarde la captura y use el servicio que prefiera.",
 "Imagens": "Imágenes",
 "Abrir com…": "Abrir con…",
 "Endereços de email": "Correos electrónicos",
@@ -234,5 +233,10 @@
 "O FFmpeg não gravou nenhum quadro.": "FFmpeg no grabó ningún fotograma.",
 "Nenhum trecho foi gravado.": "No se grabó ningún fragmento.",
 "Não foi possível unir os trechos da gravação.": "No se pudieron unir los fragmentos de la grabación.",
-"ffmpeg saiu com código {codigo}": "ffmpeg terminó con el código {codigo}"
+"ffmpeg saiu com código {codigo}": "ffmpeg terminó con el código {codigo}",
+"Copiar o conteúdo do código QR": "Copiar el contenido del código QR",
+"A pesquisa visual envia a imagem ao Bing (serviço da web da Microsoft). Deseja continuar?": "La búsqueda visual envía la imagen a Bing (un servicio web de Microsoft). ¿Desea continuar?",
+"Pesquisar": "Buscar",
+"Não foi possível iniciar a pesquisa visual": "No se pudo iniciar la búsqueda visual",
+"Falha ao codificar a imagem.": "No se pudo codificar la imagen."
 }

@@ -183,7 +183,6 @@
 "Pressione <b>⊞</b> + <b>Shift</b> + <b>S</b> para iniciar uma captura": "Premi <b>⊞</b> + <b>Maiusc</b> + <b>S</b> per avviare uno screenshot",
 "Certifique-se de que todas as informações confidenciais foram editadas.": "Assicurati che tutte le informazioni riservate siano state oscurate.",
 "Pesquisa visual": "Ricerca visiva",
-"A pesquisa visual envia a imagem a um serviço da web. Salve a captura e use o serviço de sua escolha.": "La ricerca visiva invia l'immagine a un servizio web. Salva lo screenshot e usa il servizio che preferisci.",
 "Imagens": "Immagini",
 "Abrir com…": "Apri con…",
 "Endereços de email": "Indirizzi email",
@@ -234,5 +233,10 @@
 "O FFmpeg não gravou nenhum quadro.": "FFmpeg non ha registrato alcun fotogramma.",
 "Nenhum trecho foi gravado.": "Nessun segmento è stato registrato.",
 "Não foi possível unir os trechos da gravação.": "Impossibile unire i segmenti della registrazione.",
-"ffmpeg saiu com código {codigo}": "ffmpeg è terminato con codice {codigo}"
+"ffmpeg saiu com código {codigo}": "ffmpeg è terminato con codice {codigo}",
+"Copiar o conteúdo do código QR": "Copia il contenuto del codice QR",
+"A pesquisa visual envia a imagem ao Bing (serviço da web da Microsoft). Deseja continuar?": "La ricerca visiva invia l’immagine a Bing (un servizio web di Microsoft). Vuoi continuare?",
+"Pesquisar": "Cerca",
+"Não foi possível iniciar a pesquisa visual": "Impossibile avviare la ricerca visiva",
+"Falha ao codificar a imagem.": "Codifica dell’immagine non riuscita."
 }

@@ -183,7 +183,6 @@
 "Pressione <b>⊞</b> + <b>Shift</b> + <b>S</b> para iniciar uma captura": "<b>⊞</b> + <b>Shift</b> + <b>S</b> を押してキャプチャを開始します",
 "Certifique-se de que todas as informações confidenciais foram editadas.": "機密情報がすべて編集されていることを確認してください。",
 "Pesquisa visual": "ビジュアル検索",
-"A pesquisa visual envia a imagem a um serviço da web. Salve a captura e use o serviço de sua escolha.": "ビジュアル検索では画像が Web サービスに送信されます。キャプチャを保存して、お好みのサービスをご利用ください。",
 "Imagens": "画像",
 "Abrir com…": "アプリで開く…",
 "Endereços de email": "メール アドレス",
@@ -234,5 +233,10 @@
 "O FFmpeg não gravou nenhum quadro.": "FFmpeg はフレームを録画しませんでした。",
 "Nenhum trecho foi gravado.": "録画されたセグメントがありません。",
 "Não foi possível unir os trechos da gravação.": "録画セグメントを結合できませんでした。",
-"ffmpeg saiu com código {codigo}": "ffmpeg がコード {codigo} で終了しました"
+"ffmpeg saiu com código {codigo}": "ffmpeg がコード {codigo} で終了しました",
+"Copiar o conteúdo do código QR": "QR コードの内容をコピー",
+"A pesquisa visual envia a imagem ao Bing (serviço da web da Microsoft). Deseja continuar?": "ビジュアル検索は画像を Bing (Microsoft の Web サービス) に送信します。続行しますか？",
+"Pesquisar": "検索",
+"Não foi possível iniciar a pesquisa visual": "ビジュアル検索を開始できませんでした",
+"Falha ao codificar a imagem.": "画像のエンコードに失敗しました。"
 }

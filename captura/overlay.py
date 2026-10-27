@@ -128,7 +128,7 @@ class Overlay(Gtk.Window):
         self.bar_ocr.set_margin_start(self._bar_x(OT.BAR_W))
         self.bar_ocr.set_no_show_all(True)
         overlay.add_overlay(self.bar_ocr)
-        self.mini = OT.MiniBar(self.copy_selected_text, lambda: None)
+        self.mini = OT.MiniBar(self.copy_selected_text, self.copy_qr)
         self.mini.set_no_show_all(True)
         overlay.add_overlay(self.mini)
         self.notice = OT.Notice()
@@ -583,6 +583,10 @@ class Overlay(Gtk.Window):
 
     def text_ready(self):
         self.sel_locked = False
+        self.mini.qr_enabled = bool(self.ts.qr)
+        if self.ts.qr and not self.ts.words:                    # só QR: mostra a mini barra junto da seleção
+            x0, y0, x1, y1 = self.ts.rect
+            self.place_mini(x1 - OT.MINI_W, y1 + 6)
         self._refresh_cursor()
         if settings["ocr_auto_copy"]:
             GLib.idle_add(lambda: (self.copy_all_text(), False)[1])
@@ -603,6 +607,12 @@ class Overlay(Gtk.Window):
     def copy_all_text(self):
         if self.ts.phase == "ready" and self.ts.words:
             self.finish("textcopy", self.ts.text(self.ts.words))
+        elif self.ts.phase == "ready" and self.ts.qr:           # sem texto, só QR: "Copiar todo o texto" copia o conteúdo do código
+            self.finish("textcopy", self.ts.qr_text())
+
+    def copy_qr(self):
+        if self.ts.phase == "ready" and self.ts.qr:
+            self.finish("textcopy", self.ts.qr_text())
 
     def copy_selected_text(self):
         if self.ts.phase == "ready" and self.ts.sel:

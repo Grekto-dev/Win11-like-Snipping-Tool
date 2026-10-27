@@ -183,7 +183,6 @@
 "Pressione <b>⊞</b> + <b>Shift</b> + <b>S</b> para iniciar uma captura": "Press <b>⊞</b> + <b>Shift</b> + <b>S</b> to start a capture",
 "Certifique-se de que todas as informações confidenciais foram editadas.": "Make sure all sensitive information has been redacted.",
 "Pesquisa visual": "Visual search",
-"A pesquisa visual envia a imagem a um serviço da web. Salve a captura e use o serviço de sua escolha.": "Visual search sends the image to a web service. Save the screenshot and use the service of your choice.",
 "Imagens": "Images",
 "Abrir com…": "Open with…",
 "Endereços de email": "Email addresses",
@@ -234,5 +233,10 @@
 "O FFmpeg não gravou nenhum quadro.": "FFmpeg did not record any frames.",
 "Nenhum trecho foi gravado.": "No segment was recorded.",
 "Não foi possível unir os trechos da gravação.": "Could not join the recording segments.",
-"ffmpeg saiu com código {codigo}": "ffmpeg exited with code {codigo}"
+"ffmpeg saiu com código {codigo}": "ffmpeg exited with code {codigo}",
+"Copiar o conteúdo do código QR": "Copy the QR code content",
+"A pesquisa visual envia a imagem ao Bing (serviço da web da Microsoft). Deseja continuar?": "Visual search sends the image to Bing (a Microsoft web service). Do you want to continue?",
+"Pesquisar": "Search",
+"Não foi possível iniciar a pesquisa visual": "Could not start the visual search",
+"Falha ao codificar a imagem.": "Failed to encode the image."
 }

@@ -823,7 +823,22 @@ class EditorWindow(Gtk.ApplicationWindow):
         self.canvas.queue_draw()
 
     def visual_search(self):
-        self.app.msg(self, "Pesquisa visual", "A pesquisa visual envia a imagem a um serviço da web. Salve a captura e use o serviço de sua escolha.")
+        """Pesquisa visual com o Bing: a imagem é enviada ao Bing (só depois da confirmação) por um formulário local que abre no navegador."""
+        s = self.current_surface()
+        if s is None:
+            return
+        d = Gtk.MessageDialog(transient_for=self, flags=0, message_type=Gtk.MessageType.QUESTION, text="Pesquisa visual")
+        d.format_secondary_text("A pesquisa visual envia a imagem ao Bing (serviço da web da Microsoft). Deseja continuar?")
+        d.add_buttons("Cancelar", Gtk.ResponseType.CANCEL, "Pesquisar", Gtk.ResponseType.OK)
+        r = d.run()
+        d.destroy()
+        if r != Gtk.ResponseType.OK:
+            return
+        try:
+            path = services.visual_search_page(s)
+            subprocess.Popen(["xdg-open", path])
+        except Exception as e:
+            self.error_dialog("Não foi possível iniciar a pesquisa visual", str(e))
 
     # --------------------------------------------------------------- ações
     def current_surface(self):

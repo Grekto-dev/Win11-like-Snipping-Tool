@@ -132,8 +132,9 @@ class RecordingBar(Gtk.Window):
         self.lbl.get_style_context().add_class("rec")
         fx.put(self.lbl, 85, 14)
         mic_on, sys_on = settings["rec_mic"], settings["rec_system_audio"]
-        self.btn_mic = mk("mic", "mic_on" if mic_on else "mic_off", "Microfone", lambda: None)
-        self.btn_audio = mk("audio", "screen_audio" if sys_on else "screen_audio_off", "Áudio do computador", lambda: None)
+        # microfone e áudio só informam o que foi escolhido antes de iniciar (o FFmpeg não troca de fonte no meio da gravação)
+        self.btn_mic = self._indicator(fx, "mic", "mic_on" if mic_on else "mic_off", "Microfone")
+        self.btn_audio = self._indicator(fx, "audio", "screen_audio" if sys_on else "screen_audio_off", "Áudio do computador")
         sep = Gtk.Box()
         sep.get_style_context().add_class("ov-sep")
         sep.set_size_request(1, 24)
@@ -147,6 +148,20 @@ class RecordingBar(Gtk.Window):
 
     def seconds(self):
         return int(self.elapsed + (0 if self.paused else time.time() - self.t_run))
+
+    def _indicator(self, fx, name, icon, tip):
+        """Ícone de estado (sem hover nem clique), na caixa medida do botão correspondente."""
+        x, y, w, h = self.BOXES[name]
+        box = Gtk.EventBox()
+        box.set_visible_window(False)
+        box.set_size_request(w, h)
+        img = icons.image(icon, 20, "#b4b4b4" if icon.endswith("_off") and name == "mic" else self.col)
+        img.set_halign(Gtk.Align.CENTER)
+        img.set_valign(Gtk.Align.CENTER)
+        box.add(img)
+        box.set_tooltip_text(tip)
+        fx.put(box, x, y)
+        return box
 
     def toggle_pause(self):
         if self.on_pause is not None and not self.on_pause(not self.paused):
