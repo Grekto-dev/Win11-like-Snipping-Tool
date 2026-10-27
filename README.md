@@ -32,6 +32,7 @@ As evidências e limitações da rodada de menus/paletas estão em
 ```sh
 ./bin/captura             # janela principal
 ./bin/captura --snip      # sobreposição de captura
+./bin/captura --capture   # abre já no modo captura (como clicar em Novo); no extrator de texto, fecha o programa depois de copiar
 ./bin/captura --color     # seletor de cores
 ./bin/captura --ocr       # captura para OCR
 ./bin/captura --record    # gravação

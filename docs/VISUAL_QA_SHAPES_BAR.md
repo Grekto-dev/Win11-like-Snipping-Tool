@@ -197,3 +197,15 @@ alças, seleção palavra a palavra, mini barra [copiar | QR] no ponto final, av
 Ctrl+C/Ctrl+A, menu ⋯ (copiar automaticamente / remover quebras de linha), copiar fecha a sobreposição e mostra o toast "Texto copiado".
 E2E real (`snip-tool-research/e2e.sh`): app aberto com `--ocr`, cliques/arrastos XTEST, clipboard conferido.
 Não verificado/diferenças: ícone QR é só visual (a leitura de QR não está implementada); o toast só é translúcido com compositor.
+
+## Ponteiros do Windows no fluxo de captura (medidos em `shots/ref/cur-*.png`)
+| Situação | Ponteiro |
+|---|---|
+| Overlay em repouso; botão pressionado sem mover | cruz fina |
+| Arrastando a seleção (assim que se move), durante a varredura, sobre as barras, sobre texto/seleção pronta | seta |
+| Arrastando sobre o texto detectado (após mover) | I-beam |
+| Sobre as alças da seleção do extrator (cantos / lados) | setas de redimensionar (⇔ ⇕ ↘ ↙) |
+Alça arrastada: a seleção volta a ser janela clara, "Copiar todo o texto" desabilita e ao soltar refaz a varredura.
+Implementado em `Overlay._wanted_cursor` (o grab do seat não usa cursor próprio, senão ele sobrepõe o da janela); verificado com XFixes (`curx.sh`).
+
+`captura --capture` (`-c`): abre direto o overlay no modo captura (como Novo). Ao copiar texto, sem janela principal aberta, o programa fecha após o aviso (~3,8 s).

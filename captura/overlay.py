@@ -13,6 +13,13 @@ from . import overlay_text as OT
 
 SHAPE_X = _SHAPE[0]
 DIM = 0.6          # medido no Windows 11: preto a 60% sobre a tela
+# Ponteiros medidos no Windows: cruz fina em repouso e ao pressionar sem mover; seta assim que o arrasto começa, durante a varredura
+# e sobre as barras; I-beam só ao arrastar sobre o texto; setas de redimensionar sobre as alças da seleção do extrator.
+HANDLE_CURSORS = {"n": "ns-resize", "s": "ns-resize", "e": "ew-resize", "w": "ew-resize",
+                  "nw": "nwse-resize", "se": "nwse-resize", "ne": "nesw-resize", "sw": "nesw-resize"}
+HANDLE_OUT, HANDLE_IN = 8, 4                 # faixa (px) fora/dentro da borda que responde como alça
+HANDLE_CORNER = 12
+
 SHAPES = [("rectangle", "rect", "Retângulo"), ("window", "window", "Janela"),
           ("fullscreen", "fullscreen", "Tela inteira"), ("freeform", "freeform", "Forma livre")]
 
@@ -63,6 +70,12 @@ class Overlay(Gtk.Window):
         self.cur_blank = blank_cursor(self.display)
         self.cur_arrow = Gdk.Cursor.new_from_name(self.display, "default")
         self.cur_text = Gdk.Cursor.new_from_name(self.display, "text")
+        self._cursors = {"cross": self.cur_cross, "arrow": self.cur_arrow, "blank": self.cur_blank, "text": self.cur_text}
+        for kind, name in HANDLE_CURSORS.items():
+            self._cursors[kind] = Gdk.Cursor.new_from_name(self.display, name)
+        self._cursor_kind = None
+        self._moved = False                    # o botão está pressionado e o ponteiro já se moveu
+        self._edge = None
         self.ts = OT.TextSession(self)
         self._anim_id = 0
 
@@ -86,6 +99,7 @@ class Overlay(Gtk.Window):
         self.connect("key-press-event", self.on_key)
 
         self.build_toolbar(overlay)
+        self.connect("realize", lambda *_: self.update_cursor())
         self.update_cursor()
 
     # ------------------------------------------------------------------ barra
@@ -205,8 +219,8 @@ class Overlay(Gtk.Window):
     def update_cursor(self):
         if self.get_window() is None:
             return
-        self.get_window().set_cursor(self.cur_blank if self.tool == "color" else self.cur_cross)
-        self._cursor_kind = "cross"
+        self._cursor_kind = None
+        self._refresh_cursor()
 
     # -------------------------------------------------------------- desenho
     def hole(self):
@@ -399,13 +413,17 @@ class Overlay(Gtk.Window):
             return True
         if self.tool == "ocr" and self.ts.phase != "none":
             if self.ts.dragging:
+                self._moved = True
                 self.ts.drag_select(x, y)
                 self.da.queue_draw()
-            self._set_cursor_kind("text" if self.ts.inside(x, y) else "cross")
+            self._refresh_cursor(x, y)
             return True
         if self.sel_locked:
             return True
         if self.anchor is not None:
+            x, y = self._resize_point(x, y)
+            self._moved = True
+            self._set_cursor_kind("arrow")
             ax, ay = self.anchor
             if self.shape == "freeform":
                 self.free_pts.append((x, y))
@@ -428,8 +446,13 @@ class Overlay(Gtk.Window):
         if self.tool == "ocr" and self.ts.phase == "scan":
             return True
         if self.tool == "ocr" and self.ts.phase == "ready":
+            handle = self.handle_at(x, y)
+            if handle:
+                self.begin_resize(handle)
+                return True
             if self.ts.inside(x, y):
                 self.mini.hide()
+                self._moved = False
                 self.ts.begin_select(x, y)
                 self.da.queue_draw()
                 return True
@@ -439,6 +462,8 @@ class Overlay(Gtk.Window):
             self.clear_selection()
         if self.sel_locked:
             return True
+        self._edge = None
+        self._moved = False
         if self.shape == "rectangle" or (self.shape == "freeform" and self.tool != "color"):
             self.anchor = (x, y)
             self.sel = (x, y, x, y)
@@ -459,13 +484,18 @@ class Overlay(Gtk.Window):
             self.ts.drag_select(x, y)
             if self.ts.end_select(x, y):
                 self.place_mini(x, y)
+            self._moved = False
+            self._refresh_cursor(x, y)
             self.da.queue_draw()
             return True
         if ev.button != 1 or self.anchor is None:
             return True
-        x, y = int(ev.x), int(ev.y)
+        x, y = self._resize_point(int(ev.x), int(ev.y))
         ax, ay = self.anchor
         self.anchor = None
+        self._edge = None
+        self._moved = False
+        self._refresh_cursor(int(ev.x), int(ev.y))
         if self.shape == "freeform":
             self.free_pts.append((x, y))
             if len(self.free_pts) < 3:
@@ -526,6 +556,7 @@ class Overlay(Gtk.Window):
             self.clear_selection()
             return
         self.ts.start((x0, y0, x1, y1))
+        self._refresh_cursor()
         self.da.queue_draw()
 
     def start_anim(self):
@@ -544,7 +575,7 @@ class Overlay(Gtk.Window):
 
     def text_ready(self):
         self.sel_locked = False
-        self._set_cursor_kind("cross")
+        self._refresh_cursor()
         if settings["ocr_auto_copy"]:
             GLib.idle_add(lambda: (self.copy_all_text(), False)[1])
 
@@ -582,10 +613,75 @@ class Overlay(Gtk.Window):
         m.open_at(ox + int(self.bar_ocr.get_margin_start()) + OT.MENU_DX, oy + int(self.bar_ocr.get_margin_top()) + OT.MENU_DY)
 
     def _set_cursor_kind(self, kind):
-        if getattr(self, "_cursor_kind", None) == kind or self.get_window() is None:
+        if self._cursor_kind == kind or self.get_window() is None:
             return
         self._cursor_kind = kind
-        self.get_window().set_cursor(self.cur_text if kind == "text" else self.cur_cross)
+        self.get_window().set_cursor(self._cursors[kind])
+
+    def _wanted_cursor(self, x, y):
+        if self.tool == "color":
+            return "blank"
+        ts = self.ts
+        if self.tool == "ocr" and ts.phase == "scan":
+            return "arrow"
+        if self.anchor is not None:                       # arrastando uma seleção (ou redimensionando)
+            return "arrow" if self._moved else "cross"
+        if self.tool == "ocr" and ts.phase == "ready":
+            if ts.dragging:
+                return "text" if self._moved else "arrow"
+            return self.handle_at(x, y) or "arrow"
+        return "cross"
+
+    def _refresh_cursor(self, x=None, y=None):
+        px, py = self.pointer if x is None else (x, y)
+        self._set_cursor_kind(self._wanted_cursor(px, py))
+
+    def handle_at(self, x, y):
+        """Alça da seleção do extrator sob o ponto: n, s, e, w, ne, nw, se, sw ou None."""
+        if self.ts.phase != "ready":
+            return None
+        x0, y0, x1, y1 = self.ts.rect
+        if not (x0 - HANDLE_OUT <= x <= x1 + HANDLE_OUT and y0 - HANDLE_OUT <= y <= y1 + HANDLE_OUT):
+            return None
+        on_l, on_r = x0 - HANDLE_OUT <= x <= x0 + HANDLE_IN, x1 - HANDLE_IN <= x <= x1 + HANDLE_OUT
+        on_t, on_b = y0 - HANDLE_OUT <= y <= y0 + HANDLE_IN, y1 - HANDLE_IN <= y <= y1 + HANDLE_OUT
+        if not (on_l or on_r or on_t or on_b):
+            return None
+        near_x = min(abs(x - x0), abs(x - x1)) <= HANDLE_CORNER
+        near_y = min(abs(y - y0), abs(y - y1)) <= HANDLE_CORNER
+        v = "n" if on_t else "s" if on_b else ""
+        h = "w" if on_l else "e" if on_r else ""
+        if v and not h and near_x:
+            h = "w" if abs(x - x0) <= abs(x - x1) else "e"
+        if h and not v and near_y:
+            v = "n" if abs(y - y0) <= abs(y - y1) else "s"
+        return (v + h) or None
+
+    def begin_resize(self, handle):
+        """Redimensionar a seleção do extrator: vira um arrasto de retângulo normal (tela clara, sem caixas) e refaz a varredura ao soltar."""
+        x0, y0, x1, y1 = self.ts.rect
+        fx = x1 if "w" in handle else x0 if "e" in handle else None      # ponto fixo
+        fy = y1 if "n" in handle else y0 if "s" in handle else None
+        self.ts.reset()
+        self.bar_ocr.set_copy_enabled(False)
+        self.mini.hide()
+        self.anchor = (x0 if fx is None else fx, y0 if fy is None else fy)
+        self._edge = (handle, (x0, y0, x1, y1))
+        self.sel = (x0, y0, x1, y1)
+        self._moved = False
+        self.da.queue_draw()
+
+    def _resize_point(self, x, y):
+        """Aplica a trava de eixo das alças de lado ao ponto do ponteiro."""
+        edge = getattr(self, "_edge", None)
+        if edge is None:
+            return x, y
+        handle, (x0, y0, x1, y1) = edge
+        if handle in ("n", "s"):
+            x = x1 if self.anchor[0] == x0 else x0
+        if handle in ("e", "w"):
+            y = y1 if self.anchor[1] == y0 else y0
+        return x, y
 
     def show_start_button(self):
         """Modo vídeo, região escolhida: a barra vira [● Iniciar] 00:00:00 [mic] [áudio] | [fechar]."""
@@ -631,7 +727,7 @@ class Overlay(Gtk.Window):
         if win is None or self._done:
             return False
         seat = self.display.get_default_seat()
-        st = seat.grab(win, Gdk.SeatCapabilities.ALL, True, self.cur_cross, None, None)
+        st = seat.grab(win, Gdk.SeatCapabilities.ALL, True, None, None, None)      # sem cursor de grab: o cursor da janela (mutável) vale
         if st != Gdk.GrabStatus.SUCCESS and self._grab_tries < 20:
             self._grab_tries += 1
             GLib.timeout_add(30, self._grab)

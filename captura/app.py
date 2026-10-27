@@ -236,6 +236,7 @@ class CapturaApp(Gtk.Application):
         self._rec_check_id = 0
         self.capturing = False
         self.add_main_option("snip", ord("s"), 0, 0, "Abre a sobreposição de captura", None)
+        self.add_main_option("capture", ord("c"), 0, 0, "Abre já no modo captura (como Novo); ao terminar o programa fecha", None)
         self.add_main_option("ocr", 0, 0, 0, "Extrator de texto", None)
         self.add_main_option("color", 0, 0, 0, "Seletor de cores", None)
         self.add_main_option("record", 0, 0, 0, "Gravação de tela", None)
@@ -265,6 +266,8 @@ class CapturaApp(Gtk.Application):
             w = self.get_window()
             w.show_page("settings")
             w.present()
+        elif "capture" in opts:
+            self.start_capture("snip", settings["delay"], from_app=True)
         elif "snip" in opts:
             self.start_capture("snip", 0)
         elif "ocr" in opts:
@@ -362,6 +365,8 @@ class CapturaApp(Gtk.Application):
                 pass                       # o hold da gravação é liberado em stop_recording/falha
             elif kind == "cancel":
                 self._release()
+            elif kind == "textcopy":
+                self._release(3800)        # só o aviso "Texto copiado" precisa ficar vivo (~3,3 s)
             else:
                 self._release(60000)       # mantém o processo vivo p/ ações das notificações
 
@@ -377,7 +382,7 @@ class CapturaApp(Gtk.Application):
             services.notify("Seletor de cores", f"A cor {payload} foi copiada para a área de transferência.", "applications-graphics")
             return
         if kind == "textcopy":
-            self._restore_windows_if_app()
+            self._restore_windows_if_app()         # com janela aberta, volta para ela; sem janela, o programa fecha após o aviso
             services.copy_text(payload)
             from . import overlay_text
             overlay_text.show_toast("Texto copiado", grab.monitor_at(*grab.pointer_position()))
