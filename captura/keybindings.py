@@ -1,6 +1,8 @@
 """Atalhos globais no Cinnamon: Super+Shift+S (e opcionalmente Imprimir tela) via custom-keybindings do dconf."""
 from gi.repository import Gio
 
+from . import i18n
+
 SCHEMA = "org.cinnamon.desktop.keybindings"
 CUSTOM_SCHEMA = "org.cinnamon.desktop.keybindings.custom-keybinding"
 CUSTOM_PATH = "/org/cinnamon/desktop/keybindings/custom-keybindings/%s/"
@@ -50,7 +52,7 @@ def ensure_snip_binding(command):
     """Cria Super+Shift+S -> `captura --snip` se ainda não existir (não sobrescreve escolha do usuário)."""
     if not available() or has_snip_binding():
         return False
-    _set_custom(SNIP_ID, "Ferramenta de Captura", command, ["<Super><Shift>s"])
+    _set_custom(SNIP_ID, i18n.tr("Ferramenta de Captura"), command, ["<Super><Shift>s"])
     return True
 
 
@@ -66,7 +68,7 @@ def set_print_key(enabled, command=None):
                 cur = list(media.get_strv(k))
                 if "Print" in cur:
                     media.set_strv(k, [b for b in cur if b != "Print"])
-        _set_custom(PRINT_ID, "Ferramenta de Captura (Imprimir tela)", command or "captura --snip", ["Print"])
+        _set_custom(PRINT_ID, i18n.tr("Ferramenta de Captura (Imprimir tela)"), command or "captura --snip", ["Print"])
     else:
         _remove_custom(PRINT_ID)
         if media:

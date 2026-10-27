@@ -134,8 +134,9 @@ def notify(title, body, icon=None, actions=None):
         from gi.repository import Notify
         global _notify
         if _notify is None:
-            Notify.init("Ferramenta de Captura")
+            Notify.init(i18n.tr("Ferramenta de Captura"))
             _notify = Notify
+        Notify.set_app_name(i18n.tr("Ferramenta de Captura"))          # segue o idioma escolhido, mesmo depois de trocar
         n = Notify.Notification.new(i18n.tr(title), i18n.tr(body), icon or "camera-photo")
         for aid, label, cb in actions or []:
             n.add_action(aid, i18n.tr(label), lambda _n, _a, cb=cb: cb())

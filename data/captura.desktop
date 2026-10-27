@@ -1,12 +1,6 @@
 [Desktop Entry]
 Type=Application
 Name=Snipping Tool
-Name[pt_BR]=Ferramenta de Captura
-Name[es]=Herramienta de recortes
-Name[fr]=Outil Capture d’écran
-Name[it]=Strumento di cattura
-Name[zh_CN]=截图工具
-Name[ja]=Snipping Tool
 GenericName=Screenshots and screen recording
 GenericName[pt_BR]=Capturas e gravações de tela
 Comment=Screenshots, annotation, text extraction and screen recording (Windows 11 style)

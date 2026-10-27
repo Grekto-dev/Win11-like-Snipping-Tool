@@ -1,27 +1,22 @@
-# Win11-like Snipping Tool for Linux 1.0.0
+# Win11-like Snipping Tool for Linux 1.0.1
 
-First stable release of an independent re-creation of the Windows 11 Snipping Tool for Linux (X11, tested on Linux Mint Cinnamon).
+Bug-fix release.
 
-## Highlights
+## Fixed
 
-- **Capture**: rectangle, window, full-screen and freeform snips, with a 3/5/10 s delay; Print Screen integration.
-- **Editor**: pen, highlighter, eraser, shapes, crop, ruler, emoji, undo/redo, zoom, light and dark themes.
-- **Text actions (OCR)**: word/line selection, copy all, copy as table, redact email addresses and phone numbers, QR code reading. The text extractor also works inside the capture overlay.
-- **Screen recording** with FFmpeg: region recording, pause/resume, microphone and system audio.
-- **After capture** (Settings): show a notification and copy to the clipboard (default), show a notification only, only copy to the clipboard, or open the editor.
-- **Languages**: English (default), Portuguese (Brazil), Chinese, Japanese, Spanish, French and Italian; switching applies immediately.
-- Command-line modes: `--snip`, `--capture`, `--ocr`, `--color`, `--record`, `--settings`, `--fullscreen`, `--background`, `--version`.
+- **Hand cursor**: in Settings the pointer turned into a hand over the whole page. It now changes only while the pointer is over a link (the "Change" link and the links in About) and returns to normal as soon as it leaves, or when you leave the page.
+- **App name**: the application is now called **Snipping Tool** by default (menu entry, window title, notifications and keyboard shortcut names). The name follows the language selected in Settings and changes immediately: Ferramenta de Captura (Português), Herramienta de recorte, Outil Capture d’écran, Strumento di cattura, 截图工具, Snipping Tool (English, 日本語). Notification titles and the shortcut names created by the app use the same name.
+
+## Verification
+
+- New tests move the real pointer (XTEST) over and away from every link and check the cursor, and check the title bar, header, notifications and desktop entry in all seven languages. The cursor test fails on 1.0.0 and passes on 1.0.1.
 
 ## Install
 
 ```bash
-sudo apt install ./captura_1.0.0_all.deb
+sudo apt install ./captura_1.0.1_all.deb
 ```
 
-Optional features: `tesseract-ocr` (+ language packs) for text extraction, `ffmpeg` for recording, `libzbar0` for QR codes (all installed as recommended packages).
-
-Verify the download with `sha256sum -c captura_1.0.0_all.deb.sha256`.
-
-## Notes
+Verify the download with `sha256sum -c captura_1.0.1_all.deb.sha256`.
 
 This project is not affiliated with or endorsed by Microsoft. See `THIRD_PARTY_NOTICES.md` for the bundled Fluent UI System Icons (MIT) and Selawik font (SIL OFL 1.1). Translations were produced with the help of a language model and have not had human review.

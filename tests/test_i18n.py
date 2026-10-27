@@ -234,9 +234,9 @@ class AfterCaptureTests(unittest.TestCase):
         order = [src.index('"%s"' % k) for k in ("notify_copy", "notify", "copy", "editor")]
         self.assertEqual(order, sorted(order))
 
-    def test_about_shows_version_1_0_0(self):
+    def test_about_shows_version_1_0_1(self):
         import captura
-        self.assertEqual(captura.__version__, "1.0.0")
+        self.assertEqual(captura.__version__, "1.0.1")
 
     def test_editor_mode_opens_the_editor_without_a_notification(self):
         settings["shot_after"] = "editor"
@@ -274,31 +274,166 @@ class LinkCursorTests(unittest.TestCase):
         cls.app = shared_app()
         cls.app.apply_theme = theme.apply
 
-    def test_every_link_button_gets_the_hand_cursor(self):
+    def _settings_window(self):
         theme.apply()
         w = EditorWindow(self.app)
         w.show_all()
+        w.move(0, 0)
+        w.present()
         w.show_page("settings")
-        pump(.5)
+        pump(.8)
         self.addCleanup(w.destroy)
-        links = []
+        return w
+
+    @staticmethod
+    def _links(w):
+        out = []
 
         def walk(x):
             if cursors.is_link(x):
-                links.append(x)
+                out.append(x)
             if isinstance(x, Gtk.Container):
                 for c in x.get_children():
                     walk(c)
-        walk(w)
-        links = [b for b in links if b.get_realized()]
+        walk(w.settings_page)
+        return [b for b in out if b.get_realized() and b.get_mapped()]
+
+    @staticmethod
+    def _point(w, widget, fx=.5, fy=.5):
+        al = widget.get_allocation()
+        wx, wy = widget.translate_coordinates(w, 0, 0)
+        gx, gy = w.get_window().get_origin()[1:]
+        return int(gx + wx + al.width * fx), int(gy + wy + al.height * fy)
+
+    @staticmethod
+    def _reveal(widget):
+        """Rola a página de Configurações até o widget ficar visível."""
+        p = widget.get_parent()
+        while p is not None and not isinstance(p, Gtk.ScrolledWindow):
+            p = p.get_parent()
+        if p is not None:
+            vp = p.get_child()
+            content = vp.get_child() if isinstance(vp, Gtk.Viewport) else vp         # coordenadas do conteúdo, sem o deslocamento da rolagem
+            y = widget.translate_coordinates(content, 0, 0)[1]
+            p.get_vadjustment().set_value(max(0, y - 200))
+            pump(.3)
+
+    def _hover(self, x, y):
+        from Xlib import display
+        d = display.Display()
+        d.screen().root.warp_pointer(x, y)
+        d.sync()
+        pump(.25)
+        d.close()
+
+    def test_every_link_button_is_marked_for_the_hand_cursor(self):
+        w = self._settings_window()
+        links = self._links(w)
         self.assertGreaterEqual(len(links), 5)          # "Alterar" + 4 links de "Sobre" (o aviso inicial está na outra página)
         for b in links:
             self.assertTrue(b.__dict__.get("_hand"), b.get_label() or b)
-            self.assertIsNotNone(b.get_window().get_cursor(), b.get_label() or b)
+
+    def test_hand_cursor_only_while_the_pointer_is_over_a_link(self):
+        """Regressão: o cursor era gravado na janela-mãe do botão e a mãozinha aparecia na página inteira."""
+        if not os.environ.get("DISPLAY"):
+            self.skipTest("sem X")
+        w = self._settings_window()
+        links = self._links(w)
+        self.assertTrue(links)
+        win = links[0].get_window()
+        sw, sh = Gdk.Screen.get_default().get_width(), Gdk.Screen.get_default().get_height()
+        self._hover(sw - 2, sh - 2)                       # ponteiro fora da janela (o do usuário pode estar sobre um link)
+        self.assertIsNone(win.get_cursor(), "sem o ponteiro sobre um link, nenhum cursor especial")
+        # fora dos links: cantos e meio da página, sobre cartões e sobre textos
+        page = w.settings_page
+        al = page.get_allocation()
+        for fx, fy in ((.05, .5), (.5, .5), (.95, .3), (.5, .9)):
+            x, y = self._point(w, page, fx, fy)
+            if any(abs(self._point(w, b)[0] - x) < 80 and abs(self._point(w, b)[1] - y) < 20 for b in links):
+                continue
+            self._hover(x, y)
+            self.assertIsNone(win.get_cursor(), (fx, fy))
+        for b in links:                                  # sobre cada link: mão; ao sair, normal
+            self._reveal(b)
+            win = b.get_window()
+            self._hover(*self._point(w, b))
+            cur = win.get_cursor()
+            self.assertIsNotNone(cur, (b.get_label(), self._point(w, b)))
+            self._hover(*self._point(w, page, .5, .5))
+            self.assertIsNone(win.get_cursor(), "ao sair do link o cursor volta ao normal: " + str(b.get_label()))
+
+    def test_leaving_the_settings_page_resets_the_cursor(self):
+        w = self._settings_window()
+        b = self._links(w)[0]
+        win = b.get_window()
+        self._reveal(b)
+        self._hover(*self._point(w, b))
+        self.assertIsNotNone(win.get_cursor())
+        w.show_page("main")
+        pump(.3)
+        self.assertIsNone(win.get_cursor())
 
     def test_non_link_buttons_keep_the_default_cursor(self):
         b = Gtk.Button(label="normal")
         self.assertFalse(cursors.is_link(b))
+
+
+class AppNameTests(unittest.TestCase):
+    NAMES = {"en": "Snipping Tool", "pt-BR": "Ferramenta de Captura", "es": "Herramienta de recorte", "fr": "Outil Capture d’écran",
+             "it": "Strumento di cattura", "zh": "截图工具", "ja": "Snipping Tool"}
+
+    @classmethod
+    def setUpClass(cls):
+        cls.app = shared_app()
+        cls.app.apply_theme = theme.apply
+
+    def setUp(self):
+        self.env = os.environ.pop("CAPTURA_LANG", None)        # os testes fixam pt-BR; aqui o idioma vem das configurações
+        self.saved = (settings["language"], i18n._lang)
+        i18n._lang = None
+
+    def tearDown(self):
+        settings["language"], i18n._lang = self.saved
+        if self.env is not None:
+            os.environ["CAPTURA_LANG"] = self.env
+
+    def test_default_language_names_the_app_snipping_tool(self):
+        import captura
+        self.assertEqual(i18n.DEFAULT, "en")
+        settings["language"] = "en"
+        self.assertEqual(captura.app_name(), "Snipping Tool")
+
+    def test_window_title_and_header_follow_the_selected_language_live(self):
+        import captura
+        theme.apply()
+        settings["language"] = "en"
+        w = EditorWindow(self.app)
+        w.show_all()
+        pump(.3)
+        self.addCleanup(w.destroy)
+        self.assertEqual((w.get_title(), w.title_label.get_text()), ("Snipping Tool", "Snipping Tool"))
+        for code, name in self.NAMES.items():
+            i18n.set_language(code)
+            pump(.1)
+            self.assertEqual(w.get_title(), name, code)
+            self.assertEqual(w.title_label.get_text(), name, code)
+            self.assertEqual(captura.app_name(), name, code)
+
+    def test_notifications_and_shortcuts_use_the_language_name(self):
+        import captura
+        settings["language"] = "en"
+        self.assertEqual(i18n.tr("Ferramenta de Captura (Imprimir tela)"), "Snipping Tool (Print Screen)")
+        with patch("captura.services._notify", None), patch("gi.repository.Notify.init") as init, \
+             patch("gi.repository.Notify.set_app_name") as set_name, patch("gi.repository.Notify.Notification.new") as new:
+            services.notify("Ferramenta de Captura", "x")
+        init.assert_called_once_with("Snipping Tool")
+        set_name.assert_called_with("Snipping Tool")
+        self.assertEqual(new.call_args[0][0], "Snipping Tool")
+
+    def test_desktop_entry_is_named_snipping_tool_whatever_the_system_locale(self):
+        entry = open(os.path.join(os.path.dirname(__file__), "..", "data", "captura.desktop"), encoding="utf-8").read()
+        self.assertIn("\nName=Snipping Tool\n", entry)
+        self.assertNotRegex(entry, r"(?m)^Name\[[^\]]+\]=(Ferramenta|Herramienta|Outil|Strumento|截图)")
 
 
 if __name__ == "__main__":

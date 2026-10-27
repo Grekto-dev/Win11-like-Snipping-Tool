@@ -20,7 +20,7 @@ An independent re-creation of the **Windows 11 Snipping Tool** for Linux (GTK 3,
 - **Screen recording**: FFmpeg-based region recording with pause/resume, microphone and system audio.
 - **After capture** (*Settings → Preferences*): show a notification **and** copy to the clipboard (default), show a notification only, only copy to the clipboard, or open the editor.
 - **Languages**: English (default), Portuguese (Brazil), Chinese, Japanese, Spanish, French and Italian. Switching the language applies immediately.
-- **Settings** modelled on the original page: capture, recording, preferences, appearance and about, with the app version (1.0.0).
+- **Settings** modelled on the original page: capture, recording, preferences, appearance and about, with the app version (1.0.1).
 
 <p align="center">
   <img src="docs/img/settings.png" alt="Settings page" width="49%">
@@ -34,10 +34,10 @@ An independent re-creation of the **Windows 11 Snipping Tool** for Linux (GTK 3,
 Download `captura_<version>_all.deb` from the [latest release](https://github.com/Grekto-dev/Win11-like-Snipping-Tool/releases/latest) and install it:
 
 ```bash
-sudo apt install ./captura_1.0.0_all.deb
+sudo apt install ./captura_1.0.1_all.deb
 ```
 
-Verify the download with `sha256sum -c captura_1.0.0_all.deb.sha256`. The package installs the `captura` command and a desktop entry named *Snipping Tool*.
+Verify the download with `sha256sum -c captura_1.0.1_all.deb.sha256`. The package installs the `captura` command and a desktop entry named *Snipping Tool*.
 
 The package recommends `tesseract-ocr` (text extraction), `ffmpeg` (recording), `libzbar0` (QR codes) and `pulseaudio-utils` (audio device detection). For OCR in other languages, install the matching `tesseract-ocr-*` language packs.
 

@@ -14,15 +14,21 @@ def hand(widget):
     widget.__dict__["_hand"] = True
     widget.add_events(Gdk.EventMask.ENTER_NOTIFY_MASK | Gdk.EventMask.LEAVE_NOTIFY_MASK)
 
+    # Um Gtk.Button não tem GdkWindow próprio: get_window() devolve o da janela-mãe. Por isso o cursor só pode valer enquanto o
+    # ponteiro está sobre o link (entrar -> mão; sair, esconder ou destruir -> volta ao normal), nunca ficar gravado na mãe.
     def set_cursor(w, kind):
         win = w.get_window()
         if win is not None:
             win.set_cursor(Gdk.Cursor.new_from_name(w.get_display(), kind) if kind else None)
-    widget.connect("realize", lambda w: set_cursor(w, "pointer"))
+
+    def on_leave(w, e):
+        if e.detail != Gdk.NotifyType.INFERIOR:
+            set_cursor(w, None)
+        return False
     widget.connect("enter-notify-event", lambda w, e: set_cursor(w, "pointer") or False)
-    widget.connect("leave-notify-event", lambda w, e: False)
-    if widget.get_realized():
-        set_cursor(widget, "pointer")
+    widget.connect("leave-notify-event", on_leave)
+    widget.connect("unmap", lambda w: set_cursor(w, None))
+    widget.connect("destroy", lambda w: set_cursor(w, None))
     return widget
 
 
