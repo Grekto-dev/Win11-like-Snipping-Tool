@@ -1,7 +1,8 @@
 """One registered Gtk.Application per test process (several registrations in one process abort)."""
 import atexit
 import os
-os.environ.setdefault("CAPTURA_NO_ANIM", "1")      # testes medem a geometria final dos menus
+os.environ.setdefault("CAPTURA_NO_ANIM", "1")
+os.environ.setdefault("CAPTURA_LANG", "pt-BR")      # os testes comparam textos em português; o padrão do app é inglês
 import uuid
 import gi
 gi.require_version("Gtk", "3.0")

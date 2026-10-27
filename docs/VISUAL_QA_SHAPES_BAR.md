@@ -229,3 +229,12 @@ Implementado em `Overlay._wanted_cursor` (o grab do seat não usa cursor própri
 | varredura animada (CPU) | 31 % | 16–18 % (invalida só o anel) |
 Sem vazamento em 40 ciclos de overlay/janela (RSS, descritores, threads, widgets). Fuzz: 7 200 eventos no overlay (12 combinações) e todos os botões do editor ×3 + 900 eventos no canvas: 0 exceções, 0 avisos Gtk.
 `python -X dev` na suíte achou 2 vazamentos reais no gravador (pipe de comandos do FFmpeg e arquivo de log por segmento de pausa) — corrigidos e cobertos por teste.
+
+# Idioma, "Após a captura", links e gravação de vídeo
+- **Idioma** (`captura/i18n.py`, catálogos em `captura/data/i18n/*.json`, 235 mensagens): pt-BR, English (padrão), 中文, 日本語, Español, Français, Italiano.
+  Troca ao vivo: widgets Gtk são "ganchados" (rótulos, botões, dicas, títulos, diálogos), o que é desenhado à mão passa por `draw_text` (que traduz e encolhe a fonte de 14 para 11 px / reticências se não couber; o português medido não muda).
+  Novos textos de interface precisam entrar nos 6 catálogos e em `_msgids.json` (o teste `test_code_has_no_new_ui_string_outside_the_catalog` e `scripts/extract_i18n.py` avisam).
+- **Após a captura** (`shot_after`): notificação (padrão) | abrir no editor | só copiar. A imagem é sempre copiada para a área de transferência.
+- **Cursor de mão** nos links (`captura/cursors.py`).
+- **Gravação de vídeo** (testes `test_video_recorder.py`, `test_video_app.py`): 11 bugs corrigidos (regiões inválidas, pausa curta que apagava a gravação, falha de união silenciosa, ffmpeg morto anunciado como "salvo", janelas do editor que não voltavam após falha, zumbis/órfãos, áudio ausente sem aviso).
+  Em aberto: latência de ~0,5–0,8 s no 1º quadro do ffmpeg; queda do app com kill -9 deixa MP4 sem trailer em ~50% dos casos (solução possível: MP4 fragmentado); pausa bloqueia a UI até 13 s se o ffmpeg demorar; botões de microfone/áudio da barra de gravação não alteram a gravação em curso.

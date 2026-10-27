@@ -164,7 +164,7 @@ class OcrBar(Gtk.DrawingArea):
             cr.fill()
         c = col if self.copy_enabled else muted(col)
         cr.save(); cr.translate(COPYALL[0] + 13, 17); icon_copy(cr, c); cr.restore()
-        draw_text(cr, "Copiar todo o texto", COPYALL[0] + 36, 29, c)
+        draw_text(cr, "Copiar todo o texto", COPYALL[0] + 36, 29, c, max_w=COPYALL[2] - 36 - 8)
         return False
 
 

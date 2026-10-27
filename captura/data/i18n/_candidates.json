@@ -1,0 +1,766 @@
+{
+"Ferramenta de Captura": [
+"__init__.py:3",
+"app.py:334",
+"keybindings.py:53"
+],
+"Retângulo": [
+"annot.py:16",
+"overlay.py:23",
+"window.py:22"
+],
+"Elipse": [
+"annot.py:16"
+],
+"Linha": [
+"annot.py:17"
+],
+"Seta": [
+"annot.py:17",
+"shape_bar.py:265"
+],
+"Capturando em instantes…": [
+"app.py:65"
+],
+"Pausar": [
+"app.py:128",
+"app.py:162"
+],
+"Parar gravação": [
+"app.py:129"
+],
+"Microfone": [
+"app.py:135",
+"overlay_bar.py:156"
+],
+"Áudio do computador": [
+"app.py:136",
+"overlay_bar.py:157"
+],
+"Descartar": [
+"app.py:141",
+"app.py:556"
+],
+"Abre a sobreposição de captura": [
+"app.py:238"
+],
+"Abre já no modo captura (como Novo); ao terminar o programa fecha": [
+"app.py:239"
+],
+"Extrator de texto": [
+"app.py:240"
+],
+"Seletor de cores": [
+"app.py:241",
+"app.py:382",
+"overlay_bar.py:125"
+],
+"Gravação de tela": [
+"app.py:242",
+"app.py:478",
+"chrome.py:179"
+],
+"Abre as Configurações": [
+"app.py:243"
+],
+"Fica residente, sem janela": [
+"app.py:244"
+],
+"Captura a tela inteira imediatamente": [
+"app.py:245"
+],
+"Salvo automaticamente na pasta de capturas de tela.": [
+"app.py:427"
+],
+"Copiado para a área de transferência.": [
+"app.py:427"
+],
+"Captura de tela salva": [
+"app.py:431"
+],
+"Extrator de Texto": [
+"app.py:456",
+"app.py:453",
+"chrome.py:210"
+],
+"Gravação de tela salva": [
+"app.py:618"
+],
+"Continuar": [
+"app.py:162"
+],
+"Texto copiado": [
+"app.py:388"
+],
+"Extrator de Texto indisponível": [
+"app.py:437"
+],
+"O Extrator de Texto usa o Tesseract OCR, que não está instalado.\n\nInstale com:\n  sudo apt install tesseract-ocr tesseract-ocr-por tesseract-ocr-eng": [
+"app.py:438"
+],
+"Nenhum texto foi encontrado na região selecionada.": [
+"app.py:453"
+],
+"FFmpeg não encontrado": [
+"app.py:475"
+],
+"A gravação de tela precisa do FFmpeg.\n\nInstale com:\n  sudo apt install ffmpeg": [
+"app.py:475"
+],
+"A gravação falhou": [
+"app.py:519",
+"app.py:497"
+],
+"O salvamento automático está desativado. Se você descartar, a gravação será perdida.": [
+"app.py:555"
+],
+"Salvar": [
+"app.py:556",
+"app.py:562",
+"window.py:847"
+],
+"Cancelar": [
+"app.py:562",
+"crop_bar.py:60",
+"settings_page.py:361"
+],
+"atalho global não configurado:": [
+"app.py:257"
+],
+"A cor {cor} foi copiada para a área de transferência.": [
+"app.py:382"
+],
+"Selecione para marcar e compartilhar.": [
+"app.py:431"
+],
+"Marcar e compartilhar": [
+"app.py:432"
+],
+"O FFmpeg encerrou inesperadamente.": [
+"app.py:519"
+],
+"Salvar a gravação de tela?": [
+"app.py:554"
+],
+"Salvar gravação de tela": [
+"app.py:561"
+],
+"Selecione para abrir.": [
+"app.py:618"
+],
+"Abrir": [
+"app.py:619",
+"window.py:928"
+],
+"Não foi possível capturar a tela: {erro}": [
+"app.py:334"
+],
+"Falha ao extrair o texto": [
+"app.py:446"
+],
+"O texto foi copiado para a área de transferência.": [
+"app.py:456"
+],
+"Não foi possível salvar a gravação": [
+"app.py:615"
+],
+"{erro}\n\nO arquivo foi mantido em:\n{caminho}": [
+"app.py:615"
+],
+"As capturas de tela são salvas automaticamente na pasta Capturas de Tela": [
+"chrome.py:355"
+],
+"Você pode desativá-lo nas configurações do aplicativo.": [
+"chrome.py:356"
+],
+"Nova captura (Ctrl+N)": [
+"chrome.py:164"
+],
+"Novo": [
+"chrome.py:167"
+],
+"Captura de tela": [
+"chrome.py:177",
+"overlay_bar.py:109",
+"services.py:18"
+],
+"Modo de captura": [
+"chrome.py:196",
+"overlay_bar.py:112",
+"overlay_bar.py:113"
+],
+"Atraso de captura": [
+"chrome.py:203"
+],
+"Caneta": [
+"chrome.py:231"
+],
+"Marca-texto": [
+"chrome.py:231"
+],
+"Borracha": [
+"chrome.py:231"
+],
+"Formas": [
+"chrome.py:231"
+],
+"Corte de imagem": [
+"chrome.py:250"
+],
+"Ações de texto": [
+"chrome.py:253"
+],
+"Desfazer (Ctrl+Z)": [
+"chrome.py:257"
+],
+"Refazer (Ctrl+Y)": [
+"chrome.py:258"
+],
+"Editar em outro aplicativo": [
+"chrome.py:283"
+],
+"Salvar como (Ctrl+S)": [
+"chrome.py:284"
+],
+"Copiar (Ctrl+C)": [
+"chrome.py:285"
+],
+"Compartilhar": [
+"chrome.py:286"
+],
+"Mais": [
+"chrome.py:287"
+],
+"Abrir as Configurações da Ferramenta de Captura": [
+"chrome.py:360"
+],
+"Capturas de Tela": [
+"config.py:17"
+],
+"Gravações de Tela": [
+"config.py:21"
+],
+"Aplicar": [
+"crop_bar.py:54"
+],
+"Aplicar (Enter)": [
+"crop_bar.py:79"
+],
+"Cancelar (Esc)": [
+"crop_bar.py:83"
+],
+"Zoom": [
+"crop_bar.py:87",
+"window.py:771"
+],
+"Noto Color Emoji ": [
+"emoji_picker.py:20"
+],
+"Ferramenta de Captura (Imprimir tela)": [
+"keybindings.py:69"
+],
+"captura --snip": [
+"keybindings.py:69"
+],
+"Janela": [
+"overlay.py:23",
+"window.py:22"
+],
+"Tela inteira": [
+"overlay.py:24",
+"window.py:23"
+],
+"Forma livre": [
+"overlay.py:24",
+"window.py:23"
+],
+"Copiar texto automaticamente": [
+"overlay.py:612"
+],
+"Remover quebras de linha": [
+"overlay.py:614"
+],
+"Marcação rápida (Ctrl+E)": [
+"overlay_bar.py:122"
+],
+"Fechar": [
+"overlay_bar.py:130",
+"overlay_bar.py:161",
+"overlay_text.py:134"
+],
+"Iniciar": [
+"overlay_bar.py:148"
+],
+"Copiar todo o texto": [
+"overlay_text.py:167",
+"text_bar.py:87"
+],
+"Copiar texto (Ctrl + C)": [
+"overlay_text.py:218"
+],
+"Mais opções": [
+"overlay_text.py:134"
+],
+"Voltar": [
+"overlay_text.py:134"
+],
+"Nenhum texto foi detectado": [
+"overlay_text.py:463"
+],
+"Extrator de texto indisponível (instale o tesseract-ocr)": [
+"overlay_text.py:464"
+],
+"falha ao salvar automaticamente:": [
+"services.py:61"
+],
+"notificação indisponível:": [
+"services.py:119"
+],
+"Configurações": [
+"settings_page.py:84",
+"window.py:777"
+],
+"Captura": [
+"settings_page.py:104"
+],
+"Copiar as alterações automaticamente": [
+"settings_page.py:105",
+"settings_page.py:113"
+],
+"As edições na sua captura de tela são copiadas automaticamente para a área de transferência": [
+"settings_page.py:105"
+],
+"Salvar automaticamente as capturas de tela originais": [
+"settings_page.py:106"
+],
+"Pedir para salvar as capturas de tela editadas": [
+"settings_page.py:108"
+],
+"Várias janelas": [
+"settings_page.py:109"
+],
+"Abrir novas capturas de tela em diferentes janelas": [
+"settings_page.py:109"
+],
+"Adicionar borda a cada captura de tela": [
+"settings_page.py:110"
+],
+"As edições na gravação da tela são copiadas automaticamente para a área de transferência": [
+"settings_page.py:113"
+],
+"Salvar automaticamente gravações de tela originais": [
+"settings_page.py:114"
+],
+"Solicitar para salvar gravações de tela editadas": [
+"settings_page.py:116"
+],
+"Incluir a entrada do microfone por padrão quando uma gravação de tela for iniciada": [
+"settings_page.py:117"
+],
+"Incluir áudio do sistema por padrão quando uma gravação de tela for iniciada": [
+"settings_page.py:118"
+],
+"Atalhos": [
+"settings_page.py:120"
+],
+"Use a tecla Imprimir tela para abrir a Ferramenta de Captura": [
+"settings_page.py:121"
+],
+"Aparência": [
+"settings_page.py:123"
+],
+"Preferências": [
+"settings_page.py:126"
+],
+"Idioma": [
+"settings_page.py:127"
+],
+"Troca o idioma do aplicativo na hora": [
+"settings_page.py:127"
+],
+"Após a captura": [
+"settings_page.py:129"
+],
+"O que acontece logo depois de uma captura de tela": [
+"settings_page.py:129"
+],
+"Sobre este app": [
+"settings_page.py:133"
+],
+"Ferramenta de Captura {versao}": [
+"settings_page.py:137"
+],
+"Recriação livre para Linux Mint (Cinnamon/X11). Software livre sob GPL-3.0-or-later.": [
+"settings_page.py:139"
+],
+"Não contém código nem recursos da Microsoft.": [
+"settings_page.py:140"
+],
+"Termos de licença deste software": [
+"settings_page.py:142"
+],
+"Ícones Fluent UI System Icons (MIT)": [
+"settings_page.py:143"
+],
+"Fonte Selawik (SIL OFL 1.1)": [
+"settings_page.py:144"
+],
+"Avisos de software de terceiros": [
+"settings_page.py:145"
+],
+"Tema do aplicativo": [
+"settings_page.py:160"
+],
+"Ativado": [
+"settings_page.py:286",
+"settings_page.py:314"
+],
+"Desativado": [
+"settings_page.py:286",
+"settings_page.py:314"
+],
+"Alterar": [
+"settings_page.py:340"
+],
+"Abrir pasta": [
+"settings_page.py:345"
+],
+"Selecionar pasta": [
+"settings_page.py:361"
+],
+"Cor": [
+"settings_page.py:400"
+],
+"Espessura": [
+"settings_page.py:417"
+],
+"Mostrar uma notificação": [
+"settings_page.py:130"
+],
+"Abrir a captura no editor": [
+"settings_page.py:130"
+],
+"Apenas copiar para a área de transferência": [
+"settings_page.py:131"
+],
+"Claro": [
+"settings_page.py:179"
+],
+"Escuro": [
+"settings_page.py:179"
+],
+"Usar configuração do sistema": [
+"settings_page.py:179"
+],
+"falha ao configurar a tecla Imprimir tela:": [
+"settings_page.py:439"
+],
+"As capturas de tela são salvas em": [
+"settings_page.py:107"
+],
+"As gravações de tela são salvas em": [
+"settings_page.py:115"
+],
+"Sem cor": [
+"shape_bar.py:47"
+],
+"Preto": [
+"shape_bar.py:47",
+"tool_palette.py:12"
+],
+"Branco": [
+"shape_bar.py:47",
+"tool_palette.py:12"
+],
+"Prateado": [
+"shape_bar.py:47",
+"tool_palette.py:12"
+],
+"Cinza": [
+"shape_bar.py:47",
+"tool_palette.py:12"
+],
+"Cinza escuro": [
+"shape_bar.py:47",
+"tool_palette.py:12"
+],
+"Magenta": [
+"shape_bar.py:48",
+"tool_palette.py:13"
+],
+"Vermelho": [
+"shape_bar.py:48",
+"tool_palette.py:13"
+],
+"Laranja": [
+"shape_bar.py:48",
+"tool_palette.py:13"
+],
+"Dourado": [
+"shape_bar.py:48",
+"tool_palette.py:13"
+],
+"Amarelo": [
+"shape_bar.py:48",
+"tool_palette.py:13",
+"tool_palette.py:17"
+],
+"Verde": [
+"shape_bar.py:49",
+"tool_palette.py:14",
+"tool_palette.py:17"
+],
+"Verde escuro": [
+"shape_bar.py:49",
+"tool_palette.py:14"
+],
+"Azul-petróleo": [
+"shape_bar.py:49",
+"tool_palette.py:14"
+],
+"Azul": [
+"shape_bar.py:49",
+"tool_palette.py:14"
+],
+"Índigo": [
+"shape_bar.py:49",
+"tool_palette.py:14"
+],
+"Violeta": [
+"shape_bar.py:50",
+"tool_palette.py:15",
+"tool_palette.py:17"
+],
+"Roxo": [
+"shape_bar.py:50",
+"tool_palette.py:15"
+],
+"Bege": [
+"shape_bar.py:50",
+"tool_palette.py:15"
+],
+"Marrom claro": [
+"shape_bar.py:50",
+"tool_palette.py:15"
+],
+"Marrom": [
+"shape_bar.py:50",
+"tool_palette.py:15"
+],
+"Marrom escuro": [
+"shape_bar.py:50",
+"tool_palette.py:15"
+],
+"Rosa pastel": [
+"shape_bar.py:51",
+"tool_palette.py:16"
+],
+"Laranja pastel": [
+"shape_bar.py:51",
+"tool_palette.py:16"
+],
+"Amarelo pastel": [
+"shape_bar.py:51",
+"tool_palette.py:16"
+],
+"Verde pastel": [
+"shape_bar.py:51",
+"tool_palette.py:16"
+],
+"Azul pastel": [
+"shape_bar.py:51",
+"tool_palette.py:16"
+],
+"Roxo pastel": [
+"shape_bar.py:51",
+"tool_palette.py:16"
+],
+"Preencher": [
+"shape_bar.py:280",
+"shape_bar.py:304"
+],
+"Contorno": [
+"shape_bar.py:283",
+"shape_bar.py:316"
+],
+"Opacidade": [
+"shape_bar.py:415",
+"shape_bar.py:549"
+],
+"Cores": [
+"shape_bar.py:539",
+"tool_palette.py:110"
+],
+"Quadrado": [
+"shape_bar.py:265"
+],
+"Oval": [
+"shape_bar.py:265"
+],
+"Linha reta": [
+"shape_bar.py:265"
+],
+"Tamanho": [
+"shape_bar.py:559",
+"tool_palette.py:123"
+],
+"Tamanho do contorno": [
+"shape_bar.py:567"
+],
+"Selawik ": [
+"shape_bar.py:177",
+"shape_bar.py:190"
+],
+"Copiar como tabela": [
+"text_bar.py:88"
+],
+"Redação rápida": [
+"text_bar.py:94"
+],
+"Opções de redação": [
+"text_bar.py:95"
+],
+"Carvão": [
+"tool_palette.py:12"
+],
+"Azul claro": [
+"tool_palette.py:17"
+],
+"Rosa": [
+"tool_palette.py:17"
+],
+"Tamanho da Caneta": [
+"tool_palette.py:135"
+],
+"ToolFlyout supports pen and hl; shapes use shape_bar.ShapeColorFlyout": [
+"tool_palette.py:101"
+],
+"Sem atraso": [
+"window.py:24"
+],
+"3 segundos de atraso": [
+"window.py:24"
+],
+"5 segundos de atraso": [
+"window.py:25"
+],
+"10 segundos de atraso": [
+"window.py:25"
+],
+"Pressione <b>⊞</b> + <b>Shift</b> + <b>S</b> para iniciar uma captura": [
+"window.py:196"
+],
+"Certifique-se de que todas as informações confidenciais foram editadas.": [
+"window.py:587"
+],
+"Pesquisa visual": [
+"window.py:826"
+],
+"A pesquisa visual envia a imagem a um serviço da web. Salve a captura e use o serviço de sua escolha.": [
+"window.py:826"
+],
+"Imagens": [
+"window.py:930"
+],
+"Abrir com…": [
+"window.py:267",
+"window.py:563"
+],
+"Endereços de email": [
+"window.py:747"
+],
+"Números de telefone": [
+"window.py:749"
+],
+"Remover todas as redações": [
+"window.py:752"
+],
+"Copiar texto": [
+"window.py:758"
+],
+"Selecionar tudo": [
+"window.py:759"
+],
+"Redigir texto": [
+"window.py:761"
+],
+"Mostrar régua": [
+"window.py:772"
+],
+"Pesquisa visual com o Bing": [
+"window.py:773"
+],
+"Abrir arquivo": [
+"window.py:774",
+"window.py:927"
+],
+"Abrir a pasta de capturas de tela": [
+"window.py:775"
+],
+"Imprimir": [
+"window.py:776"
+],
+"Aplicar zoom": [
+"window.py:788"
+],
+"Reduzir": [
+"window.py:789"
+],
+"Ajustar à janela": [
+"window.py:790"
+],
+"Copiado para a área de transferência": [
+"window.py:837"
+],
+"Salvar como": [
+"window.py:844"
+],
+"Caminho copiado": [
+"window.py:919"
+],
+"Suas edições serão perdidas se você não salvar.": [
+"window.py:1017"
+],
+"Não salvar": [
+"window.py:1018"
+],
+"Editar no {app}": [
+"window.py:267"
+],
+"Não foi possível abrir o arquivo": [
+"window.py:332"
+],
+"Enviar por e-mail": [
+"window.py:561"
+],
+"Copiar caminho do arquivo": [
+"window.py:562"
+],
+"Apagar todas as marcações": [
+"window.py:765"
+],
+"PNG (*.png)": [
+"window.py:853"
+],
+"JPEG (*.jpg, *.jpeg)": [
+"window.py:853"
+],
+"BMP (*.bmp)": [
+"window.py:853"
+],
+"Salvo em {caminho}": [
+"window.py:870"
+],
+"Não foi possível salvar": [
+"window.py:872"
+],
+"Salvar alterações na captura de tela?": [
+"window.py:1016"
+],
+"Falha ao reconhecer o texto.": [
+"window.py:683"
+],
+"Nenhum texto ou código QR foi detectado.": [
+"window.py:683"
+]
+}

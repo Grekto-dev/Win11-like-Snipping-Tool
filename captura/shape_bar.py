@@ -12,7 +12,7 @@ gi.require_version("PangoCairo", "1.0")
 import cairo
 from gi.repository import Gdk, Gtk, Pango, PangoCairo
 
-from . import annot, theme
+from . import annot, i18n, theme
 from .menus import Popup, SHADOW, anchor_origin
 
 SQUIGGLE = [(33, 422.0), (51, 416.5), (69, 412.5), (87, 410.5), (105, 410.5), (123, 412.0), (141, 415.0),
@@ -170,15 +170,44 @@ _TEXT_OPTIONS.set_hint_style(cairo.HINT_STYLE_NONE)
 _TEXT_OPTIONS.set_hint_metrics(cairo.HINT_METRICS_ON)
 
 
-def draw_text(cr, text, x, baseline, c, weight=400):
+def draw_text(cr, text, x, baseline, c, weight=400, max_w=None):
+    """Texto de interface. `max_w`: largura disponível em px; fora do português (medido) a fonte encolhe por passos
+    (14 → 11 px) e, em último caso, o texto recebe reticências, para nunca vazar do botão."""
+    text = i18n.tr(text)
     cr.set_font_options(_TEXT_OPTIONS)
     layout = PangoCairo.create_layout(cr)
-    layout.set_font_description(Pango.FontDescription(f"Selawik {'Semibold' if weight >= 600 else ''} 14px".replace("  ", " ")))
-    layout.set_text(text, -1)
-    ink, _ = layout.get_pixel_extents()
+    size = 14
+    while True:
+        layout.set_font_description(Pango.FontDescription(f"Selawik {'Semibold' if weight >= 600 else ''} {size}px".replace("  ", " ")))
+        layout.set_text(text, -1)
+        ink, _ = layout.get_pixel_extents()
+        if max_w is None or i18n.current() == i18n.SOURCE or ink.x + ink.width <= max_w or size <= 11:
+            break
+        size -= 1
+    if max_w is not None and i18n.current() != i18n.SOURCE and ink.x + ink.width > max_w:
+        layout.set_ellipsize(Pango.EllipsizeMode.END)
+        layout.set_width(int(max_w * Pango.SCALE))
+        ink, _ = layout.get_pixel_extents()
     cr.set_source_rgb(*c)
     cr.move_to(x - ink.x, baseline - layout.get_baseline() / Pango.SCALE)
     PangoCairo.show_layout(cr, layout)
+
+
+def draw_wrapped(cr, text, x, baseline, width, line_h, c, weight=400):
+    """Texto com quebra de linha por largura em pixels (palavras ou, em CJK, caracteres). Devolve o número de linhas."""
+    text = i18n.tr(text)
+    cr.set_font_options(_TEXT_OPTIONS)
+    layout = PangoCairo.create_layout(cr)
+    layout.set_font_description(Pango.FontDescription(f"Selawik {'Semibold' if weight >= 600 else ''} 14px".replace("  ", " ")))
+    layout.set_width(int(width * Pango.SCALE))
+    layout.set_wrap(Pango.WrapMode.WORD_CHAR)
+    layout.set_spacing(int((line_h - 19) * Pango.SCALE))
+    layout.set_text(text, -1)
+    cr.set_source_rgb(*c)
+    first = layout.get_baseline() / Pango.SCALE
+    cr.move_to(x, baseline - first)
+    PangoCairo.show_layout(cr, layout)
+    return layout.get_line_count()
 
 
 # ------------------------------------------------------------------ botões
@@ -283,7 +312,7 @@ class ShapeBar(Gtk.EventBox):
         else:
             icon_disc(cr, self.fill)
         cr.restore()
-        draw_text(cr, "Preencher", 38, 23, c)
+        draw_text(cr, "Preencher", 38, 23, c, max_w=63)
         cr.save(); cr.translate(107, 16); icon_chevron(cr, c); cr.restore()
 
     def _paint_outline(self, cr):
@@ -295,7 +324,7 @@ class ShapeBar(Gtk.EventBox):
         else:
             icon_ring(cr, self.outline)
         cr.restore()
-        draw_text(cr, "Contorno", 38, 23, c)
+        draw_text(cr, "Contorno", 38, 23, c, max_w=61)
         cr.save(); cr.translate(105, 16); icon_chevron(cr, c); cr.restore()
 
     # -- estado

@@ -5,6 +5,12 @@ __version__ = "0.1.0"
 
 
 try:
+    from . import i18n as _i18n
+    _i18n.install()
+except Exception:      # sem Gtk 3 (ferramentas de linha de comando): sem tradução automática
+    pass
+
+try:
     from . import fonts as _fonts
     _fonts.register()
 except Exception:      # fontes opcionais

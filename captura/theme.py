@@ -52,6 +52,7 @@ button.tbtn:disabled { opacity: .4; }
 button.tbtn.newbtn { background: $surface; border: 1px solid $border2; padding: 0 12px; }
 button.tbtn.newbtn:hover { background: $hover; }
 button.tbtn.newbtn.icononly { padding: 0; min-width: 40px; }
+.cap-window button.fluent-btn.dropdown-btn { padding: 0 12px; min-height: 32px; min-width: 200px; }
 button.tbtn.accentbtn { background: $accent; color: $accent_text; border: none; padding: 0 16px; }
 button.tbtn.accentbtn:hover { background: $accent_hover; }
 button.tbtn.accentbtn label { color: $accent_text; }

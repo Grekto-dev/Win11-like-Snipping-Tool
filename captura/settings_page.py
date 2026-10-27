@@ -5,7 +5,7 @@ import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
 
-from . import __version__, icons, keybindings, theme
+from . import __version__, cursors, i18n, icons, keybindings, menus, theme
 from .config import settings
 
 
@@ -123,11 +123,20 @@ class SettingsPage(Gtk.Box):
         self.section("Aparência")
         self.build_theme_card()
 
+        self.section("Preferências")
+        self.dropdown_row("Idioma", "Troca o idioma do aplicativo na hora", [(c, n) for c, n in i18n.LANGS], "language",
+                          native=True, on_change=i18n.set_language)
+        self.dropdown_row("Após a captura", "O que acontece logo depois de uma captura de tela",
+                          [("notify", "Mostrar uma notificação"), ("editor", "Abrir a captura no editor"),
+                           ("copy", "Apenas copiar para a área de transferência")], "shot_after")
+
         self.section("Sobre este app", about=True)
         about = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
         about.set_margin_start(32)
-        for text, cls in ((f"Ferramenta de Captura {__version__}", "about-line"),
-                          ("Recriação livre para Linux Mint (Cinnamon/X11). Software livre sob GPL-3.0-or-later.", "about-line"),
+        ver = _label("", "about-line")
+        ver.set_text(i18n.set_fmt(ver, "text", "Ferramenta de Captura {versao}", versao=__version__))
+        about.pack_start(ver, False, False, 0)
+        for text, cls in (("Recriação livre para Linux Mint (Cinnamon/X11). Software livre sob GPL-3.0-or-later.", "about-line"),
                           ("Não contém código nem recursos da Microsoft.", "about-line")):
             about.pack_start(_label(text, cls), False, False, 0)
         for text, url in (("Termos de licença deste software", "https://www.gnu.org/licenses/gpl-3.0.html"),
@@ -199,6 +208,53 @@ class SettingsPage(Gtk.Box):
         l.set_margin_bottom(6)
         l.set_margin_start(1 if not about else 32)
         self.col.pack_start(l, False, False, 0)
+
+    def dropdown_row(self, title, desc, options, key, native=False, on_change=None):
+        """Cartão com título, descrição e uma lista suspensa (menu do Windows 11) à direita. `native`: rótulos que não se traduzem."""
+        card = _card()
+        row = Gtk.Box(spacing=0)
+        row.get_style_context().add_class("cap-row")
+        row.set_size_request(-1, 64)
+        tb = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=3)
+        tb.set_valign(Gtk.Align.CENTER)
+        tb.pack_start(_label(title, wrap=True), False, False, 0)
+        tb.pack_start(_label(desc, "subtle", wrap=True), False, False, 0)
+        row.pack_start(tb, True, True, 0)
+        btn = Gtk.Button()
+        btn.get_style_context().add_class("fluent-btn")
+        btn.set_can_focus(False)
+        btn.set_valign(Gtk.Align.CENTER)
+        btn.get_style_context().add_class("dropdown-btn")
+        inner = Gtk.Box(spacing=10)
+        lab = Gtk.Label(xalign=0)
+        lab.set_width_chars(22)
+        inner.pack_start(lab, True, True, 0)
+        inner.pack_end(icons.image("chevron_down", 12, theme.icon_color()), False, False, 0)
+        btn.add(inner)
+        row.pack_end(btn, False, False, 0)
+        names = dict(options)
+
+        def show():
+            cur = settings[key]
+            lab.set_text(names.get(cur, str(cur)))
+        show()
+
+        def pick(code):
+            settings[key] = code
+            if on_change:
+                on_change(code)
+            show()
+
+        def open_menu(_b):
+            items = [("checksm" if settings[key] == c else None, n, None, (lambda c=c: pick(c))) for c, n in options]
+            m = menus.Menu(items, menus.DROPDOWN)
+            ox, oy = menus.anchor_origin(btn)
+            a = btn.get_allocation()
+            m.open_at(ox + a.width - menus.DROPDOWN["width"], oy + a.height + 2)
+        btn.connect("clicked", open_menu)
+        card.pack_start(row, False, False, 0)
+        self.col.pack_start(card, False, False, 0)
+        return btn
 
     def switch_row(self, title, desc, key, expander=None, on_change=None, icon=None, height=None):
         card = _card()

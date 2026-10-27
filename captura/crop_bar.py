@@ -51,13 +51,13 @@ def _at(cr, x, y, fn, c):
 def paint_apply(cr):
     c = text_rgb()
     _at(cr, 11, 13, icon_check, c)
-    draw_text(cr, "Aplicar", 33, TEXT_BASELINE, c)
+    draw_text(cr, "Aplicar", 33, TEXT_BASELINE, c, max_w=50)
 
 
 def paint_cancel(cr):
     c = text_rgb()
     _at(cr, 11, 11, icon_cross, c)
-    draw_text(cr, "Cancelar", 34, TEXT_BASELINE, c)
+    draw_text(cr, "Cancelar", 34, TEXT_BASELINE, c, max_w=55)
 
 
 def paint_zoom(cr):

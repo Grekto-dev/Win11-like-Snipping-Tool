@@ -9,7 +9,7 @@ gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk
 
 from . import theme
-from .shape_bar import SbButton, draw_text, icon_chevron, rgb, text_rgb
+from .shape_bar import SbButton, draw_text, draw_wrapped, rgb, text_rgb
 
 BAR_W, BAR_H = 550, 48
 BTN_Y, BTN_H = 6, 36
@@ -105,7 +105,7 @@ class TextBar(Gtk.EventBox):
             sensitive = btn.get_sensitive()
             c = text_rgb() if sensitive else _muted(text_rgb())
             cr.save(); cr.translate(ix, ICON_Y + dy); icon(cr, c); cr.restore()
-            draw_text(cr, label, ix + 26, TEXT_BASE, c)
+            draw_text(cr, label, ix + 26, TEXT_BASE, c, max_w=w - ix - 26 - 8)
         btn.painter = paint
         btn.connect("clicked", lambda b: cb())
         btn.connect("state-flags-changed", lambda *_: btn.area.queue_draw())
@@ -187,8 +187,7 @@ class InfoTip(Gtk.DrawingArea):
         cr.arc(19.5, a + 31.5, 7, 0, math.tau); cr.stroke()
         cr.move_to(19.5, a + 28.5); cr.line_to(19.5, a + 28.7); cr.stroke()
         cr.move_to(19.5, a + 31.2); cr.line_to(19.5, a + 36); cr.stroke()
-        for n, line in enumerate(("Certifique-se de que todas as informações", "confidenciais foram editadas.")):
-            draw_text(cr, line, 40, a + 29 + n * 18, c)
+        draw_wrapped(cr, self.text, 40, a + 29, self.W - 40 - 14, 18, c)
         return False
 
 

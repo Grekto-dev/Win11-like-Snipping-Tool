@@ -1,270 +1,270 @@
 {
  "import/import captura.app (a frio, dentro do processo)": {
-  "value": 107.472,
+  "value": 113.092,
   "unit": "ms",
   "budget": 900,
   "ok": true
  },
+ "import/  mais lento: captura": {
+  "value": 77.293,
+  "unit": "ms",
+  "budget": null,
+  "ok": true
+ },
+ "import/  mais lento: captura.i18n": {
+  "value": 69.104,
+  "unit": "ms",
+  "budget": null,
+  "ok": true
+ },
  "import/  mais lento: captura.overlay": {
-  "value": 21.479,
-  "unit": "ms",
-  "budget": null,
-  "ok": true
- },
- "import/  mais lento: captura.overlay_text": {
-  "value": 19.127,
-  "unit": "ms",
-  "budget": null,
-  "ok": true
- },
- "import/  mais lento: captura.textlayer": {
-  "value": 14.81,
+  "value": 19.543,
   "unit": "ms",
   "budget": null,
   "ok": true
  },
  "import/baseline: s\u00f3 importar o Gtk": {
-  "value": 81.93,
+  "value": 86.246,
   "unit": "ms",
   "budget": null,
   "ok": true
  },
  "window/criar + mostrar EditorWindow (melhor de 3)": {
-  "value": 73.971,
+  "value": 77.917,
   "unit": "ms",
   "budget": 400,
   "ok": true
  },
  "window/load_surface + 1\u00ba desenho 700x450": {
-  "value": 3.125,
+  "value": 3.14,
   "unit": "ms",
   "budget": 60,
   "ok": true
  },
  "window/load_surface + 1\u00ba desenho 1920x1080": {
-  "value": 19.303,
+  "value": 18.921,
   "unit": "ms",
   "budget": 60,
   "ok": true
  },
  "window/load_surface + 1\u00ba desenho 3840x2160": {
-  "value": 38.03,
+  "value": 39.025,
   "unit": "ms",
   "budget": 120,
   "ok": true
  },
  "window/abrir p\u00e1gina Configura\u00e7\u00f5es": {
-  "value": 100.923,
+  "value": 103.102,
   "unit": "ms",
   "budget": 400,
   "ok": true
  },
  "window/voltar ao editor": {
-  "value": 101.022,
+  "value": 100.636,
   "unit": "ms",
   "budget": 300,
   "ok": true
  },
  "window/abrir+fechar menu Mais": {
-  "value": 49.797,
+  "value": 50.928,
   "unit": "ms",
   "budget": 120,
   "ok": true
  },
  "window/abrir+fechar menu de formas": {
-  "value": 47.173,
+  "value": 46.694,
   "unit": "ms",
   "budget": 120,
   "ok": true
  },
  "draw/quadro do canvas vazio 1920x1080 (zoom ajustado)": {
-  "value": 0.892,
+  "value": 0.899,
   "unit": "ms",
   "budget": 8,
   "ok": true
  },
  "draw/quadro com 150 tra\u00e7os + 60 formas (estresse)": {
-  "value": 28.518,
+  "value": 28.196,
   "unit": "ms",
   "budget": 33,
   "ok": true
  },
  "draw/quadro com 30 itens (uso t\u00edpico)": {
-  "value": 6.464,
+  "value": 5.96,
   "unit": "ms",
   "budget": 16.7,
   "ok": true
  },
  "draw/quadro do canvas 3840x2160": {
-  "value": 0.883,
+  "value": 0.78,
   "unit": "ms",
   "budget": 16.7,
   "ok": true
  },
  "draw/60 passos de zoom cont\u00ednuo (m\u00e9dia por quadro)": {
-  "value": 2.857,
+  "value": 2.549,
   "unit": "ms",
   "budget": 33,
   "ok": true
  },
  "draw/quadro com zoom fixo 0.5 e 20 itens (cache)": {
-  "value": 2.183,
+  "value": 2.158,
   "unit": "ms",
   "budget": 8,
   "ok": true
  },
  "overlay/criar + mostrar 1440x900": {
-  "value": 61.664,
+  "value": 59.852,
   "unit": "ms",
   "budget": 350,
   "ok": true
  },
  "overlay/quadro ocioso 1440x900": {
-  "value": 0.638,
+  "value": 0.891,
   "unit": "ms",
   "budget": 16.7,
   "ok": true
  },
  "overlay/quadro durante o arrasto 1440x900": {
-  "value": 1.125,
+  "value": 0.768,
   "unit": "ms",
   "budget": 16.7,
   "ok": true
  },
  "overlay/criar + mostrar 3840x1080 (seu desktop)": {
-  "value": 54.829,
+  "value": 54.544,
   "unit": "ms",
   "budget": 350,
   "ok": true
  },
  "overlay/quadro ocioso 3840x1080 (seu desktop)": {
-  "value": 2.84,
+  "value": 2.878,
   "unit": "ms",
   "budget": 16.7,
   "ok": true
  },
  "overlay/quadro durante o arrasto 3840x1080 (seu desktop)": {
-  "value": 4.402,
+  "value": 4.23,
   "unit": "ms",
   "budget": 16.7,
   "ok": true
  },
  "overlay/2000 eventos de movimento no arrasto (\u00b5s/ev)": {
-  "value": 1.022,
+  "value": 0.983,
   "unit": "\u00b5s",
   "budget": 500,
   "ok": true
  },
  "text/group_lines 24 linhas": {
-  "value": 0.263,
+  "value": 0.146,
   "unit": "ms",
   "budget": 30,
   "ok": true
  },
  "text/group_lines 200 linhas": {
-  "value": 1.127,
+  "value": 1.125,
   "unit": "ms",
   "budget": 30,
   "ok": true
  },
  "text/detect_table (2000 palavras)": {
-  "value": 1.547,
+  "value": 1.456,
   "unit": "ms",
   "budget": 80,
   "ok": true
  },
  "text/select_between (2000 palavras)": {
-  "value": 1.908,
+  "value": 1.895,
   "unit": "ms",
   "budget": 30,
   "ok": true
  },
  "text/words_text (2000 palavras)": {
-  "value": 0.182,
+  "value": 0.185,
   "unit": "ms",
   "budget": 20,
   "ok": true
  },
  "text/sensitive (2000 palavras)": {
-  "value": 1.204,
+  "value": 1.174,
   "unit": "ms",
   "budget": 60,
   "ok": true
  },
  "text/quadro do overlay pronto, 24 linhas, metade selecionada": {
-  "value": 6.693,
+  "value": 6.708,
   "unit": "ms",
   "budget": 16.7,
   "ok": true
  },
  "text/quadro do overlay pronto, 120 linhas, metade selecionada": {
-  "value": 14.977,
+  "value": 14.331,
   "unit": "ms",
   "budget": 16.7,
   "ok": true
  },
  "text/quadro do anel de varredura": {
-  "value": 2.189,
+  "value": 1.981,
   "unit": "ms",
   "budget": 16.7,
   "ok": true
  },
  "ocr/ocr_surface 700x450 (texto)": {
-  "value": 478.785,
+  "value": 475.698,
   "unit": "ms",
   "budget": 1500,
   "ok": true
  },
  "ocr/ocr_surface tabela 4x3": {
-  "value": 361.977,
+  "value": 326.083,
   "unit": "ms",
   "budget": 1500,
   "ok": true
  },
  "ocr/ocr_surface em branco 500x300": {
-  "value": 268.889,
+  "value": 267.339,
   "unit": "ms",
   "budget": 1200,
   "ok": true
  },
  "ocr/ocr_surface p\u00e1gina 1920x1080 (lorem)": {
-  "value": 2065.669,
+  "value": 2020.509,
   "unit": "ms",
   "budget": 6000,
   "ok": true
  },
  "anim/quadros desenhados por segundo na varredura": {
-  "value": 60.0,
+  "value": 60.667,
   "unit": "fps",
   "budget": null,
   "ok": true
  },
  "anim/intervalo mediano entre quadros": {
-  "value": 16.791,
+  "value": 16.678,
   "unit": "ms",
   "budget": 20,
   "ok": true
  },
  "anim/p95 do intervalo entre quadros": {
-  "value": 17.531,
+  "value": 17.24,
   "unit": "ms",
   "budget": 40,
   "ok": true
  },
  "anim/p95 do custo de desenho de um quadro": {
-  "value": 2.697,
+  "value": 2.611,
   "unit": "ms",
   "budget": 16.7,
   "ok": true
  },
  "anim/CPU durante a varredura animada": {
-  "value": 18.0,
+  "value": 16.667,
   "unit": "%",
   "budget": 60,
   "ok": true
  },
  "anim/CPU gasta pela anima\u00e7\u00e3o de abrir menu (5x)": {
-  "value": 26.0,
+  "value": 28.0,
   "unit": "ms/menu",
   "budget": 120,
   "ok": true
@@ -276,13 +276,13 @@
   "ok": true
  },
  "idle/CPU do overlay parado (4 s)": {
-  "value": 0.75,
+  "value": 0.5,
   "unit": "%",
   "budget": 3,
   "ok": true
  },
  "leak/overlay (criar/destruir) RSS ap\u00f3s 40 ciclos": {
-  "value": 4.926,
+  "value": 0.0,
   "unit": "MB",
   "budget": 25,
   "ok": true

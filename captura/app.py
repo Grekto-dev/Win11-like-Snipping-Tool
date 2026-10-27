@@ -12,7 +12,7 @@ gi.require_version("Gdk", "3.0")
 import cairo
 from gi.repository import Gtk, Gdk, Gio, GLib
 
-from . import APP_ID, grab, icons, keybindings, services, theme
+from . import APP_ID, grab, i18n, icons, keybindings, services, theme
 from .config import settings
 from .overlay import Overlay
 from .window import EditorWindow
@@ -235,14 +235,14 @@ class CapturaApp(Gtk.Application):
         self._rec_begin_id = 0
         self._rec_check_id = 0
         self.capturing = False
-        self.add_main_option("snip", ord("s"), 0, 0, "Abre a sobreposição de captura", None)
-        self.add_main_option("capture", ord("c"), 0, 0, "Abre já no modo captura (como Novo); ao terminar o programa fecha", None)
-        self.add_main_option("ocr", 0, 0, 0, "Extrator de texto", None)
-        self.add_main_option("color", 0, 0, 0, "Seletor de cores", None)
-        self.add_main_option("record", 0, 0, 0, "Gravação de tela", None)
-        self.add_main_option("settings", 0, 0, 0, "Abre as Configurações", None)
-        self.add_main_option("background", 0, 0, 0, "Fica residente, sem janela", None)
-        self.add_main_option("fullscreen", 0, 0, 0, "Captura a tela inteira imediatamente", None)
+        self.add_main_option("snip", ord("s"), 0, 0, i18n.tr("Abre a sobreposição de captura"), None)
+        self.add_main_option("capture", ord("c"), 0, 0, i18n.tr("Abre já no modo captura (como Novo); ao terminar o programa fecha"), None)
+        self.add_main_option("ocr", 0, 0, 0, i18n.tr("Extrator de texto"), None)
+        self.add_main_option("color", 0, 0, 0, i18n.tr("Seletor de cores"), None)
+        self.add_main_option("record", 0, 0, 0, i18n.tr("Gravação de tela"), None)
+        self.add_main_option("settings", 0, 0, 0, i18n.tr("Abre as Configurações"), None)
+        self.add_main_option("background", 0, 0, 0, i18n.tr("Fica residente, sem janela"), None)
+        self.add_main_option("fullscreen", 0, 0, 0, i18n.tr("Captura a tela inteira imediatamente"), None)
 
     # ------------------------------------------------------------ ciclo
     def do_startup(self):
@@ -331,7 +331,7 @@ class CapturaApp(Gtk.Application):
             surf = grab.grab_screen()
         except Exception as e:
             self.capturing = False
-            services.notify("Ferramenta de Captura", f"Não foi possível capturar a tela: {e}")
+            services.notify("Ferramenta de Captura", i18n.trf("Não foi possível capturar a tela: {erro}", erro=e))
             self._restore_windows()
             self._release()
             return
@@ -379,7 +379,7 @@ class CapturaApp(Gtk.Application):
         if kind == "color":
             services.copy_text(payload)
             self._restore_windows_if_app()
-            services.notify("Seletor de cores", f"A cor {payload} foi copiada para a área de transferência.", "applications-graphics")
+            services.notify("Seletor de cores", i18n.trf("A cor {cor} foi copiada para a área de transferência.", cor=payload), "applications-graphics")
             return
         if kind == "textcopy":
             self._restore_windows_if_app()         # com janela aberta, volta para ela; sem janela, o programa fecha após o aviso
@@ -414,17 +414,21 @@ class CapturaApp(Gtk.Application):
             out = annot.render(surf, [], border)
         services.copy_surface(out)
         path = services.autosave(out)
-        open_editor = self._from_app or settings["quick_markup"] or bool(self._hidden)
+        after = settings["shot_after"]
+        # "Novo" na janela, marcação rápida ou janela do app aberta sempre voltam ao editor; senão vale a escolha em Configurações
+        open_editor = self._from_app or settings["quick_markup"] or bool(self._hidden) or after == "editor"
         self._hidden = []
         if open_editor:
             w = self.get_window(new=settings["shot_multi_window"] and bool(self.windows) and self.windows[-1].canvas.base is not None)
             w.load_surface(surf if not border else surf, new_capture=True, path=path)
             return
+        if after == "copy":
+            return                                 # só copiar: a imagem já está na área de transferência (e salva, se o salvamento automático estiver ligado)
         body = "Salvo automaticamente na pasta de capturas de tela." if path else "Copiado para a área de transferência."
         def open_it():
             w = self.get_window(new=settings["shot_multi_window"] and bool(self.windows) and self.windows[-1].canvas.base is not None)
             w.load_surface(surf, new_capture=True, path=path)
-        services.notify("Captura de tela salva", body + "\nSelecione para marcar e compartilhar.", path or "camera-photo",
+        services.notify("Captura de tela salva", i18n.tr(body) + "\n" + i18n.tr("Selecione para marcar e compartilhar."), path or "camera-photo",
                         [("default", "Marcar e compartilhar", open_it)])
 
     # ------------------------------------------------------------ OCR
@@ -449,7 +453,7 @@ class CapturaApp(Gtk.Application):
             services.notify("Extrator de Texto", "Nenhum texto foi encontrado na região selecionada.")
             return False
         services.copy_text(text)
-        services.notify("Extrator de Texto", "O texto foi copiado para a área de transferência.\n" + (text[:90] + "…" if len(text) > 90 else text), "edit-copy")
+        services.notify("Extrator de Texto", i18n.tr("O texto foi copiado para a área de transferência.") + "\n" + (text[:90] + "…" if len(text) > 90 else text), "edit-copy")
         return False
 
     def ocr_current(self, win):
@@ -467,16 +471,25 @@ class CapturaApp(Gtk.Application):
     # ------------------------------------------------------------ gravação
     def start_recording(self, rect):
         if not services.ffmpeg_path():
+            self._restore_rec_windows()
             self._release()
             self.msg(None, "FFmpeg não encontrado", "A gravação de tela precisa do FFmpeg.\n\nInstale com:\n  sudo apt install ffmpeg")
             return
         d = settings.rec_directory if settings["rec_autosave"] else self._rec_scratch_dir()
         name = services.timestamp_name("Gravação de tela", "mp4")
         self.rec_dest = services.unique_path(d, name)
-        self.recorder = services.Recorder(rect, settings["rec_mic"], settings["rec_system_audio"], self.rec_dest)
-        self.rec_rect = rect
-        self.rec_outline = OutlineWindow(rect)
-        self.rec_bar = RecordingBar(self.stop_recording, lambda: self.stop_recording(discard=True), rect, on_pause=self._pause_rec)
+        recorder = services.Recorder(rect, settings["rec_mic"], settings["rec_system_audio"], self.rec_dest)
+        if recorder.region is None:                       # fora da tela ou menor que 2×2: nem abre a barra
+            self._restore_rec_windows()
+            self._release()
+            self.msg(None, "Área pequena demais", "Selecione uma área de pelo menos 2 × 2 pixels dentro da tela.")
+            return
+        self.recorder = recorder
+        missing = services.missing_audio(settings["rec_mic"], settings["rec_system_audio"])
+        if missing:
+            services.notify("Gravação de tela", i18n.trf("Sem acesso a: {itens}. A gravação será só de vídeo.", itens=", ".join(i18n.tr(m) for m in missing)), "video-x-generic")
+        self.rec_outline = OutlineWindow(recorder.region)
+        self.rec_bar = RecordingBar(self.stop_recording, lambda: self.stop_recording(discard=True), recorder.region, on_pause=self._pause_rec)
         self._rec_begin_id = GLib.timeout_add(350, self._begin_rec)
 
     def _begin_rec(self):
@@ -486,36 +499,47 @@ class CapturaApp(Gtk.Application):
         try:
             self.recorder.start()
         except Exception as error:
+            r = self.recorder
             try:
-                self.recorder.stop()
+                r.stop()
             finally:
                 self._teardown_rec(release_delay=0)
+                r.close()
             self.msg(None, "A gravação falhou", str(error))
             return False
         self._rec_check_id = GLib.timeout_add(1200, self._check_rec)
         return False
 
     def _pause_rec(self, pause):
-        """Barra de gravação: pausa/continua. Devolve False se não foi possível."""
+        """Barra de gravação: pausa/continua. Devolve False se não foi possível (a barra não muda)."""
         r = self.recorder
         if r is None:
             return False
-        if pause:
-            return r.pause()
-        ok = r.resume()
-        if ok and self._rec_check_id == 0:
+        try:
+            ok = r.pause() if pause else r.resume()
+        except Exception as error:
+            self.msg(None, "Não foi possível pausar a gravação" if pause else "Não foi possível continuar a gravação", str(error))
+            return False
+        if ok and not pause and self._rec_check_id == 0:
             self._rec_check_id = GLib.timeout_add(1200, self._check_rec)
         return ok
 
     def _check_rec(self):
         self._rec_check_id = 0
-        if self.recorder is not None and not self.recorder.paused and not self.recorder.alive():
-            err = self.recorder.error_text()
+        r = self.recorder
+        if r is not None and not r.paused and not r.alive():
+            err = r.error_text()
+            kept = r.abort()                              # apaga o trecho quebrado; trechos íntegros ficam para o usuário
             self._teardown_rec()
-            self.msg(None, "A gravação falhou", err[-600:] or "O FFmpeg encerrou inesperadamente.")
+            r.close()
+            text = err[-600:] or i18n.tr("O FFmpeg encerrou inesperadamente.")
+            if kept:
+                text += "\n\n" + i18n.tr("Os trechos já gravados foram mantidos em:") + "\n" + "\n".join(kept)
+            self.msg(None, "A gravação falhou", text)
         return False
 
     def _teardown_rec(self, release_delay=60000):
+        """Desmonta a UI da gravação (barra, moldura, timers) e devolve as janelas escondidas. Quem chama fecha o gravador."""
         for attr in ("_rec_begin_id", "_rec_check_id"):
             source_id = getattr(self, attr, 0)
             if source_id:
@@ -527,8 +551,7 @@ class CapturaApp(Gtk.Application):
         if self.rec_outline:
             self.rec_outline.destroy()
         self.rec_bar = self.rec_outline = None
-        if self.recorder is not None:
-            self.recorder.close()
+        self._restore_rec_windows()                       # também em falha: o editor não pode ficar escondido
         self.recorder = None
 
     @staticmethod
@@ -572,8 +595,19 @@ class CapturaApp(Gtk.Application):
             return
         dest = self.rec_dest
         self._teardown_rec()
-        self._restore_rec_windows()
-        self._stop_job = job = threading.Thread(target=r.stop, daemon=True)     # o ffmpeg leva um instante para fechar o arquivo
+        result = {}
+
+        def work():
+            try:
+                if discard:
+                    r.discard()
+                    result["ok"] = True
+                else:
+                    result["ok"] = r.stop() is not False
+            except Exception as error:               # a thread não pode morrer calada: vira falha informada
+                result["ok"], result["error"] = False, str(error)
+
+        self._stop_job = job = threading.Thread(target=work, daemon=True)     # o ffmpeg leva um instante para fechar o arquivo
         job.start()
         self._finish_stop_pending = True
 
@@ -581,9 +615,20 @@ class CapturaApp(Gtk.Application):
             if job.is_alive():
                 return GLib.SOURCE_CONTINUE
             self._finish_stop_pending = False
-            self._finish_recording(dest, discard)
+            failure = None
+            if not discard and not result.get("ok"):
+                failure = self._rec_failure_text(r, result.get("error"))
+            r.close()
+            self._finish_recording(dest, discard, failure)
             return GLib.SOURCE_REMOVE
         GLib.timeout_add(40, poll)
+
+    @staticmethod
+    def _rec_failure_text(r, error=None):
+        text = i18n.tr(r.failure) if r.failure else (error or i18n.tr("O FFmpeg não conseguiu gravar o vídeo."))
+        if r.parts:
+            text += "\n\n" + i18n.tr("Os trechos já gravados foram mantidos em:") + "\n" + "\n".join(r.parts)
+        return text
 
     def wait_stop(self):
         """Usado nos testes: espera a thread de parada e a finalização."""
@@ -595,9 +640,15 @@ class CapturaApp(Gtk.Application):
             GLib.MainContext.default().iteration(False)
             time.sleep(.005)
 
-    def _finish_recording(self, dest, discard):
-        if discard or not os.path.exists(dest):
+    def _finish_recording(self, dest, discard, failure=None):
+        if discard:
             self._remove_quietly(dest)
+            return
+        if failure is not None:                           # falha já sabida: não anuncia "salva"
+            self._remove_quietly(dest)
+            self.msg(None, "A gravação falhou", failure)
+            return
+        if not os.path.exists(dest):
             return
         if not settings["rec_autosave"]:
             final = self.ask_save_recording(dest)
@@ -608,10 +659,10 @@ class CapturaApp(Gtk.Application):
                 os.makedirs(os.path.dirname(final), exist_ok=True)
                 shutil.move(dest, final)
             except OSError as e:
-                self.msg(None, "Não foi possível salvar a gravação", f"{e}\n\nO arquivo foi mantido em:\n{dest}")
+                self.msg(None, "Não foi possível salvar a gravação", i18n.trf("{erro}\n\nO arquivo foi mantido em:\n{caminho}", erro=e, caminho=dest))
                 return
             dest = final
-        services.notify("Gravação de tela salva", os.path.basename(dest) + "\nSelecione para abrir.", "video-x-generic",
+        services.notify("Gravação de tela salva", os.path.basename(dest) + "\n" + i18n.tr("Selecione para abrir."), "video-x-generic",
                         [("default", "Abrir", lambda: subprocess.Popen(["xdg-open", dest]))])
 
     def toast_in_window(self, text):

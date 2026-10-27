@@ -9,7 +9,7 @@ gi.require_version("Gdk", "3.0")
 import cairo
 from gi.repository import Gtk, Gdk, GLib, GdkPixbuf
 
-from . import APP_NAME, annot, chrome, icons, menus, metrics as M, services, textlayer, theme
+from . import APP_NAME, annot, chrome, cursors, i18n, icons, menus, metrics as M, services, textlayer, theme
 from . import text_anim
 from .text_bar import BAR_H, BAR_W, InfoTip, Notice, TextBar
 from .canvas import Canvas
@@ -107,6 +107,8 @@ class EditorWindow(Gtk.ApplicationWindow):
         main = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.stack.add_named(main, "main")
         self.settings_page = SettingsPage(lambda: self.show_page("main"), self.app.apply_theme)
+        cursors.apply_links(self.settings_page)
+        self.connect("map", lambda *_: cursors.apply_links(self))          # links do aviso inicial e das Configurações: cursor de mão
         self.stack.add_named(self.settings_page, "settings")
 
         main.pack_start(self.build_toolbar(), False, False, 0)
@@ -262,7 +264,7 @@ class EditorWindow(Gtk.ApplicationWindow):
         icons.set_role(self.undo_img, role="text" if self.canvas.undo_stack else "disabled")
         icons.set_role(self.redo_img, role="text" if self.canvas.redo_stack else "disabled")
         ed, lab = services.external_editor()
-        self.btn_ext.set_tooltip_text(f"Editar no {lab}" if lab else "Abrir com…")
+        self.btn_ext.set_tooltip_text(i18n.set_fmt(self.btn_ext, "tooltip", "Editar no {app}", app=lab) if lab else "Abrir com…")
 
     def refresh_state(self):
         pass
@@ -865,7 +867,7 @@ class EditorWindow(Gtk.ApplicationWindow):
             self.saved_path = path
             self.canvas.dirty = False
             saved = True
-            self.app.toast_in_window("Salvo em " + path)
+            self.app.toast_in_window(i18n.trf("Salvo em {caminho}", caminho=path))
         except Exception as e:
             self.error_dialog("Não foi possível salvar", str(e))
         finally:
