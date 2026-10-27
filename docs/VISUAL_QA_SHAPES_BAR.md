@@ -164,3 +164,19 @@ Tempos relativos à gravação (ms); a pasta `frames/lp-flow` guarda os quadros.
 6. **Soltar a seleção de texto (≈12,2 s):** aparece de uma vez, sem animação, uma **mini barra flutuante** (fundo `#f9f9f9`, cantos ~8 px, sombra suave, ≈ 89×47) com dois ícones: copiar `⧉` e QR/código `⠿`, **posicionada logo à direita e abaixo do ponto final do arrasto** (canto superior-esquerdo ≈ (fim.x, fim.y+4)); fica visível mesmo com o mouse longe.
    A seleção azul permanece; o botão da barra principal continua "Copiar todo o texto".
 7. **✕:** o overlay inteiro fecha (menos de 1,5 s) e volta a janela "Pressione ⊞ + Shift + S" (a mesma do início).
+
+# Referência — Extrator de texto numa área SEM texto (Windows)
+
+Gravação `lprec_empty.py lp-empty` (402 quadros, região 0,0 1000×500) + capturas `ue-*.png`. Seleção arrastada em (40,140)→(200,340), margem branca da página.
+
+**Seleção parcial (desenhada pelo usuário, `ue-0-current.png`):** só as linhas de texto que **cruzam** a seleção ficam em caixas brancas; as caixas são **recortadas pela borda da seleção** (não saem dela) e o texto fora da seleção
+continua escuro. Linhas totalmente fora não aparecem. Alças/cantos: cantos em L brancos de ~5 px e alças-pílula no meio de cada aresta, contorno tracejado de 1 px por dentro.
+
+**Sem texto, linha do tempo (ms):**
+- ≈7,66–8,26 s: arrasto — o retângulo é uma janela sem escurecimento (branca na margem), tracejado fino.
+- 8,42 s (soltar): a janela clara some **no mesmo quadro**; só fica um anel de gradiente (traço de 6 px, cantos arredondados ≈4 px, fora do retângulo: x 32–206, y 133–346 para a seleção 40–200 × 140–340),
+  interior **escurecido** como o resto (#666666 = preto a 60%). Gradiente cônico `#4c50eb` (esq.) → `#a55af8` (topo) → `#fa7283` (dir.) → `#ad5bf9` (base), girando; dura **≈0,40 s** (8,42→8,82 s) e some **de uma vez**.
+- 8,46 s: aparece o aviso **"Nenhum texto foi detectado"** — cartão branco `#ffffff`, 237×51 px, cantos 8 px, ícone de informação azul `#0078d4` (círculo 15 px, "i" branco) e texto 14 px `#1b1b1b`;
+  centrado sob a barra (x 602–838 ≈ meio da barra 558–881; topo em y 73, a 11 px da barra que termina em 62).
+  Entra **subindo ~23 px com fade em ~200 ms** (y 96→73 em 8,47→8,62 s), fica **≈2,9 s** e sai **descendo ~22 px com fade em ~150 ms** (11,53→11,62 s; some em 11,62 s). Total ≈3,15 s.
+- A barra permanece `←  Copiar todo o texto (cinza/desabilitado)  ⋯  ✕`. **Nada** da seleção sobra: sem tracejado, sem alças. A tela fica só escurecida e o usuário pode arrastar de novo.
