@@ -17,9 +17,10 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install build and test dependencies
+        timeout-minutes: 10
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
+          sudo apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=20 update
+          sudo apt-get -o Acquire::Retries=3 -o Acquire::http::Timeout=20 install -y --no-install-recommends \
             python3-gi python3-gi-cairo python3-cairo gir1.2-gtk-3.0 gir1.2-gdkpixbuf-2.0 gir1.2-pango-1.0 \
             gir1.2-wnck-3.0 gir1.2-notify-0.7 librsvg2-common xdg-utils \
             tesseract-ocr tesseract-ocr-eng ffmpeg libzbar0 python3-xlib python3-qrcode python3-pil \
