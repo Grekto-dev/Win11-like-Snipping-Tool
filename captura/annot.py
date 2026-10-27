@@ -274,8 +274,13 @@ def draw_shape(cr, s):
     cr.restore()
 
 
-def draw_all(cr, items):
+def draw_all(cr, items, view=None):
+    """Desenha os itens; com `view` (x0, y0, x1, y1 no espaço da imagem) pula os que ficam inteiramente fora."""
     for it in items:
+        if view is not None:
+            x0, y0, x1, y1 = it.bbox()
+            if x1 < view[0] or x0 > view[2] or y1 < view[1] or y0 > view[3]:
+                continue
         if it.kind == "stroke":
             draw_stroke(cr, it)
         elif it.kind == "emoji":

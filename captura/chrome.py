@@ -382,4 +382,3 @@ def layout_left(win, empty):
     # o ícone "+" fica no mesmo lugar nos dois estados; no vazio é cinza-azulado como no original
     win._left.move(win.ocr_sep, M.EMPTY_OCR_SEP_X - o[0], M.SEP_Y - o[1])
     win._left.move(win.btn_ocr_empty, M.EMPTY_OCR["tile"][0] - o[0], M.EMPTY_OCR["tile"][1] - o[1])
-    ocr_img = win.btn_ocr_empty.get_child().get_children()[0] if False else None

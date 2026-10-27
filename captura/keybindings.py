@@ -1,6 +1,5 @@
 """Atalhos globais no Cinnamon: Super+Shift+S (e opcionalmente Imprimir tela) via custom-keybindings do dconf."""
-import gi
-from gi.repository import Gio, GLib
+from gi.repository import Gio
 
 SCHEMA = "org.cinnamon.desktop.keybindings"
 CUSTOM_SCHEMA = "org.cinnamon.desktop.keybindings.custom-keybinding"
@@ -61,7 +60,6 @@ def set_print_key(enabled, command=None):
         return
     media = Gio.Settings.new(MEDIA_SCHEMA) if _schema_exists(MEDIA_SCHEMA) else None
     keys = ("screenshot",)
-    store = Gio.Settings.new("org.cinnamon.desktop.keybindings")
     if enabled:
         if media:
             for k in keys:

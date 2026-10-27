@@ -209,3 +209,23 @@ Alça arrastada: a seleção volta a ser janela clara, "Copiar todo o texto" des
 Implementado em `Overlay._wanted_cursor` (o grab do seat não usa cursor próprio, senão ele sobrepõe o da janela); verificado com XFixes (`curx.sh`).
 
 `captura --capture` (`-c`): abre direto o overlay no modo captura (como Novo). Ao copiar texto, sem janela principal aberta, o programa fecha após o aviso (~3,8 s).
+
+# Auditoria final: varredura visual + bateria de desempenho/depuração
+
+**Varredura visual** (`snip-tool-research/sweep.py`: renderiza 28 estados e mede o MAE contra a referência do Windows)
+- Editor, menus, flyouts, Formas, Corte e Ações de texto: MAE 0,5–2,4 (janela inteira de 984×683).
+- Divergências conhecidas e intencionais: *menu Compartilhar* (o Windows abre a folha de compartilhamento do sistema; o nosso é um menu com 3 itens),
+  *Configurações* (MAE 5–11: caminho/versão/"Sobre" são do Linux e falta a linha "Corretor de cores HDR", recurso exclusivo do Windows).
+- Achados corrigidos: referência `ocr-select-all` estava capturada em estado errado (régua aberta), recapturada (41,4 → 1,7); `uishot.py` usava imagem de fundo diferente da referência (MAE inflado);
+  **tema escuro**: o botão "Novo", separadores, hover e bordas tinham cores claras fixas no CSS — agora vêm da paleta (a numeração do tema claro não mudou).
+
+**Bateria** (`scripts/perf.sh`, `scripts/perf_battery.py`, Xephyr isolado; relatório em `scripts/perf_report.json`): 55 medições com orçamento, 0 fora.
+| Área | Antes | Depois |
+|---|---|---|
+| quadro do canvas 1080p (zoom ajustado) | 16,3 ms | 0,9 ms (imagem reduzida em cache) |
+| zoom contínuo | 67 ms/quadro | 2,9 ms/quadro (caminho rápido + reconstrução depois do gesto) |
+| quadro 3840×2160 | 35 ms | 0,9 ms |
+| OCR página 1080p / 700×450 | 3,4 s / 0,78 s | 2,1 s / 0,48 s (modos 4 e 11 do Tesseract em paralelo) |
+| varredura animada (CPU) | 31 % | 16–18 % (invalida só o anel) |
+Sem vazamento em 40 ciclos de overlay/janela (RSS, descritores, threads, widgets). Fuzz: 7 200 eventos no overlay (12 combinações) e todos os botões do editor ×3 + 900 eventos no canvas: 0 exceções, 0 avisos Gtk.
+`python -X dev` na suíte achou 2 vazamentos reais no gravador (pipe de comandos do FFmpeg e arquivo de log por segmento de pausa) — corrigidos e cobertos por teste.

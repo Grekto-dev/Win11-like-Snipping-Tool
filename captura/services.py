@@ -223,6 +223,8 @@ class Recorder:
         os.makedirs(os.path.dirname(out_path), exist_ok=True)
         cmd.append(out_path)
         self.current = out_path
+        if self.log is not None:                           # pausa/retomada: o log do segmento anterior não é mais necessário
+            self.log.close()
         self.log = tempfile.TemporaryFile()
         self.proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=self.log, stderr=self.log)
 
@@ -243,6 +245,12 @@ class Recorder:
                 self.proc.wait(timeout=5)
             except Exception:
                 self.proc.kill()
+        finally:
+            try:
+                if self.proc.stdin is not None:           # o pipe de comandos (stdin) vazava um descritor por segmento
+                    self.proc.stdin.close()
+            except Exception:
+                pass
 
     def pause(self):
         if self.paused or not self.alive():
@@ -299,6 +307,14 @@ class Recorder:
                 except OSError:
                     pass
             self.parts = []
+
+    def close(self):
+        """Libera o log temporário do FFmpeg (chamar depois de ler `error_text`)."""
+        if self.log is not None:
+            try:
+                self.log.close()
+            except Exception:
+                pass
 
     def error_text(self):
         try:

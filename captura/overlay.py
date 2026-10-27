@@ -568,7 +568,15 @@ class Overlay(Gtk.Window):
             self._anim_id = 0
             return False
         running = self.ts.tick()
-        self.da.queue_draw()
+        if running and self.ts.rect:                      # só o anel muda durante a varredura: invalida só a sua região
+            x0, y0, x1, y1 = self.ts.rect
+            o, i = 18, 4                                  # o anel ocupa de 8 px fora a 2 px dentro da borda da seleção
+            w, h = x1 - x0, y1 - y0
+            for rx, ry, rw, rh in ((x0 - o, y0 - o, w + 2 * o, o + i), (x0 - o, y1 - i, w + 2 * o, o + i),
+                                   (x0 - o, y0 - o, o + i, h + 2 * o), (x1 - i, y0 - o, o + i, h + 2 * o)):
+                self.da.queue_draw_area(max(0, rx), max(0, ry), rw, rh)
+        else:
+            self.da.queue_draw()
         if not running:
             self._anim_id = 0
         return running

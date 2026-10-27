@@ -8,7 +8,7 @@ from gi.repository import Gtk, Gdk
 from .config import settings
 
 LIGHT = dict(
-    dark=False, bg0="#f3f3f3", surface="#fbfbfb", canvas="#fcfcfc", text="#1a1a1a", subtle="#5f5f5f", disabled="#a0a0a0",
+    dark=False, new_bg="#fbfbfb", new_bd="#e5e5e5", new_bd_bot="#cccccc", seg_join="#cccccc", pxsep="#e0e0e0", px_hover="rgba(0,0,0,0.0373)", px_press="rgba(0,0,0,0.0241)", canvas_bg="#f9f9f9", infobar_bd="#ededed", fly_bd="#c4c4c4", bg0="#f3f3f3", surface="#fbfbfb", canvas="#fcfcfc", text="#1a1a1a", subtle="#5f5f5f", disabled="#a0a0a0",
     chev="#5b5b5b", disabled_icon="#9b9b9b", tile_on="#eaeaea", seg_off="#ededed", seg_on="#fafafa", seg_edge="#c4c4c4", seg_out="#dfdfdf",
     border="#e0e0e0", border2="#d1d1d1", hover="rgba(0,0,0,0.055)", press="rgba(0,0,0,0.085)", card="#fdfdfd",
     accent="#0067c0", accent_hover="#1975c5", accent_text="#ffffff", infobar="#ffffff", flyout="#fcfcfc",
@@ -17,7 +17,7 @@ LIGHT = dict(
     crop_hover="#eaeaea", ov_bar="#e6e6e6", ov_on="#f6f6f6", ov_on_b="#bfbfbf", ov_off="#e1e1e1", ov_off_b="#d4d4d4", ov_sep="#d4d4d4", ov_hover="#dadada", ov_time="#767676", radio_fill="#eeeeee", radio_ring="#878787", set_card="#fbfbfb", set_border="#e5e5e5", set_inner="#f4f4f4", set_btn="#fcfcfc", set_btn_top="#e6e6e6", set_btn_bot="#cdcdcd", sbar_border="#ededed", sbar_sep="#eaeaea", sbar_sel="#f0f0f0", sbar_inner="#ffffff", fly2_border="#eaeaea",
 )
 DARK = dict(
-    dark=True, bg0="#202020", surface="#2b2b2b", canvas="#1c1c1c", text="#ffffff", subtle="#c8c8c8", disabled="#6f6f6f",
+    dark=True, new_bg="#2b2b2b", new_bd="#3a3a3a", new_bd_bot="#1f1f1f", seg_join="#5a5a5a", pxsep="#3d3d3d", px_hover="rgba(255,255,255,0.0606)", px_press="rgba(255,255,255,0.0419)", canvas_bg="#1c1c1c", infobar_bd="#3a3a3a", fly_bd="#454545", bg0="#202020", surface="#2b2b2b", canvas="#1c1c1c", text="#ffffff", subtle="#c8c8c8", disabled="#6f6f6f",
     chev="#c8c8c8", disabled_icon="#6f6f6f", tile_on="#2f2f2f", seg_off="#2b2b2b", seg_on="#3a3a3a", seg_edge="#5a5a5a", seg_out="#3d3d3d",
     border="#333333", border2="#454545", hover="rgba(255,255,255,0.07)", press="rgba(255,255,255,0.05)", card="#2b2b2b",
     accent="#60cdff", accent_hover="#7ad6ff", accent_text="#000000", infobar="#2b2b2b", flyout="#2c2c2c",
@@ -38,7 +38,7 @@ headerbar.cap-header .title { color: $subtle; font-size: 9pt; }
 .cap-window label.subtle { color: $subtle; font-size: 12px; }
 .cap-window label.section { font-weight: 400; font-size: 14px; }
 .cap-window label.pagetitle { font-size: 19.5px; font-weight: 600; }
-.cap-canvas-bg { background: #f9f9f9; }
+.cap-canvas-bg { background: $canvas_bg; }
 .cap-canvas-bg.cropping { background: $crop_bg; }
 
 button.tbtn, button.tbtn:backdrop {
@@ -68,7 +68,7 @@ button.tbtn.menuitem label { color: $text; }
 .cap-title { color: $text; font-size: 12px; }
 .empty-text { font-size: 14px; }
 
-.cap-infobar { background: $infobar; border: 1px solid #ededed; border-radius: 5px; margin: 0; padding: 0; }
+.cap-infobar { background: $infobar; border: 1px solid $infobar_bd; border-radius: 5px; margin: 0; padding: 0; }
 .info-title { font-weight: 600; color: $text; }
 .info-desc { color: $text; letter-spacing: 0.1px; }
 .cap-infobar button.link { background: none; border: none; box-shadow: none; padding: 0; margin: 0; color: $link; min-height: 0; min-width: 0; }
@@ -98,23 +98,23 @@ menu menuitem label, .menu menuitem label { color: $text; }
 /* ---- botões de precisão (barra de ferramentas) ---- */
 button.px { background: transparent; background-image: none; border: 0 solid transparent; border-radius: 4px; padding: 0; margin: 0;
     min-width: 0; min-height: 0; box-shadow: none; text-shadow: none; outline: none; -gtk-icon-shadow: none; }
-button.px:hover { background: rgba(0,0,0,0.0373); }
-button.px:active { background: rgba(0,0,0,0.0241); }
+button.px:hover { background: $px_hover; }
+button.px:active { background: $px_press; }
 button.px:disabled { opacity: 1; }
 button.px:disabled image { -gtk-icon-effect: none; opacity: 1; }
 button.px.tool { border: 1px solid transparent; border-radius: 5px; }
 button.px.tool:checked { background: $tile_on; border-color: $accent; box-shadow: inset 0 0 0 2px $card; }
-button.px.newbtn { background: #fbfbfb; border: 1px solid #e5e5e5; border-bottom-color: #cccccc; border-radius: 4px; }
+button.px.newbtn { background: $new_bg; border: 1px solid $new_bd; border-bottom-color: $new_bd_bot; border-radius: 4px; }
 button.px.segl, button.px.segr { background: $seg_off; border: 1px solid $seg_out; border-radius: 0; }
 button.px.segl { border-radius: 4px 0 0 4px; border-right-color: transparent; }
 button.px.segr { border-radius: 0 4px 4px 0; border-left-color: transparent; }
 button.px.segl:checked, button.px.segr:checked { background: $seg_on; border-color: $seg_edge; }
-button.px.segl:checked { border-right-color: #cccccc; }
-button.px.segr:checked { border-left-color: #cccccc; }
-box.pxsep { background: #e0e0e0; min-width: 1px; }
-box.tbline { background: #e0e0e0; min-height: 1px; }
+button.px.segl:checked { border-right-color: $seg_join; }
+button.px.segr:checked { border-left-color: $seg_join; }
+box.pxsep { background: $pxsep; min-width: 1px; }
+box.tbline { background: $pxsep; min-height: 1px; }
 button.caption { background: transparent; background-image: none; border: 0; border-radius: 0; padding: 0; margin: 0; min-width: 0; min-height: 0; box-shadow: none; outline: none; }
-button.caption:hover { background: rgba(0,0,0,0.0373); }
+button.caption:hover { background: $px_hover; }
 button.caption-close:hover { background: #c42b1c; }
 .ind-bar { background: $accent; border-radius: 2px; min-width: 16px; min-height: 3px; }
 .cap-toolbar { background: $bg0; }
@@ -132,7 +132,7 @@ button.wmi:disabled label { color: $disabled_icon; }
 .wmenu-sep { background: $menu_sep; min-height: 1px; margin: 3px 0; }
 .wmenu-sep.tight { margin: 1px 0; }
 /* measured tool palettes */
-.wflyout { border-color: #c4c4c4; border-radius: 4px; }
+.wflyout { border-color: $fly_bd; border-radius: 4px; }
 button.palette-swatch { background: transparent; background-image: none; border: 0; border-radius: 20px; padding: 0; margin: 0; min-width: 0; min-height: 0; box-shadow: none; outline: none; }
 button.palette-swatch:hover { background: $hover; }
 scale.palette-size { padding: 0; margin: 0; }

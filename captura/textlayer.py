@@ -5,6 +5,7 @@ import os
 import re
 import subprocess
 import tempfile
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 
 from . import services
@@ -125,15 +126,20 @@ def ocr_surface(surface):
     with tempfile.TemporaryDirectory() as d:
         orig = os.path.join(d, "orig.png")
         pb.savev(orig, "png", [], [])
-        sparse = parse_tsv(_tesseract(orig, 11, want), 1)
-        if sparse and detect_table(sparse) is not None:
-            return sparse
         scale, src = 1, orig
         if max(w, h) < 1200:
             scale = 2
             src = os.path.join(d, "x2.png")
             pb.scale_simple(w * 2, h * 2, GdkPixbuf.InterpType.BILINEAR).savev(src, "png", [], [])
-        return parse_tsv(_tesseract(src, 4, want), scale)
+        # os dois modos rodam em paralelo (processos independentes): o tempo total cai de ~soma para ~máximo
+        with ThreadPoolExecutor(2) as ex:
+            f_sparse = ex.submit(_tesseract, orig, 11, want)
+            f_plain = ex.submit(_tesseract, src, 4, want)
+            sparse = parse_tsv(f_sparse.result(), 1)
+            plain = parse_tsv(f_plain.result(), scale)
+    if sparse and detect_table(sparse) is not None:
+        return sparse
+    return plain
 
 
 # ------------------------------------------------------------------ geometria (medida no Windows)

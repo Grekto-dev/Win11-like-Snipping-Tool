@@ -12,7 +12,7 @@ gi.require_version("Gdk", "3.0")
 import cairo
 from gi.repository import Gtk, Gdk, Gio, GLib
 
-from . import APP_ID, APP_NAME, grab, icons, keybindings, services, theme
+from . import APP_ID, grab, icons, keybindings, services, theme
 from .config import settings
 from .overlay import Overlay
 from .window import EditorWindow
@@ -527,6 +527,8 @@ class CapturaApp(Gtk.Application):
         if self.rec_outline:
             self.rec_outline.destroy()
         self.rec_bar = self.rec_outline = None
+        if self.recorder is not None:
+            self.recorder.close()
         self.recorder = None
 
     @staticmethod

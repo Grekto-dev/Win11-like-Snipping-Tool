@@ -31,6 +31,8 @@ class Canvas(Gtk.DrawingArea):
                         Gdk.EventMask.SMOOTH_SCROLL_MASK | Gdk.EventMask.KEY_PRESS_MASK |
                         Gdk.EventMask.LEAVE_NOTIFY_MASK)
         self.base = None
+        self._scaled = None
+        self._zoom_seen, self._zoom_t, self._rebuild_id = None, 0.0, 0
         self.items = []
         self.undo_stack = []
         self.redo_stack = []
@@ -321,19 +323,28 @@ class Canvas(Gtk.DrawingArea):
         ox, oy = self.origin()
         cr.save()
         cr.translate(ox, oy)
-        cr.scale(self.zoom, self.zoom)
         iw, ih = self.base.get_width(), self.base.get_height()
-        cr.set_source_surface(self.base, 0, 0)
-        f = cr.get_source()
         if self.zoom < 1:
-            f.set_filter(cairo.FILTER_GOOD)
-        elif self.zoom >= 2:
-            f.set_filter(cairo.FILTER_NEAREST)
-        cr.paint()
+            sc = self._scaled_base()                              # reduzir a imagem a cada quadro era o gargalo (16 ms em 1080p)
+            if sc is not None:
+                cr.set_source_surface(sc, 0, 0)
+                cr.paint()
+                cr.scale(self.zoom, self.zoom)
+            else:                                                 # zoom em andamento: reduz rápido agora, refaz bonito depois
+                cr.scale(self.zoom, self.zoom)
+                cr.set_source_surface(self.base, 0, 0)
+                cr.get_source().set_filter(cairo.FILTER_BILINEAR)
+                cr.paint()
+        else:
+            cr.scale(self.zoom, self.zoom)
+            cr.set_source_surface(self.base, 0, 0)
+            if self.zoom >= 2:
+                cr.get_source().set_filter(cairo.FILTER_NEAREST)
+            cr.paint()
         cr.save()
         cr.rectangle(0, 0, iw, ih)
         cr.clip()
-        annot.draw_all(cr, self.items)
+        annot.draw_all(cr, self.items, cr.clip_extents())
         if self.cur_stroke:
             annot.draw_stroke(cr, self.cur_stroke)
         cr.restore()
@@ -366,6 +377,33 @@ class Canvas(Gtk.DrawingArea):
             cr.arc(x, y, 9, 0, 2 * math.pi)
             cr.stroke()
         return False
+
+    def _scaled_base(self):
+        """Imagem reduzida ao zoom atual, em cache (a base nunca é alterada no lugar: só trocada)."""
+        c = self._scaled
+        now = time.monotonic()
+        if self.zoom != self._zoom_seen:
+            self._zoom_seen, self._zoom_t = self.zoom, now
+        if c is None or c[0] is not self.base or c[1] != self.zoom:
+            if c is not None and c[0] is self.base and now - self._zoom_t < 0.12:
+                if not self._rebuild_id:
+                    self._rebuild_id = GLib.timeout_add(140, self._rebuild_scaled)
+                return None
+            iw, ih = self.base.get_width(), self.base.get_height()
+            surf = cairo.ImageSurface(cairo.FORMAT_ARGB32, max(1, math.ceil(iw * self.zoom)), max(1, math.ceil(ih * self.zoom)))
+            cr = cairo.Context(surf)
+            cr.scale(self.zoom, self.zoom)
+            cr.set_source_surface(self.base, 0, 0)
+            cr.get_source().set_filter(cairo.FILTER_GOOD)
+            cr.paint()
+            c = self._scaled = (self.base, self.zoom, surf)
+        return c[2]
+
+    def _rebuild_scaled(self):
+        self._rebuild_id = 0
+        if self.get_realized():
+            self.queue_draw()
+        return GLib.SOURCE_REMOVE
 
     def draw_text_layer(self, cr, iw, ih):
         """Modo Ações de texto (medido no Windows): imagem esmaecida a 57 %, cada linha reconhecida numa caixa

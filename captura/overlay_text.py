@@ -19,7 +19,7 @@ from gi.repository import Gdk, GLib, Gtk
 
 from . import icons, text_anim, textlayer, theme
 from .config import settings
-from .shape_bar import draw_text, icon_chevron, rgb, text_rgb
+from .shape_bar import draw_text, rgb, text_rgb
 from .text_bar import icon_copy
 
 # --------------------------------------------------------------------------- medidas (relativas à barra / ao cartão)

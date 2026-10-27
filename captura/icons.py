@@ -177,7 +177,6 @@ def apply_palette(pal):
     _PALETTE.update(text=pal["text"], chev=pal.get("chev", pal["subtle"]),
                     disabled=pal.get("disabled_icon", pal["disabled"]), accent=pal["accent"])
     TEXT_COLOR[0] = pal["text"]
-    _cache_keep = {}
     for img, name, size, role in tuple(_themed):
         img.set_from_pixbuf(pixbuf(name, size, _PALETTE[role]))
 

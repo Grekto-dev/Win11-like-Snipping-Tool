@@ -159,7 +159,6 @@ class InfoTip(Gtk.DrawingArea):
         GLib.timeout_add(16, tick)
 
     def _draw(self, _w, cr):
-        import textwrap
         pal = theme.palette()
         a, W, H, R = self.ARROW, self.W - 1, self.H, 8
         if self.scale < 1.0:
