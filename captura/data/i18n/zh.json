@@ -238,5 +238,8 @@
 "A pesquisa visual envia a imagem ao Bing (serviço da web da Microsoft). Deseja continuar?": "视觉搜索会将图像发送到 Bing（Microsoft 网络服务）。是否继续？",
 "Pesquisar": "搜索",
 "Não foi possível iniciar a pesquisa visual": "无法启动视觉搜索",
-"Falha ao codificar a imagem.": "无法编码图像。"
+"Falha ao codificar a imagem.": "无法编码图像。",
+"Mostrar uma notificação e copiar para a área de transferência": "显示通知并复制到剪贴板",
+"Mostrar apenas uma notificação": "仅显示通知",
+"Captura de tela feita.": "已截图。"
 }

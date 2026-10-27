@@ -427,9 +427,10 @@ class CapturaApp(Gtk.Application):
         if border:
             from . import annot
             out = annot.render(surf, [], border)
-        services.copy_surface(out)
-        path = services.autosave(out)
         after = settings["shot_after"]
+        if after != "notify":                      # "só notificação" não mexe na área de transferência; as demais opções copiam
+            services.copy_surface(out)
+        path = services.autosave(out)
         # "Novo" na janela, marcação rápida ou janela do app aberta sempre voltam ao editor; senão vale a escolha em Configurações
         open_editor = self._from_app or settings["quick_markup"] or bool(self._hidden) or after == "editor"
         self._hidden = []
@@ -439,7 +440,10 @@ class CapturaApp(Gtk.Application):
             return
         if after == "copy":
             return                                 # só copiar: a imagem já está na área de transferência (e salva, se o salvamento automático estiver ligado)
-        body = "Salvo automaticamente na pasta de capturas de tela." if path else "Copiado para a área de transferência."
+        if path:
+            body = "Salvo automaticamente na pasta de capturas de tela."
+        else:
+            body = "Copiado para a área de transferência." if after != "notify" else "Captura de tela feita."
         def open_it():
             w = self.get_window(new=settings["shot_multi_window"] and bool(self.windows) and self.windows[-1].canvas.base is not None)
             w.load_surface(surf, new_capture=True, path=path)

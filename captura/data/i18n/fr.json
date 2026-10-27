@@ -238,5 +238,8 @@
 "A pesquisa visual envia a imagem ao Bing (serviço da web da Microsoft). Deseja continuar?": "La recherche visuelle envoie l’image à Bing (un service web de Microsoft). Voulez-vous continuer ?",
 "Pesquisar": "Rechercher",
 "Não foi possível iniciar a pesquisa visual": "Impossible de démarrer la recherche visuelle",
-"Falha ao codificar a imagem.": "Échec de l’encodage de l’image."
+"Falha ao codificar a imagem.": "Échec de l’encodage de l’image.",
+"Mostrar uma notificação e copiar para a área de transferência": "Afficher une notification et copier dans le presse-papiers",
+"Mostrar apenas uma notificação": "Afficher uniquement une notification",
+"Captura de tela feita.": "Capture d’écran effectuée."
 }

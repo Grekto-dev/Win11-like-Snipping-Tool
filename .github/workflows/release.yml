@@ -1,0 +1,78 @@
+name: Release
+
+# Pushing a tag like v1.0.0 tests the project, builds captura_<version>_all.deb and publishes it as a GitHub Release.
+# "Run workflow" (manual) only builds the package and keeps it as a build artifact.
+on:
+  push:
+    tags: ["v*.*.*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  deb:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build and test dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            python3-gi python3-gi-cairo python3-cairo gir1.2-gtk-3.0 gir1.2-gdkpixbuf-2.0 gir1.2-pango-1.0 \
+            gir1.2-wnck-3.0 gir1.2-notify-0.7 librsvg2-common xdg-utils \
+            tesseract-ocr tesseract-ocr-eng ffmpeg libzbar0 python3-xlib python3-qrcode python3-pil \
+            xvfb dbus-x11 x11-utils xclip fakeroot dpkg-dev desktop-file-utils fonts-liberation
+
+      - name: Check that the tag matches the version in the code
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          code_version="$(python3 -c 'import re; print(re.search(r"__version__ = \"([^\"]+)\"", open("captura/__init__.py").read()).group(1))')"
+          tag_version="${GITHUB_REF_NAME#v}"
+          echo "tag=$tag_version code=$code_version"
+          test "$tag_version" = "$code_version"
+
+      - name: Run the tests
+        timeout-minutes: 25
+        run: |
+          export NO_AT_BRIDGE=1 GTK_USE_PORTAL=0 CAPTURA_NO_ANIM=1
+          xvfb-run -a -s "-screen 0 1920x1080x24" dbus-run-session -- python3 -X faulthandler -m unittest discover -s tests -v
+
+      - name: Validate the desktop entry
+        run: desktop-file-validate data/captura.desktop
+
+      - name: Build the .deb
+        run: scripts/build-deb.sh
+
+      - name: Install the package and smoke-test it
+        run: |
+          sudo apt-get install -y --no-install-recommends ./dist/captura_*_all.deb
+          captura --version
+          # The app must stay alive for 6 s on a virtual display (timeout exits with 124).
+          # Output goes to a file: helper daemons started by GTK would otherwise keep the step's pipe open.
+          export NO_AT_BRIDGE=1 GTK_USE_PORTAL=0
+          set +e
+          xvfb-run -a dbus-run-session -- timeout -k 2 6 captura > /tmp/captura-smoke.log 2>&1 < /dev/null
+          code=$?
+          set -e
+          cat /tmp/captura-smoke.log
+          test "$code" = "124"
+
+      - name: Upload the package as a build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: captura-deb
+          path: |
+            dist/*.deb
+            dist/*.sha256
+
+      - name: Publish the GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" dist/*.deb dist/*.sha256 \
+            --title "Win11-like Snipping Tool for Linux ${GITHUB_REF_NAME#v}" \
+            --notes-file RELEASE_NOTES.md \
+            --verify-tag

@@ -25,7 +25,7 @@ DEFAULTS = {
     # Ações de texto
     "redact_emails": True,
     "language": "en",                   # pt-BR | en | zh | ja | es | fr | it
-    "shot_after": "notify",             # editor | notify | copy: o que acontece logo após a captura
+    "shot_after": "notify_copy",        # notify | notify_copy | copy | editor: o que acontece logo após a captura
     "ocr_auto_copy": False,
     "ocr_remove_breaks": False,
     "redact_phones": True,

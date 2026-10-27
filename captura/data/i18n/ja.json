@@ -238,5 +238,8 @@
 "A pesquisa visual envia a imagem ao Bing (serviço da web da Microsoft). Deseja continuar?": "ビジュアル検索は画像を Bing (Microsoft の Web サービス) に送信します。続行しますか？",
 "Pesquisar": "検索",
 "Não foi possível iniciar a pesquisa visual": "ビジュアル検索を開始できませんでした",
-"Falha ao codificar a imagem.": "画像のエンコードに失敗しました。"
+"Falha ao codificar a imagem.": "画像のエンコードに失敗しました。",
+"Mostrar uma notificação e copiar para a área de transferência": "通知を表示してクリップボードにコピー",
+"Mostrar apenas uma notificação": "通知のみ表示",
+"Captura de tela feita.": "スクリーンショットを撮影しました。"
 }

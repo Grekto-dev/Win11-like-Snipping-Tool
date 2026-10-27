@@ -69,7 +69,7 @@ class CatalogTests(unittest.TestCase):
     def test_default_language_is_english_and_options_cover_the_seven_languages(self):
         from captura import config
         self.assertEqual(config.DEFAULTS["language"], "en")
-        self.assertEqual(config.DEFAULTS["shot_after"], "notify")
+        self.assertEqual(config.DEFAULTS["shot_after"], "notify_copy")
         self.assertEqual([c for c, _ in i18n.LANGS], ["pt-BR", "en", "zh", "ja", "es", "fr", "it"])
 
     def test_tr_falls_back_to_english_then_source(self):
@@ -205,18 +205,38 @@ class AfterCaptureTests(unittest.TestCase):
         self.pb = GdkPixbuf.Pixbuf.new(GdkPixbuf.Colorspace.RGB, True, 8, 40, 30)
         self.pb.fill(0x336699ff)
 
-    def test_the_capture_is_always_copied_to_the_clipboard(self):
-        for mode in ("notify", "editor", "copy"):
+    def test_clipboard_is_used_by_every_mode_except_notification_only(self):
+        for mode, expected in (("notify_copy", 1), ("editor", 1), ("copy", 1), ("notify", 0)):
             settings["shot_after"] = mode
             self.copied.clear()
             self.app.handle_image(self.pb)
-            self.assertEqual(len(self.copied), 1, mode)
+            self.assertEqual(len(self.copied), expected, mode)
 
-    def test_notify_mode_shows_a_notification_and_does_not_open_the_editor(self):
+    def test_notify_and_copy_mode_shows_a_notification_copies_and_does_not_open_the_editor(self):
+        settings["shot_after"] = "notify_copy"
+        self.app.handle_image(self.pb)
+        self.assertEqual(len(self.notified), 1)
+        self.assertEqual(len(self.copied), 1)
+        self.assertEqual(self.opened, [])
+        self.assertIn("Copiado para a área de transferência", self.notified[0][1])
+
+    def test_notify_only_mode_shows_a_notification_without_touching_the_clipboard(self):
         settings["shot_after"] = "notify"
         self.app.handle_image(self.pb)
         self.assertEqual(len(self.notified), 1)
-        self.assertEqual(self.opened, [])
+        self.assertEqual((self.copied, self.opened), ([], []))
+        self.assertNotIn("Copiado", self.notified[0][1])
+
+    def test_dropdown_lists_the_four_options_with_notify_and_copy_first(self):
+        import inspect
+        from captura import settings_page
+        src = inspect.getsource(settings_page.SettingsPage.__init__)
+        order = [src.index('"%s"' % k) for k in ("notify_copy", "notify", "copy", "editor")]
+        self.assertEqual(order, sorted(order))
+
+    def test_about_shows_version_1_0_0(self):
+        import captura
+        self.assertEqual(captura.__version__, "1.0.0")
 
     def test_editor_mode_opens_the_editor_without_a_notification(self):
         settings["shot_after"] = "editor"

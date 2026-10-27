@@ -238,5 +238,8 @@
 "A pesquisa visual envia a imagem ao Bing (serviço da web da Microsoft). Deseja continuar?": "Visual search sends the image to Bing (a Microsoft web service). Do you want to continue?",
 "Pesquisar": "Search",
 "Não foi possível iniciar a pesquisa visual": "Could not start the visual search",
-"Falha ao codificar a imagem.": "Failed to encode the image."
+"Falha ao codificar a imagem.": "Failed to encode the image.",
+"Mostrar uma notificação e copiar para a área de transferência": "Show a notification and copy to the clipboard",
+"Mostrar apenas uma notificação": "Show a notification only",
+"Captura de tela feita.": "Screenshot taken."
 }

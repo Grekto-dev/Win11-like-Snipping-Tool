@@ -127,8 +127,10 @@ class SettingsPage(Gtk.Box):
         self.dropdown_row("Idioma", "Troca o idioma do aplicativo na hora", [(c, n) for c, n in i18n.LANGS], "language",
                           native=True, on_change=i18n.set_language)
         self.dropdown_row("Após a captura", "O que acontece logo depois de uma captura de tela",
-                          [("notify", "Mostrar uma notificação"), ("editor", "Abrir a captura no editor"),
-                           ("copy", "Apenas copiar para a área de transferência")], "shot_after")
+                          [("notify_copy", "Mostrar uma notificação e copiar para a área de transferência"),
+                           ("notify", "Mostrar apenas uma notificação"),
+                           ("copy", "Apenas copiar para a área de transferência"),
+                           ("editor", "Abrir a captura no editor")], "shot_after", width=450)
 
         self.section("Sobre este app", about=True)
         about = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
@@ -209,7 +211,7 @@ class SettingsPage(Gtk.Box):
         l.set_margin_start(1 if not about else 32)
         self.col.pack_start(l, False, False, 0)
 
-    def dropdown_row(self, title, desc, options, key, native=False, on_change=None):
+    def dropdown_row(self, title, desc, options, key, native=False, on_change=None, width=246):
         """Cartão com título, descrição e uma lista suspensa (menu do Windows 11) à direita. `native`: rótulos que não se traduzem."""
         card = _card()
         row = Gtk.Box(spacing=0)
@@ -227,7 +229,8 @@ class SettingsPage(Gtk.Box):
         btn.get_style_context().add_class("dropdown-btn")
         inner = Gtk.Box(spacing=10)
         lab = Gtk.Label(xalign=0)
-        lab.set_width_chars(22)
+        lab.set_width_chars(max(22, width // 9))
+        lab.set_ellipsize(3)                                  # Pango.EllipsizeMode.END
         inner.pack_start(lab, True, True, 0)
         inner.pack_end(icons.image("chevron_down", 12, theme.icon_color()), False, False, 0)
         btn.add(inner)
@@ -247,10 +250,10 @@ class SettingsPage(Gtk.Box):
 
         def open_menu(_b):
             items = [("checksm" if settings[key] == c else None, n, None, (lambda c=c: pick(c))) for c, n in options]
-            m = menus.Menu(items, menus.DROPDOWN)
+            m = menus.Menu(items, dict(menus.DROPDOWN, width=width))
             ox, oy = menus.anchor_origin(btn)
             a = btn.get_allocation()
-            m.open_at(ox + a.width - menus.DROPDOWN["width"], oy + a.height + 2)
+            m.open_at(ox + a.width - width, oy + a.height + 2)
         btn.connect("clicked", open_menu)
         card.pack_start(row, False, False, 0)
         self.col.pack_start(card, False, False, 0)

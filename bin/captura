@@ -3,5 +3,10 @@
 import os, sys
 here = os.path.dirname(os.path.realpath(__file__))
 sys.path.insert(0, os.path.dirname(here))
+if "--version" in sys.argv[1:] or "-V" in sys.argv[1:]:
+    import re
+    src = open(os.path.join(os.path.dirname(here), "captura", "__init__.py"), encoding="utf-8").read()
+    print("captura " + re.search(r'__version__ = "([^"]+)"', src).group(1))
+    sys.exit(0)
 from captura.app import main
 sys.exit(main(sys.argv))

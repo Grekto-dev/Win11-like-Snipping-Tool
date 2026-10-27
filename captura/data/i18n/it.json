@@ -238,5 +238,8 @@
 "A pesquisa visual envia a imagem ao Bing (serviço da web da Microsoft). Deseja continuar?": "La ricerca visiva invia l’immagine a Bing (un servizio web di Microsoft). Vuoi continuare?",
 "Pesquisar": "Cerca",
 "Não foi possível iniciar a pesquisa visual": "Impossibile avviare la ricerca visiva",
-"Falha ao codificar a imagem.": "Codifica dell’immagine non riuscita."
+"Falha ao codificar a imagem.": "Codifica dell’immagine non riuscita.",
+"Mostrar uma notificação e copiar para a área de transferência": "Mostra una notifica e copia negli appunti",
+"Mostrar apenas uma notificação": "Mostra solo una notifica",
+"Captura de tela feita.": "Screenshot acquisito."
 }
