@@ -145,3 +145,22 @@ Medido e implementado (`captura/text_anim.py`):
 
 Diferenças restantes: o Tesseract não lê dígitos soltos em tabelas ("4", "1"); a tarja da redação aparece de uma vez (o Windows faz fade de ~250 ms);
 animação de seleção/cópia (mudanças < 0,5 de MAE) não replicada; o OCR do Windows é mais rápido que o Tesseract em imagens grandes (a varredura espera o OCR).
+
+# Referência — Extrator de texto dentro da captura (Windows, página "lorem ipsum")
+
+Gravado com `snip-tool-research/lprec.py lp-flow` (427 quadros, ~30 fps, região 200,0 760×440) + capturas `shots/ref/lp-*.png`.
+Fluxo: janela → **Novo** → overlay → **Extrator de texto** → arrastar um retângulo → arrastar dentro do texto detectado.
+Tempos relativos à gravação (ms); a pasta `frames/lp-flow` guarda os quadros.
+
+1. **Novo (clique ≈3,55 s):** a janela do app some em ~130 ms (fade); ~0,5 s depois o overlay aparece **de uma vez** (sem fade): tela escurecida
+   (brilho 238→95, ≈ preto a 60%) e a barra superior de captura surge no mesmo quadro.
+2. **Extrator de texto (clique ≈5,6 s):** a barra é trocada **instantaneamente** (sem animação) por outra: `←` | `Copiar todo o texto` (desabilitado, cinza) | `⋯` | `✕`, centrada no topo (≈ x 558–882, y 13–62).
+   O botão de texto aparece pressionado (cinza) um quadro antes. A escuridão não muda. Cursor: cruz (+).
+3. **Arrasto (≈7,7–8,2 s):** o retângulo vira uma janela **sem escurecimento** (mostra a tela normal) com borda branca tracejada de 1 px; o texto dentro fica nítido; a barra segue desabilitada.
+4. **Soltar (≈8,2 s):** surge uma borda de **gradiente** (azul→violeta→rosa/coral, ~4 px, em rotação) em volta da seleção durante o reconhecimento: de 8,37 s a ≈8,85 s (≈0,5–0,6 s);
+   "Copiar todo o texto" **habilita** em ≈8,6 s (texto preto). Fim: a borda vira **branca grossa em L nos cantos + alças brancas nos meios das arestas** (cantos 3×... alças tipo pílula), contorno tracejado fino por dentro,
+   e as **linhas de texto ficam em caixas brancas** sobre o fundo escurecido (a imagem fora das linhas permanece escura *dentro da seleção também*: só as linhas ficam claras).
+5. **Arrastar dentro do texto (≈11,6–12,3 s):** o cursor vira I-beam; a seleção é feita **palavra a palavra em ordem de leitura** (da âncora ao cursor): realce azul claro `#b2d6f2` por linha, parcial na primeira/última linha; cresce a cada movimento.
+6. **Soltar a seleção de texto (≈12,2 s):** aparece de uma vez, sem animação, uma **mini barra flutuante** (fundo `#f9f9f9`, cantos ~8 px, sombra suave, ≈ 89×47) com dois ícones: copiar `⧉` e QR/código `⠿`, **posicionada logo à direita e abaixo do ponto final do arrasto** (canto superior-esquerdo ≈ (fim.x, fim.y+4)); fica visível mesmo com o mouse longe.
+   A seleção azul permanece; o botão da barra principal continua "Copiar todo o texto".
+7. **✕:** o overlay inteiro fecha (menos de 1,5 s) e volta a janela "Pressione ⊞ + Shift + S" (a mesma do início).
