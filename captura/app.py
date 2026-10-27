@@ -575,6 +575,8 @@ class CapturaApp(Gtk.Application):
 
     @staticmethod
     def _remove_quietly(path):
+        if not path:
+            return
         try:
             os.remove(path)
         except OSError:

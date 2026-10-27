@@ -58,7 +58,7 @@ class _AppCase(unittest.TestCase):
         self.app._rec_scratch_dir = lambda: self.scratch
         self.recdir = tempfile.mkdtemp(prefix="captura-app-rec-")
         self.addCleanup(shutil.rmtree, self.recdir, True)
-        for key, value in (("rec_dir", self.recdir), ("rec_autosave", True)):
+        for key, value in (("rec_dir", self.recdir), ("rec_autosave", True), ("rec_mic", False), ("rec_system_audio", False)):   # sem PulseAudio (CI) o aviso de áudio não pode interferir
             old = settings[key]
             settings[key] = value
             self.addCleanup(settings.__setitem__, key, old)
@@ -153,7 +153,7 @@ class RealRecordingFlowTests(_AppCase):
         path = os.path.join(self.recdir, files[0])
         self.assertEqual(decode_errors(path), "")
         # ~2,5 s + ~2,0 s gravados menos a latência de início de cada trecho; os 1,5 s de pausa ficam de fora
-        self.assertTrue(2.0 <= duration(path) <= 4.0, duration(path))
+        self.assertTrue(2.0 <= duration(path) <= 5.0, duration(path))     # com a pausa (1,5 s) incluída seriam ~6 s
         self.assertEqual(ffprobe(path)["streams"][0]["codec_type"], "video")
         self.app.msg.assert_not_called()
         self.assertIn(60000, self.releases)               # hold da captura liberado (com atraso)

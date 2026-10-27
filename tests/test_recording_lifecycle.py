@@ -30,6 +30,10 @@ class RecordingLifecycleTests(unittest.TestCase):
         old = settings['rec_dir']
         settings['rec_dir'] = self.temp.name
         self.addCleanup(lambda: settings.__setitem__('rec_dir', old))
+        for key in ('rec_mic', 'rec_system_audio'):      # sem PulseAudio (CI) o aviso de áudio não pode interferir
+            prev = settings[key]
+            settings[key] = False
+            self.addCleanup(settings.__setitem__, key, prev)
 
     def _record(self, autosave, fake_file=b"video"):
         """Runs start→stop with a fake recorder that really writes its output file."""
