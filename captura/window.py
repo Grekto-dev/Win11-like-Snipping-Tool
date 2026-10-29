@@ -165,6 +165,7 @@ class EditorWindow(Gtk.ApplicationWindow):
 
         self.connect("delete-event", self.on_delete)
         self.connect("destroy", self._close_popups)
+        self.connect("destroy", lambda *_args: self._cancel_text_ocr())
         self.connect("key-press-event", self.on_key)
         self.refresh_state()
         root.show_all()
@@ -301,6 +302,9 @@ class EditorWindow(Gtk.ApplicationWindow):
 
     # --------------------------------------------------------------- imagem
     def load_surface(self, surface, name=None, new_capture=False, path=None):
+        self._cancel_text_ocr()
+        if self.btn_text.get_active():
+            self.btn_text.set_active(False)
         self.canvas.set_image(surface)
         self.btn_text.set_sensitive(True)
         self.hide_notice()
@@ -626,12 +630,18 @@ class EditorWindow(Gtk.ApplicationWindow):
         self.infotip.hide()
         return False
 
+    def _cancel_text_ocr(self):
+        token = getattr(self, "_text_job", None)
+        if token is not None:
+            textlayer.cancel_ocr(token)
+        self._text_job = None
+
     def toggle_text_mode(self, btn):
         if not btn.get_active():
             was_text = self.canvas.tool == "text"
             if was_text:
                 self.canvas.set_tool(None)                 # cancela a animação: a saída é instantânea
-            self._text_job = None
+            self._cancel_text_ocr()
             self.text_bar.hide()
             self.text_holder.hide()
             self.set_text_bar_offset(0)
@@ -651,7 +661,7 @@ class EditorWindow(Gtk.ApplicationWindow):
             self.btn_crop.set_active(False)
         for tb in self.tool_btns.values():
             tb.set_active(False)
-        self._text_job = job = object()
+        self._text_job = job = textlayer.new_ocr_job(self)
         self.text_bar.hide()
         self.text_holder.hide()
         self.canvas.begin_text_scan()
@@ -659,7 +669,7 @@ class EditorWindow(Gtk.ApplicationWindow):
 
         def work():
             try:
-                words = textlayer.ocr_surface(s)
+                words = textlayer.ocr_surface(s, job=job)
                 err = None
             except Exception as e:
                 words, err = [], str(e)

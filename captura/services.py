@@ -153,29 +153,42 @@ def ocr_available():
     return shutil.which("tesseract") is not None
 
 
+_ocr_langs = None
+
+
 def ocr_languages():
-    try:
-        out = subprocess.run(["tesseract", "--list-langs"], capture_output=True, text=True, timeout=5).stdout.split()[1:]
-        return [l for l in out if l != "osd"]
-    except Exception:
-        return []
+    """Idiomas instalados do Tesseract (consultado uma vez por execução: cada consulta custava um processo novo)."""
+    global _ocr_langs
+    if _ocr_langs is None:
+        try:
+            out = subprocess.run(["tesseract", "--list-langs"], capture_output=True, text=True, timeout=5).stdout.split()[1:]
+            _ocr_langs = [l for l in out if l != "osd"]
+        except Exception:
+            return []
+    return list(_ocr_langs)
+
+
+def ocr_language_spec():
+    """Idiomas usados no reconhecimento, no formato do Tesseract ("por+eng"); "" se nenhum pacote estiver instalado."""
+    langs = ocr_languages()
+    return "+".join([l for l in ("por", "eng") if l in langs] or langs[:1])
 
 
 def ocr_pixbuf(pb):
-    """Extrai texto com o tesseract (pt+en quando instalados)."""
-    langs = ocr_languages()
-    want = [l for l in ("por", "eng") if l in langs] or (langs[:1] if langs else [])
-    with tempfile.TemporaryDirectory() as d:
-        src = os.path.join(d, "in.png")
-        w, h = pb.get_width(), pb.get_height()
-        if max(w, h) < 1200:
-            pb = pb.scale_simple(w * 2, h * 2, GdkPixbuf.InterpType.BILINEAR)
+    """Auxiliary plain-text command: retain the published PSM 6 text formatting."""
+    langs = ocr_language_spec()
+    with tempfile.TemporaryDirectory() as directory:
+        src = os.path.join(directory, "in.png")
+        width, height = pb.get_width(), pb.get_height()
+        if max(width, height) < 1200:
+            pb = pb.scale_simple(width * 2, height * 2, GdkPixbuf.InterpType.BILINEAR)
         pb.savev(src, "png", [], [])
         cmd = ["tesseract", src, "stdout", "--psm", "6"]
-        if want:
-            cmd += ["-l", "+".join(want)]
-        r = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
-        return r.stdout.strip()
+        if langs:
+            cmd += ["-l", langs]
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=300, check=True,
+                                env=dict(os.environ, OMP_THREAD_LIMIT="1", OMP_NUM_THREADS="1"))
+        return result.stdout.strip()
 
 
 # ------------------------------------------------------------------ editores externos

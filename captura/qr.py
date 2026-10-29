@@ -38,6 +38,8 @@ def _load():
         lib.zbar_image_set_size.argtypes = [ctypes.c_void_p, ctypes.c_uint, ctypes.c_uint]
         lib.zbar_image_set_data.argtypes = [ctypes.c_void_p, ctypes.c_void_p, ctypes.c_ulong, ctypes.c_void_p]
         lib.zbar_scan_image.argtypes = [ctypes.c_void_p, ctypes.c_void_p]
+        lib.zbar_image_convert.argtypes = [ctypes.c_void_p, ctypes.c_ulong]
+        lib.zbar_image_convert.restype = ctypes.c_void_p
         lib.zbar_image_destroy.argtypes = [ctypes.c_void_p]
         _lib = lib
         return lib
@@ -48,16 +50,46 @@ def available():
     return _load() is not None
 
 
-def _gray(surface):
-    """Cairo ARGB32 -> bytes de 8 bits (luminância), no tamanho original."""
-    w, h, stride = surface.get_width(), surface.get_height(), surface.get_stride()
-    data = bytes(surface.get_data())
-    out = bytearray(w * h)
-    for y in range(h):
-        row = data[y * stride:y * stride + w * 4]
-        b, g, r = row[0::4], row[1::4], row[2::4]
-        out[y * w:(y + 1) * w] = bytes((29 * bb + 150 * gg + 77 * rr) >> 8 for bb, gg, rr in zip(b, g, r))
-    return w, h, bytes(out)
+def _rgb(pb):
+    """Bytes RGB sem preenchimento de linha (o zbar converte para cinza em C: nada de laços em Python por pixel)."""
+    w, h, stride = pb.get_width(), pb.get_height(), pb.get_rowstride()
+    data = pb.get_pixels()
+    if stride == w * 3:
+        return bytes(data)
+    return b"".join(data[y * stride:y * stride + w * 3] for y in range(h))
+
+
+def _scan(lib, w, h, rgb):
+    sc = lib.zbar_image_scanner_create()
+    lib.zbar_image_scanner_set_config(sc, 0, 0, 0)                   # tudo desligado
+    lib.zbar_image_scanner_set_config(sc, Z_QRCODE, Z_CFG_ENABLE, 1)
+    lib.zbar_image_scanner_set_config(sc, 0, Z_CFG_BINARY, 1)         # bytes brutos: o zbar não adivinha o encoding
+    img = lib.zbar_image_create()
+    lib.zbar_image_set_format(img, 0x33424752)                       # 'RGB3'
+    lib.zbar_image_set_size(img, w, h)
+    buf = ctypes.create_string_buffer(rgb, len(rgb))
+    lib.zbar_image_set_data(img, buf, len(rgb), None)
+    found = []
+    gray = lib.zbar_image_convert(img, 0x30303859)                   # RGB3 -> 'Y800' (em C; o scanner só aceita cinza)
+    if gray and lib.zbar_scan_image(sc, gray) > 0:
+        sym = lib.zbar_image_first_symbol(gray)
+        while sym:
+            if lib.zbar_symbol_get_type(sym) == Z_QRCODE:
+                n = lib.zbar_symbol_get_data_length(sym)
+                data = ctypes.string_at(lib.zbar_symbol_get_data(sym), n)
+                if data:
+                    try:
+                        t = data.decode("utf-8")
+                    except UnicodeDecodeError:
+                        t = data.decode("latin-1")
+                    if t not in found:
+                        found.append(t)
+            sym = lib.zbar_symbol_next(sym)
+    if gray:
+        lib.zbar_image_destroy(gray)
+    lib.zbar_image_destroy(img)
+    lib.zbar_image_scanner_destroy(sc)
+    return found
 
 
 def decode(surface):
@@ -65,43 +97,19 @@ def decode(surface):
     lib = _load()
     if lib is None or surface is None:
         return []
-    found = []
-    for scale in (1, 2):
-        w, h, gray = _gray(surface)
-        if scale == 2:
-            if max(w, h) > 1400:
-                break
-            up = bytearray(w * 2 * h * 2)
-            for y in range(h):
-                line = bytes(c for c in gray[y * w:(y + 1) * w] for _ in (0, 1))
-                up[(2 * y) * (2 * w):(2 * y + 1) * (2 * w)] = line
-                up[(2 * y + 1) * (2 * w):(2 * y + 2) * (2 * w)] = line
-            w, h, gray = w * 2, h * 2, bytes(up)
-        sc = lib.zbar_image_scanner_create()
-        lib.zbar_image_scanner_set_config(sc, 0, 0, 0)                   # tudo desligado
-        lib.zbar_image_scanner_set_config(sc, Z_QRCODE, Z_CFG_ENABLE, 1)
-        lib.zbar_image_scanner_set_config(sc, 0, Z_CFG_BINARY, 1)         # bytes brutos: o zbar não adivinha o encoding
-        img = lib.zbar_image_create()
-        lib.zbar_image_set_format(img, 0x30303859)                       # 'Y800'
-        lib.zbar_image_set_size(img, w, h)
-        buf = ctypes.create_string_buffer(gray, len(gray))
-        lib.zbar_image_set_data(img, buf, len(gray), None)
-        if lib.zbar_scan_image(sc, img) > 0:
-            sym = lib.zbar_image_first_symbol(img)
-            while sym:
-                if lib.zbar_symbol_get_type(sym) == Z_QRCODE:
-                    n = lib.zbar_symbol_get_data_length(sym)
-                    data = ctypes.string_at(lib.zbar_symbol_get_data(sym), n)
-                    if data:
-                        try:
-                            t = data.decode("utf-8")
-                        except UnicodeDecodeError:
-                            t = data.decode("latin-1")
-                        if t not in found:
-                            found.append(t)
-                sym = lib.zbar_symbol_next(sym)
-        lib.zbar_image_destroy(img)
-        lib.zbar_image_scanner_destroy(sc)
-        if found:
-            break
+    import cairo
+    from gi.repository import Gdk, GdkPixbuf
+    flat = cairo.ImageSurface(cairo.FORMAT_RGB24, surface.get_width(), surface.get_height())      # sem canal alfa: pixbuf de 3 canais
+    cr = cairo.Context(flat)
+    cr.set_source_rgb(1, 1, 1)
+    cr.paint()
+    cr.set_source_surface(surface, 0, 0)
+    cr.paint()
+    pb = Gdk.pixbuf_get_from_surface(flat, 0, 0, flat.get_width(), flat.get_height())
+    if pb is None:
+        return []
+    found = _scan(lib, pb.get_width(), pb.get_height(), _rgb(pb))
+    if not found and max(pb.get_width(), pb.get_height()) <= 1400:
+        big = pb.scale_simple(pb.get_width() * 2, pb.get_height() * 2, GdkPixbuf.InterpType.BILINEAR)
+        found = _scan(lib, big.get_width(), big.get_height(), _rgb(big))
     return found

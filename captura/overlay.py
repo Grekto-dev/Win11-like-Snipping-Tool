@@ -77,7 +77,10 @@ class Overlay(Gtk.Window):
         self._moved = False                    # o botão está pressionado e o ponteiro já se moveu
         self._edge = None
         self.ts = OT.TextSession(self)
+        self.connect("destroy", lambda *_args: self.ts.reset())
         self._anim_id = 0
+        if self.tool == "ocr":
+            OT.textlayer.warm_up()                 # o modelo carrega enquanto o usuário escolhe a região
 
         self.set_decorated(False)
         self.set_app_paintable(True)
@@ -197,6 +200,8 @@ class Overlay(Gtk.Window):
 
     def set_tool(self, tool):
         self.tool = tool
+        if tool == "ocr":
+            OT.textlayer.warm_up()
         self.bar.set_tool(tool)
         self.ts.reset()
         self._show_bar_for_tool()

@@ -1,0 +1,1478 @@
+{
+  "affinity": [
+    6,
+    7
+  ],
+  "languages": "por+eng",
+  "reference_single_thread": true,
+  "repeat": 1,
+  "cache": false,
+  "tesseract": "tesseract 5.3.4",
+  "cases": [
+    {
+      "name": "dark1080",
+      "legacy": {
+        "seconds": [
+          10.539633307998884
+        ],
+        "median_seconds": 10.539633307998884,
+        "words": 1583,
+        "repeat_identical": true
+      },
+      "current": {
+        "seconds": [
+          9.47991390900279
+        ],
+        "median_seconds": 9.47991390900279,
+        "words": 1583,
+        "repeat_identical": true
+      },
+      "equal": {
+        "word_order_boxes_lines": true,
+        "clipboard_text": true,
+        "table_cells": true
+      }
+    },
+    {
+      "name": "doc900",
+      "legacy": {
+        "seconds": [
+          2.8004935030039633
+        ],
+        "median_seconds": 2.8004935030039633,
+        "words": 584,
+        "repeat_identical": true
+      },
+      "current": {
+        "seconds": [
+          2.321149665993289
+        ],
+        "median_seconds": 2.321149665993289,
+        "words": 584,
+        "repeat_identical": true
+      },
+      "equal": {
+        "word_order_boxes_lines": true,
+        "clipboard_text": true,
+        "table_cells": true
+      }
+    },
+    {
+      "name": "lp-clean",
+      "legacy": {
+        "seconds": [
+          2.5280971720058005
+        ],
+        "median_seconds": 2.5280971720058005,
+        "words": 565,
+        "repeat_identical": true
+      },
+      "current": {
+        "seconds": [
+          2.169244582997635
+        ],
+        "median_seconds": 2.169244582997635,
+        "words": 565,
+        "repeat_identical": true
+      },
+      "equal": {
+        "word_order_boxes_lines": true,
+        "clipboard_text": true,
+        "table_cells": true
+      }
+    },
+    {
+      "name": "mono1080",
+      "legacy": {
+        "seconds": [
+          6.198626876997878
+        ],
+        "median_seconds": 6.198626876997878,
+        "words": 902,
+        "repeat_identical": true
+      },
+      "current": {
+        "seconds": [
+          5.429523590995814
+        ],
+        "median_seconds": 5.429523590995814,
+        "words": 902,
+        "repeat_identical": true
+      },
+      "equal": {
+        "word_order_boxes_lines": true,
+        "clipboard_text": true,
+        "table_cells": true
+      }
+    },
+    {
+      "name": "ocr-big",
+      "legacy": {
+        "seconds": [
+          1.496200740992208
+        ],
+        "median_seconds": 1.496200740992208,
+        "words": 216,
+        "repeat_identical": true
+      },
+      "current": {
+        "seconds": [
+          1.095461056989734
+        ],
+        "median_seconds": 1.095461056989734,
+        "words": 216,
+        "repeat_identical": true
+      },
+      "equal": {
+        "word_order_boxes_lines": true,
+        "clipboard_text": true,
+        "table_cells": true
+      }
+    },
+    {
+      "name": "ocr-input-en",
+      "legacy": {
+        "seconds": [
+          0.5776385909994133
+        ],
+        "median_seconds": 0.5776385909994133,
+        "words": 30,
+        "repeat_identical": true
+      },
+      "current": {
+        "seconds": [
+          0.23920401999203023
+        ],
+        "median_seconds": 0.23920401999203023,
+        "words": 30,
+        "repeat_identical": true
+      },
+      "equal": {
+        "word_order_boxes_lines": true,
+        "clipboard_text": true,
+        "table_cells": true
+      }
+    },
+    {
+      "name": "ocr-input",
+      "legacy": {
+        "seconds": [
+          0.5567226380080683
+        ],
+        "median_seconds": 0.5567226380080683,
+        "words": 26,
+        "repeat_identical": true
+      },
+      "current": {
+        "seconds": [
+          0.23590402000991162
+        ],
+        "median_seconds": 0.23590402000991162,
+        "words": 26,
+        "repeat_identical": true
+      },
+      "equal": {
+        "word_order_boxes_lines": true,
+        "clipboard_text": true,
+        "table_cells": true
+      }
+    },
+    {
+      "name": "ocr-small",
+      "legacy": {
+        "seconds": [
+          0.299037730001146
+        ],
+        "median_seconds": 0.299037730001146,
+        "words": 2,
+        "repeat_identical": true
+      },
+      "current": {
+        "seconds": [
+          0.031035427004098892
+        ],
+        "median_seconds": 0.031035427004098892,
+        "words": 2,
+        "repeat_identical": true
+      },
+      "equal": {
+        "word_order_boxes_lines": true,
+        "clipboard_text": true,
+        "table_cells": true
+      }
+    },
+    {
+      "name": "ocr-table",
+      "legacy": {
+        "seconds": [
+          0.40654676999838557
+        ],
+        "median_seconds": 0.40654676999838557,
+        "words": 13,
+        "repeat_identical": true
+      },
+      "current": {
+        "seconds": [
+          0.08998389799671713
+        ],
+        "median_seconds": 0.08998389799671713,
+        "words": 13,
+        "repeat_identical": true
+      },
+      "equal": {
+        "word_order_boxes_lines": true,
+        "clipboard_text": true,
+        "table_cells": true
+      }
+    },
+    {
+      "name": "rp-gpl-1col-15",
+      "legacy": {
+        "seconds": [
+          3.585399766001501
+        ],
+        "median_seconds": 3.585399766001501,
+        "words": 734,
+        "repeat_identical": true
+      },
+      "current": {
+        "seconds": [
+          3.021298580992152
+        ],
+        "median_seconds": 3.021298580992152,
+        "words": 734,
+        "repeat_identical": true
+      },
+      "equal": {
+        "word_order_boxes_lines": true,
+        "clipboard_text": true,
+        "table_cells": true
+      }
+    },
+    {
+      "name": "rp-gpl-2col-13",
+      "legacy": {
+        "seconds": [
+          5.381245548996958
+        ],
+        "median_seconds": 5.381245548996958,
+        "words": 1363,
+        "repeat_identical": true
+      },
+      "current": {
+        "seconds": [
+          4.71648471300432
+        ],
+        "median_seconds": 4.71648471300432,
+        "words": 1363,
+        "repeat_identical": true
+      },
+      "equal": {
+        "word_order_boxes_lines": true,
+        "clipboard_text": true,
+        "table_cells": true
+      }
+    },
+    {
+      "name": "rp-gpl-2col-18",
+      "legacy": {
+        "seconds": [
+          2.9038309389870847
+        ],
+        "median_seconds": 2.9038309389870847,
+        "words": 729,
+        "repeat_identical": true
+      },
+      "current": {
+        "seconds": [
+          2.526192453005933
+        ],
+        "median_seconds": 2.526192453005933,
+        "words": 729,
+        "repeat_identical": true
+      },
+      "equal": {
+        "word_order_boxes_lines": true,
+        "clipboard_text": true,
+        "table_cells": true
+      }
+    },
+    {
+      "name": "rp-gpl-3col-14",
+      "legacy": {
+        "seconds": [
+          11.329868372005876
+        ],
+        "median_seconds": 11.329868372005876,
+        "words": 2175,
+        "repeat_identical": true
+      },
+      "current": {
+        "seconds": [
+          9.273160304001067
+        ],
+        "median_seconds": 9.273160304001067,
+        "words": 2175,
+        "repeat_identical": true
+      },
+      "equal": {
+        "word_order_boxes_lines": true,
+        "clipboard_text": true,
+        "table_cells": true
+      }
+    },
+    {
+      "name": "rp-gpl-dark-2col-15",
+      "legacy": {
+        "seconds": [
+          6.114766466998844
+        ],
+        "median_seconds": 6.114766466998844,
+        "words": 1089,
+        "repeat_identical": true
+      },
+      "current": {
+        "seconds": [
+          5.474498744995799
+        ],
+        "median_seconds": 5.474498744995799,
+        "words": 1089,
+        "repeat_identical": true
+      },
+      "equal": {
+        "word_order_boxes_lines": true,
+        "clipboard_text": true,
+        "table_cells": true
+      }
+    },
+    {
+      "name": "rp-pt-1col-11",
+      "legacy": {
+        "seconds": [
+          5.423442885003169
+        ],
+        "median_seconds": 5.423442885003169,
+        "words": 944,
+        "repeat_identical": true
+      },
+      "current": {
+        "seconds": [
+          4.7621208380005555
+        ],
+        "median_seconds": 4.7621208380005555,
+        "words": 944,
+        "repeat_identical": true
+      },
+      "equal": {
+        "word_order_boxes_lines": true,
+        "clipboard_text": true,
+        "table_cells": true
+      }
+    },
+    {
+      "name": "rp-pt-2col-14",
+      "legacy": {
+        "seconds": [
+          6.452577353004017
+        ],
+        "median_seconds": 6.452577353004017,
+        "words": 1402,
+        "repeat_identical": true
+      },
+      "current": {
+        "seconds": [
+          5.796817962997011
+        ],
+        "median_seconds": 5.796817962997011,
+        "words": 1402,
+        "repeat_identical": true
+      },
+      "equal": {
+        "word_order_boxes_lines": true,
+        "clipboard_text": true,
+        "table_cells": true
+      }
+    },
+    {
+      "name": "rp-pt-3col-12",
+      "legacy": {
+        "seconds": [
+          20.855555107002147
+        ],
+        "median_seconds": 20.855555107002147,
+        "words": 2839,
+        "repeat_identical": true
+      },
+      "current": {
+        "seconds": [
+          15.224579291010741
+        ],
+        "median_seconds": 15.224579291010741,
+        "words": 2839,
+        "repeat_identical": true
+      },
+      "equal": {
+        "word_order_boxes_lines": true,
+        "clipboard_text": true,
+        "table_cells": true
+      }
+    },
+    {
+      "name": "rp-pt-dark-1col-16",
+      "legacy": {
+        "seconds": [
+          4.818285240005935
+        ],
+        "median_seconds": 4.818285240005935,
+        "words": 681,
+        "repeat_identical": true
+      },
+      "current": {
+        "seconds": [
+          4.366693538002437
+        ],
+        "median_seconds": 4.366693538002437,
+        "words": 681,
+        "repeat_identical": true
+      },
+      "equal": {
+        "word_order_boxes_lines": true,
+        "clipboard_text": true,
+        "table_cells": true
+      }
+    },
+    {
+      "name": "sel300",
+      "legacy": {
+        "seconds": [
+          0.3668821439932799
+        ],
+        "median_seconds": 0.3668821439932799,
+        "words": 27,
+        "repeat_identical": true
+      },
+      "current": {
+        "seconds": [
+          0.08923791200504638
+        ],
+        "median_seconds": 0.08923791200504638,
+        "words": 27,
+        "repeat_identical": true
+      },
+      "equal": {
+        "word_order_boxes_lines": true,
+        "clipboard_text": true,
+        "table_cells": true
+      }
+    },
+    {
+      "name": "sel600",
+      "legacy": {
+        "seconds": [
+          0.9325219860038487
+        ],
+        "median_seconds": 0.9325219860038487,
+        "words": 122,
+        "repeat_identical": true
+      },
+      "current": {
+        "seconds": [
+          0.612501505005639
+        ],
+        "median_seconds": 0.612501505005639,
+        "words": 122,
+        "repeat_identical": true
+      },
+      "equal": {
+        "word_order_boxes_lines": true,
+        "clipboard_text": true,
+        "table_cells": true
+      }
+    },
+    {
+      "name": "sz-dej-10",
+      "legacy": {
+        "seconds": [
+          2.8763552689924836
+        ],
+        "median_seconds": 2.8763552689924836,
+        "words": 546,
+        "repeat_identical": true
+      },
+      "current": {
+        "seconds": [
+          2.425433686003089
+        ],
+        "median_seconds": 2.425433686003089,
+        "words": 546,
+        "repeat_identical": true
+      },
+      "equal": {
+        "word_order_boxes_lines": true,
+        "clipboard_text": true,
+        "table_cells": true
+      }
+    },
+    {
+      "name": "sz-dej-11",
+      "legacy": {
+        "seconds": [
+          2.812133785992046
+        ],
+        "median_seconds": 2.812133785992046,
+        "words": 531,
+        "repeat_identical": true
+      },
+      "current": {
+        "seconds": [
+          2.294669809998595
+        ],
+        "median_seconds": 2.294669809998595,
+        "words": 531,
+        "repeat_identical": true
+      },
+      "equal": {
+        "word_order_boxes_lines": true,
+        "clipboard_text": true,
+        "table_cells": true
+      }
+    },
+    {
+      "name": "sz-dej-12",
+      "legacy": {
+        "seconds": [
+          2.4146491379942745
+        ],
+        "median_seconds": 2.4146491379942745,
+        "words": 412,
+        "repeat_identical": true
+      },
+      "current": {
+        "seconds": [
+          1.9103922520007472
+        ],
+        "median_seconds": 1.9103922520007472,
+        "words": 412,
+        "repeat_identical": true
+      },
+      "equal": {
+        "word_order_boxes_lines": true,
+        "clipboard_text": true,
+        "table_cells": true
+      }
+    },
+    {
+      "name": "sz-dej-14",
+      "legacy": {
+        "seconds": [
+          1.9162216349941446
+        ],
+        "median_seconds": 1.9162216349941446,
+        "words": 300,
+        "repeat_identical": true
+      },
+      "current": {
+        "seconds": [
+          1.5091261830093572
+        ],
+        "median_seconds": 1.5091261830093572,
+        "words": 300,
+        "repeat_identical": true
+      },
+      "equal": {
+        "word_order_boxes_lines": true,
+        "clipboard_text": true,
+        "table_cells": true
+      }
+    },
+    {
+      "name": "sz-dej-16",
+      "legacy": {
+        "seconds": [
+          1.4516525180079043
+        ],
+        "median_seconds": 1.4516525180079043,
+        "words": 236,
+        "repeat_identical": true
+      },
+      "current": {
+        "seconds": [
+          1.0896260570007144
+        ],
+        "median_seconds": 1.0896260570007144,
+        "words": 236,
+        "repeat_identical": true
+      },
+      "equal": {
+        "word_order_boxes_lines": true,
+        "clipboard_text": true,
+        "table_cells": true
+      }
+    },
+    {
+      "name": "sz-dej-20",
+      "legacy": {
+        "seconds": [
+          1.1340483510139165
+        ],
+        "median_seconds": 1.1340483510139165,
+        "words": 141,
+        "repeat_identical": true
+      },
+      "current": {
+        "seconds": [
+          0.7997249920008471
+        ],
+        "median_seconds": 0.7997249920008471,
+        "words": 141,
+        "repeat_identical": true
+      },
+      "equal": {
+        "word_order_boxes_lines": true,
+        "clipboard_text": true,
+        "table_cells": true
+      }
+    },
+    {
+      "name": "sz-dej-26",
+      "legacy": {
+        "seconds": [
+          1.3186925439949846
+        ],
+        "median_seconds": 1.3186925439949846,
+        "words": 136,
+        "repeat_identical": true
+      },
+      "current": {
+        "seconds": [
+          0.9084815800015349
+        ],
+        "median_seconds": 0.9084815800015349,
+        "words": 136,
+        "repeat_identical": true
+      },
+      "equal": {
+        "word_order_boxes_lines": true,
+        "clipboard_text": true,
+        "table_cells": true
+      }
+    },
+    {
+      "name": "sz-dej-34",
+      "legacy": {
+        "seconds": [
+          1.1794524440047098
+        ],
+        "median_seconds": 1.1794524440047098,
+        "words": 73,
+        "repeat_identical": true
+      },
+      "current": {
+        "seconds": [
+          0.579940739000449
+        ],
+        "median_seconds": 0.579940739000449,
+        "words": 73,
+        "repeat_identical": true
+      },
+      "equal": {
+        "word_order_boxes_lines": true,
+        "clipboard_text": true,
+        "table_cells": true
+      }
+    },
+    {
+      "name": "sz-dej-9",
+      "legacy": {
+        "seconds": [
+          3.2849935079866555
+        ],
+        "median_seconds": 3.2849935079866555,
+        "words": 749,
+        "repeat_identical": true
+      },
+      "current": {
+        "seconds": [
+          2.7408047290082322
+        ],
+        "median_seconds": 2.7408047290082322,
+        "words": 749,
+        "repeat_identical": true
+      },
+      "equal": {
+        "word_order_boxes_lines": true,
+        "clipboard_text": true,
+        "table_cells": true
+      }
+    },
+    {
+      "name": "sz-lib-10",
+      "legacy": {
+        "seconds": [
+          3.313285612006439
+        ],
+        "median_seconds": 3.313285612006439,
+        "words": 589,
+        "repeat_identical": true
+      },
+      "current": {
+        "seconds": [
+          2.964106586005073
+        ],
+        "median_seconds": 2.964106586005073,
+        "words": 589,
+        "repeat_identical": true
+      },
+      "equal": {
+        "word_order_boxes_lines": true,
+        "clipboard_text": true,
+        "table_cells": true
+      }
+    },
+    {
+      "name": "sz-lib-11",
+      "legacy": {
+        "seconds": [
+          3.0404224680096377
+        ],
+        "median_seconds": 3.0404224680096377,
+        "words": 545,
+        "repeat_identical": true
+      },
+      "current": {
+        "seconds": [
+          2.72702479500731
+        ],
+        "median_seconds": 2.72702479500731,
+        "words": 545,
+        "repeat_identical": true
+      },
+      "equal": {
+        "word_order_boxes_lines": true,
+        "clipboard_text": true,
+        "table_cells": true
+      }
+    },
+    {
+      "name": "sz-lib-12",
+      "legacy": {
+        "seconds": [
+          2.5056638109963387
+        ],
+        "median_seconds": 2.5056638109963387,
+        "words": 463,
+        "repeat_identical": true
+      },
+      "current": {
+        "seconds": [
+          2.0919409590133
+        ],
+        "median_seconds": 2.0919409590133,
+        "words": 463,
+        "repeat_identical": true
+      },
+      "equal": {
+        "word_order_boxes_lines": true,
+        "clipboard_text": true,
+        "table_cells": true
+      }
+    },
+    {
+      "name": "sz-lib-14",
+      "legacy": {
+        "seconds": [
+          1.804429377996712
+        ],
+        "median_seconds": 1.804429377996712,
+        "words": 297,
+        "repeat_identical": true
+      },
+      "current": {
+        "seconds": [
+          1.436192029999802
+        ],
+        "median_seconds": 1.436192029999802,
+        "words": 297,
+        "repeat_identical": true
+      },
+      "equal": {
+        "word_order_boxes_lines": true,
+        "clipboard_text": true,
+        "table_cells": true
+      }
+    },
+    {
+      "name": "sz-lib-16",
+      "legacy": {
+        "seconds": [
+          1.6678697470051702
+        ],
+        "median_seconds": 1.6678697470051702,
+        "words": 263,
+        "repeat_identical": true
+      },
+      "current": {
+        "seconds": [
+          1.302266762999352
+        ],
+        "median_seconds": 1.302266762999352,
+        "words": 263,
+        "repeat_identical": true
+      },
+      "equal": {
+        "word_order_boxes_lines": true,
+        "clipboard_text": true,
+        "table_cells": true
+      }
+    },
+    {
+      "name": "sz-lib-20",
+      "legacy": {
+        "seconds": [
+          1.1985084119951352
+        ],
+        "median_seconds": 1.1985084119951352,
+        "words": 168,
+        "repeat_identical": true
+      },
+      "current": {
+        "seconds": [
+          0.8195253409940051
+        ],
+        "median_seconds": 0.8195253409940051,
+        "words": 168,
+        "repeat_identical": true
+      },
+      "equal": {
+        "word_order_boxes_lines": true,
+        "clipboard_text": true,
+        "table_cells": true
+      }
+    },
+    {
+      "name": "sz-lib-26",
+      "legacy": {
+        "seconds": [
+          1.249156657999265
+        ],
+        "median_seconds": 1.249156657999265,
+        "words": 138,
+        "repeat_identical": true
+      },
+      "current": {
+        "seconds": [
+          0.8360411149915308
+        ],
+        "median_seconds": 0.8360411149915308,
+        "words": 138,
+        "repeat_identical": true
+      },
+      "equal": {
+        "word_order_boxes_lines": true,
+        "clipboard_text": true,
+        "table_cells": true
+      }
+    },
+    {
+      "name": "sz-lib-34",
+      "legacy": {
+        "seconds": [
+          0.8867110319988569
+        ],
+        "median_seconds": 0.8867110319988569,
+        "words": 81,
+        "repeat_identical": true
+      },
+      "current": {
+        "seconds": [
+          0.5247136959951604
+        ],
+        "median_seconds": 0.5247136959951604,
+        "words": 81,
+        "repeat_identical": true
+      },
+      "equal": {
+        "word_order_boxes_lines": true,
+        "clipboard_text": true,
+        "table_cells": true
+      }
+    },
+    {
+      "name": "sz-lib-9",
+      "legacy": {
+        "seconds": [
+          4.085765664989594
+        ],
+        "median_seconds": 4.085765664989594,
+        "words": 847,
+        "repeat_identical": true
+      },
+      "current": {
+        "seconds": [
+          3.732321421004599
+        ],
+        "median_seconds": 3.732321421004599,
+        "words": 847,
+        "repeat_identical": true
+      },
+      "equal": {
+        "word_order_boxes_lines": true,
+        "clipboard_text": true,
+        "table_cells": true
+      }
+    },
+    {
+      "name": "sz-sel-10",
+      "legacy": {
+        "seconds": [
+          3.48241156199947
+        ],
+        "median_seconds": 3.48241156199947,
+        "words": 549,
+        "repeat_identical": true
+      },
+      "current": {
+        "seconds": [
+          3.040072007002891
+        ],
+        "median_seconds": 3.040072007002891,
+        "words": 549,
+        "repeat_identical": true
+      },
+      "equal": {
+        "word_order_boxes_lines": true,
+        "clipboard_text": true,
+        "table_cells": true
+      }
+    },
+    {
+      "name": "sz-sel-11",
+      "legacy": {
+        "seconds": [
+          2.913893568998901
+        ],
+        "median_seconds": 2.913893568998901,
+        "words": 562,
+        "repeat_identical": true
+      },
+      "current": {
+        "seconds": [
+          2.5597654700104613
+        ],
+        "median_seconds": 2.5597654700104613,
+        "words": 562,
+        "repeat_identical": true
+      },
+      "equal": {
+        "word_order_boxes_lines": true,
+        "clipboard_text": true,
+        "table_cells": true
+      }
+    },
+    {
+      "name": "sz-sel-12",
+      "legacy": {
+        "seconds": [
+          2.99916046699218
+        ],
+        "median_seconds": 2.99916046699218,
+        "words": 480,
+        "repeat_identical": true
+      },
+      "current": {
+        "seconds": [
+          2.625076062991866
+        ],
+        "median_seconds": 2.625076062991866,
+        "words": 480,
+        "repeat_identical": true
+      },
+      "equal": {
+        "word_order_boxes_lines": true,
+        "clipboard_text": true,
+        "table_cells": true
+      }
+    },
+    {
+      "name": "sz-sel-14",
+      "legacy": {
+        "seconds": [
+          1.9734830989909824
+        ],
+        "median_seconds": 1.9734830989909824,
+        "words": 302,
+        "repeat_identical": true
+      },
+      "current": {
+        "seconds": [
+          1.5891685469978256
+        ],
+        "median_seconds": 1.5891685469978256,
+        "words": 302,
+        "repeat_identical": true
+      },
+      "equal": {
+        "word_order_boxes_lines": true,
+        "clipboard_text": true,
+        "table_cells": true
+      }
+    },
+    {
+      "name": "sz-sel-16",
+      "legacy": {
+        "seconds": [
+          1.6788219820009544
+        ],
+        "median_seconds": 1.6788219820009544,
+        "words": 257,
+        "repeat_identical": true
+      },
+      "current": {
+        "seconds": [
+          1.3085838690021774
+        ],
+        "median_seconds": 1.3085838690021774,
+        "words": 257,
+        "repeat_identical": true
+      },
+      "equal": {
+        "word_order_boxes_lines": true,
+        "clipboard_text": true,
+        "table_cells": true
+      }
+    },
+    {
+      "name": "sz-sel-20",
+      "legacy": {
+        "seconds": [
+          1.0966609030001564
+        ],
+        "median_seconds": 1.0966609030001564,
+        "words": 172,
+        "repeat_identical": true
+      },
+      "current": {
+        "seconds": [
+          0.7945164389966521
+        ],
+        "median_seconds": 0.7945164389966521,
+        "words": 172,
+        "repeat_identical": true
+      },
+      "equal": {
+        "word_order_boxes_lines": true,
+        "clipboard_text": true,
+        "table_cells": true
+      }
+    },
+    {
+      "name": "sz-sel-26",
+      "legacy": {
+        "seconds": [
+          1.2624900969967712
+        ],
+        "median_seconds": 1.2624900969967712,
+        "words": 154,
+        "repeat_identical": true
+      },
+      "current": {
+        "seconds": [
+          0.8919174429902341
+        ],
+        "median_seconds": 0.8919174429902341,
+        "words": 154,
+        "repeat_identical": true
+      },
+      "equal": {
+        "word_order_boxes_lines": true,
+        "clipboard_text": true,
+        "table_cells": true
+      }
+    },
+    {
+      "name": "sz-sel-34",
+      "legacy": {
+        "seconds": [
+          0.9773137779993704
+        ],
+        "median_seconds": 0.9773137779993704,
+        "words": 81,
+        "repeat_identical": true
+      },
+      "current": {
+        "seconds": [
+          0.5718047010013834
+        ],
+        "median_seconds": 0.5718047010013834,
+        "words": 81,
+        "repeat_identical": true
+      },
+      "equal": {
+        "word_order_boxes_lines": true,
+        "clipboard_text": true,
+        "table_cells": true
+      }
+    },
+    {
+      "name": "sz-sel-9",
+      "legacy": {
+        "seconds": [
+          4.0883495890011545
+        ],
+        "median_seconds": 4.0883495890011545,
+        "words": 814,
+        "repeat_identical": true
+      },
+      "current": {
+        "seconds": [
+          3.7767620920058107
+        ],
+        "median_seconds": 3.7767620920058107,
+        "words": 814,
+        "repeat_identical": true
+      },
+      "equal": {
+        "word_order_boxes_lines": true,
+        "clipboard_text": true,
+        "table_cells": true
+      }
+    },
+    {
+      "name": "szd-lib-11",
+      "legacy": {
+        "seconds": [
+          4.683276284005842
+        ],
+        "median_seconds": 4.683276284005842,
+        "words": 575,
+        "repeat_identical": true
+      },
+      "current": {
+        "seconds": [
+          4.142311297007836
+        ],
+        "median_seconds": 4.142311297007836,
+        "words": 575,
+        "repeat_identical": true
+      },
+      "equal": {
+        "word_order_boxes_lines": true,
+        "clipboard_text": true,
+        "table_cells": true
+      }
+    },
+    {
+      "name": "szd-lib-13",
+      "legacy": {
+        "seconds": [
+          3.4017805050098104
+        ],
+        "median_seconds": 3.4017805050098104,
+        "words": 425,
+        "repeat_identical": true
+      },
+      "current": {
+        "seconds": [
+          3.180827534000855
+        ],
+        "median_seconds": 3.180827534000855,
+        "words": 425,
+        "repeat_identical": true
+      },
+      "equal": {
+        "word_order_boxes_lines": true,
+        "clipboard_text": true,
+        "table_cells": true
+      }
+    },
+    {
+      "name": "szd-lib-16",
+      "legacy": {
+        "seconds": [
+          2.2610245879914146
+        ],
+        "median_seconds": 2.2610245879914146,
+        "words": 281,
+        "repeat_identical": true
+      },
+      "current": {
+        "seconds": [
+          1.9026390969956992
+        ],
+        "median_seconds": 1.9026390969956992,
+        "words": 281,
+        "repeat_identical": true
+      },
+      "equal": {
+        "word_order_boxes_lines": true,
+        "clipboard_text": true,
+        "table_cells": true
+      }
+    },
+    {
+      "name": "tab-a",
+      "legacy": {
+        "seconds": [
+          0.368523256998742
+        ],
+        "median_seconds": 0.368523256998742,
+        "words": 19,
+        "repeat_identical": true
+      },
+      "current": {
+        "seconds": [
+          0.09509556400007568
+        ],
+        "median_seconds": 0.09509556400007568,
+        "words": 19,
+        "repeat_identical": true
+      },
+      "equal": {
+        "word_order_boxes_lines": true,
+        "clipboard_text": true,
+        "table_cells": true
+      }
+    },
+    {
+      "name": "tab-b",
+      "legacy": {
+        "seconds": [
+          0.4126753199961968
+        ],
+        "median_seconds": 0.4126753199961968,
+        "words": 30,
+        "repeat_identical": true
+      },
+      "current": {
+        "seconds": [
+          0.12191669900494162
+        ],
+        "median_seconds": 0.12191669900494162,
+        "words": 30,
+        "repeat_identical": true
+      },
+      "equal": {
+        "word_order_boxes_lines": true,
+        "clipboard_text": true,
+        "table_cells": true
+      }
+    },
+    {
+      "name": "tab-c",
+      "legacy": {
+        "seconds": [
+          0.5185266869957559
+        ],
+        "median_seconds": 0.5185266869957559,
+        "words": 55,
+        "repeat_identical": true
+      },
+      "current": {
+        "seconds": [
+          0.25486304800142534
+        ],
+        "median_seconds": 0.25486304800142534,
+        "words": 55,
+        "repeat_identical": true
+      },
+      "equal": {
+        "word_order_boxes_lines": true,
+        "clipboard_text": true,
+        "table_cells": true
+      }
+    },
+    {
+      "name": "tab-d",
+      "legacy": {
+        "seconds": [
+          0.4548630210047122
+        ],
+        "median_seconds": 0.4548630210047122,
+        "words": 25,
+        "repeat_identical": true
+      },
+      "current": {
+        "seconds": [
+          0.1346489690040471
+        ],
+        "median_seconds": 0.1346489690040471,
+        "words": 25,
+        "repeat_identical": true
+      },
+      "equal": {
+        "word_order_boxes_lines": true,
+        "clipboard_text": true,
+        "table_cells": true
+      }
+    },
+    {
+      "name": "tab-e",
+      "legacy": {
+        "seconds": [
+          0.44199494099302683
+        ],
+        "median_seconds": 0.44199494099302683,
+        "words": 39,
+        "repeat_identical": true
+      },
+      "current": {
+        "seconds": [
+          0.22248565701011103
+        ],
+        "median_seconds": 0.22248565701011103,
+        "words": 39,
+        "repeat_identical": true
+      },
+      "equal": {
+        "word_order_boxes_lines": true,
+        "clipboard_text": true,
+        "table_cells": true
+      }
+    },
+    {
+      "name": "tab-f",
+      "legacy": {
+        "seconds": [
+          0.445889487004024
+        ],
+        "median_seconds": 0.445889487004024,
+        "words": 43,
+        "repeat_identical": true
+      },
+      "current": {
+        "seconds": [
+          0.1701920589985093
+        ],
+        "median_seconds": 0.1701920589985093,
+        "words": 43,
+        "repeat_identical": true
+      },
+      "equal": {
+        "word_order_boxes_lines": true,
+        "clipboard_text": true,
+        "table_cells": true
+      }
+    },
+    {
+      "name": "tab-g",
+      "legacy": {
+        "seconds": [
+          0.4853366110037314
+        ],
+        "median_seconds": 0.4853366110037314,
+        "words": 29,
+        "repeat_identical": true
+      },
+      "current": {
+        "seconds": [
+          0.20141175799653865
+        ],
+        "median_seconds": 0.20141175799653865,
+        "words": 29,
+        "repeat_identical": true
+      },
+      "equal": {
+        "word_order_boxes_lines": true,
+        "clipboard_text": true,
+        "table_cells": true
+      }
+    },
+    {
+      "name": "tab-h",
+      "legacy": {
+        "seconds": [
+          0.47443113499321043
+        ],
+        "median_seconds": 0.47443113499321043,
+        "words": 26,
+        "repeat_identical": true
+      },
+      "current": {
+        "seconds": [
+          0.14141866999852937
+        ],
+        "median_seconds": 0.14141866999852937,
+        "words": 26,
+        "repeat_identical": true
+      },
+      "equal": {
+        "word_order_boxes_lines": true,
+        "clipboard_text": true,
+        "table_cells": true
+      }
+    },
+    {
+      "name": "tab-orig",
+      "legacy": {
+        "seconds": [
+          0.3812891920097172
+        ],
+        "median_seconds": 0.3812891920097172,
+        "words": 13,
+        "repeat_identical": true
+      },
+      "current": {
+        "seconds": [
+          0.09054889300023206
+        ],
+        "median_seconds": 0.09054889300023206,
+        "words": 13,
+        "repeat_identical": true
+      },
+      "equal": {
+        "word_order_boxes_lines": true,
+        "clipboard_text": true,
+        "table_cells": true
+      }
+    },
+    {
+      "name": "web1080-ui",
+      "legacy": {
+        "seconds": [
+          11.607613061001757
+        ],
+        "median_seconds": 11.607613061001757,
+        "words": 2095,
+        "repeat_identical": true
+      },
+      "current": {
+        "seconds": [
+          9.45990362300654
+        ],
+        "median_seconds": 9.45990362300654,
+        "words": 2095,
+        "repeat_identical": true
+      },
+      "equal": {
+        "word_order_boxes_lines": true,
+        "clipboard_text": true,
+        "table_cells": true
+      }
+    },
+    {
+      "name": "web1080",
+      "legacy": {
+        "seconds": [
+          5.299353810987668
+        ],
+        "median_seconds": 5.299353810987668,
+        "words": 1243,
+        "repeat_identical": true
+      },
+      "current": {
+        "seconds": [
+          4.64018778600439
+        ],
+        "median_seconds": 4.64018778600439,
+        "words": 1243,
+        "repeat_identical": true
+      },
+      "equal": {
+        "word_order_boxes_lines": true,
+        "clipboard_text": true,
+        "table_cells": true
+      }
+    }
+  ],
+  "warmup_seconds": 0.6819129810028244
+}

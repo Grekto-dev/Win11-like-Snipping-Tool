@@ -401,6 +401,10 @@ class TextSession:
         self.reset()
 
     def reset(self):
+        token = getattr(self, "ocr_job", None)
+        if token is not None:
+            textlayer.cancel_ocr(token)
+        self.ocr_job = None
         self.phase = "none"            # none | scan | ready
         self.rect = None               # x0, y0, x1, y1 (tela)
         self.crop = None
@@ -411,7 +415,7 @@ class TextSession:
         self.dragging = False
         self.t0 = 0.0
         self.scan_end = 0.0
-        self.job = 0
+        self.job = getattr(self, "job", 0) + 1   # monotonic: old completions cannot match a new selection
         self.result = None
         self.qr = []                   # textos dos códigos QR dentro da seleção
 
@@ -431,18 +435,33 @@ class TextSession:
         self.crop = crop
         self.job += 1
         job = self.job
+        self.ocr_job = token = textlayer.new_ocr_job(self)
         ov.bar_ocr.set_copy_enabled(False)
 
         def work():
+            if token.cancelled:
+                textlayer.ocr_engine.end_job(token)
+                return
+            codes = []
+
+            def read_qr():
+                try:
+                    codes.extend(qr.decode(crop))
+                except Exception:
+                    pass
+            qr_thread = threading.Thread(target=read_qr, daemon=True)       # zbar solta o GIL: roda junto com o OCR
+            qr_thread.start()
             try:
-                codes = qr.decode(crop)
-            except Exception:
-                codes = []
-            try:
-                words = textlayer.ocr_surface(crop) if textlayer.services.ocr_available() else None
+                words = textlayer.ocr_surface(crop, job=token) if textlayer.services.ocr_available() else None
+            except textlayer.ocr_engine.Cancelled:
+                return
             except Exception:
                 words = None
-            GLib.idle_add(self._done, job, words, codes)
+            finally:
+                textlayer.ocr_engine.end_job(token)
+            qr_thread.join(timeout=5)
+            if not token.cancelled:
+                GLib.idle_add(self._done, job, words, tuple(codes))
         threading.Thread(target=work, daemon=True).start()
         ov.start_anim()
 

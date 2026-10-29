@@ -61,6 +61,15 @@ class OverlayTextTests(unittest.TestCase):
             self.drag(*rect)
             pump(wait)
 
+    def test_destroy_cancels_its_own_pending_request(self):
+        token = SimpleNamespace(cancelled=False)
+        token.cancel = lambda: setattr(token, "cancelled", True)
+        self.ov.ts.ocr_job = token
+        self.ov.ts.phase = "scan"
+        with patch.object(OT.textlayer, "cancel_ocr", side_effect=lambda job: job.cancel()):
+            self.ov.destroy()
+        self.assertTrue(token.cancelled)
+
     def test_ocr_tool_swaps_the_bar_for_the_text_bar(self):
         self.assertTrue(self.ov.bar_ocr.get_visible())
         self.assertFalse(self.ov.bar.get_visible())

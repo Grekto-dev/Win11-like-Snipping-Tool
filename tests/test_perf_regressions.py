@@ -115,25 +115,5 @@ class DarkThemeTests(unittest.TestCase):
         self.assertNotEqual(theme.LIGHT["new_bg"], theme.DARK["new_bg"])
 
 
-class OcrParallelTests(unittest.TestCase):
-    def test_ocr_runs_both_modes_in_parallel_and_keeps_the_table_preference(self):
-        from unittest.mock import patch
-        from captura import textlayer
-        import threading
-        seen = []
-
-        def fake(path, psm, want):
-            seen.append((psm, threading.current_thread().name))
-            time.sleep(.2)
-            return ""
-        with patch.object(textlayer, "_tesseract", side_effect=fake), \
-             patch.object(textlayer.services, "ocr_languages", return_value=["eng"]):
-            t = time.perf_counter()
-            textlayer.ocr_surface(surf(300, 200))
-            dt = time.perf_counter() - t
-        self.assertEqual(sorted(p for p, _ in seen), [4, 11])
-        self.assertLess(dt, .37)                   # 2 x 0,2 s em série seria >= 0,4 s
-
-
 if __name__ == "__main__":
     unittest.main()

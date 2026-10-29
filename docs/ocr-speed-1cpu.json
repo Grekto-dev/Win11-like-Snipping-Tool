@@ -1,0 +1,143 @@
+{
+  "affinity": [
+    6
+  ],
+  "languages": "por+eng",
+  "reference_single_thread": false,
+  "repeat": 2,
+  "cache": false,
+  "tesseract": "tesseract 5.3.4",
+  "cases": [
+    {
+      "name": "sel300",
+      "legacy": {
+        "seconds": [
+          1.3919538949994603,
+          1.4408804850099841
+        ],
+        "median_seconds": 1.4164171900047222,
+        "words": 27,
+        "repeat_identical": true
+      },
+      "current": {
+        "seconds": [
+          0.1488544629974058,
+          0.14956785799586214
+        ],
+        "median_seconds": 0.14921116049663397,
+        "words": 27,
+        "repeat_identical": true
+      },
+      "equal": {
+        "word_order_boxes_lines": true,
+        "clipboard_text": true,
+        "table_cells": true
+      }
+    },
+    {
+      "name": "ocr-input",
+      "legacy": {
+        "seconds": [
+          2.6835814130026847,
+          2.628080783004407
+        ],
+        "median_seconds": 2.6558310980035458,
+        "words": 26,
+        "repeat_identical": true
+      },
+      "current": {
+        "seconds": [
+          0.38129863499489147,
+          0.41186411801027134
+        ],
+        "median_seconds": 0.3965813765025814,
+        "words": 26,
+        "repeat_identical": true
+      },
+      "equal": {
+        "word_order_boxes_lines": true,
+        "clipboard_text": true,
+        "table_cells": true
+      }
+    },
+    {
+      "name": "sel600",
+      "legacy": {
+        "seconds": [
+          6.911911193004926,
+          6.691891088994453
+        ],
+        "median_seconds": 6.801901140999689,
+        "words": 122,
+        "repeat_identical": true
+      },
+      "current": {
+        "seconds": [
+          1.06675951500074,
+          1.0277891310106497
+        ],
+        "median_seconds": 1.047274323005695,
+        "words": 122,
+        "repeat_identical": true
+      },
+      "equal": {
+        "word_order_boxes_lines": true,
+        "clipboard_text": true,
+        "table_cells": true
+      }
+    },
+    {
+      "name": "doc900",
+      "legacy": {
+        "seconds": [
+          27.941768007993232,
+          27.319297234993428
+        ],
+        "median_seconds": 27.63053262149333,
+        "words": 584,
+        "repeat_identical": true
+      },
+      "current": {
+        "seconds": [
+          4.523830630001612,
+          4.427718597013154
+        ],
+        "median_seconds": 4.475774613507383,
+        "words": 584,
+        "repeat_identical": true
+      },
+      "equal": {
+        "word_order_boxes_lines": true,
+        "clipboard_text": true,
+        "table_cells": true
+      }
+    },
+    {
+      "name": "web1080",
+      "legacy": {
+        "seconds": [
+          48.835589822003385,
+          48.51102661999175
+        ],
+        "median_seconds": 48.67330822099757,
+        "words": 1243,
+        "repeat_identical": true
+      },
+      "current": {
+        "seconds": [
+          9.30283471099392,
+          8.783983254004852
+        ],
+        "median_seconds": 9.043408982499386,
+        "words": 1243,
+        "repeat_identical": true
+      },
+      "equal": {
+        "word_order_boxes_lines": true,
+        "clipboard_text": true,
+        "table_cells": true
+      }
+    }
+  ],
+  "warmup_seconds": 0.43126724200556055
+}

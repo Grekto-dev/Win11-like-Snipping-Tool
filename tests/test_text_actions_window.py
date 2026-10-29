@@ -52,6 +52,16 @@ class TextActionsWindowTests(unittest.TestCase):
             self.w.btn_text.clicked()
             self.assertTrue(drain(lambda: (self.w.canvas.tool == "text" and not self.w.canvas.text_scanning() and bool(self.w.canvas.text_words)) or not self.w.btn_text.get_active(), 4))
 
+    def test_leaving_before_worker_start_cancels_the_precreated_request(self):
+        with patch("captura.window.threading.Thread") as thread:
+            self.w.btn_text.set_active(True)
+            token = self.w._text_job
+            target = thread.call_args.kwargs["target"]
+            self.w.btn_text.set_active(False)
+            self.assertTrue(getattr(token, "cancelled", False))
+            with patch("captura.ocr_engine.Proc.call", side_effect=AssertionError("cancelled job reached a worker")):
+                target()
+
     def test_button_runs_ocr_and_enters_text_mode_with_actions(self):
         self.enter()
         self.assertEqual(self.w.canvas.tool, "text")

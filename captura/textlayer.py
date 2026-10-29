@@ -5,10 +5,11 @@ import os
 import re
 import subprocess
 import tempfile
-from concurrent.futures import ThreadPoolExecutor
+import threading
+import time
 from dataclasses import dataclass
 
-from . import services
+from . import ocr_engine, services
 
 EMAIL_RE = re.compile(r"^[\w.+-]+@[\w-]+(\.[\w-]+)+[.,;:]?$")
 PHONE_CHARS = re.compile(r"^[+()\-.\d]+$")
@@ -108,20 +109,106 @@ def words_in_rect(words, rect):
     return picked
 
 
-def _tesseract(path, psm, want):
-    cmd = ["tesseract", path, "stdout", "--psm", str(psm)] + (["-l", "+".join(want)] if want else []) + ["tsv"]
-    return subprocess.run(cmd, capture_output=True, text=True, timeout=60).stdout
+def _words_from_rows(rows):
+    return [Word(t, tuple(round(v, 2) if v % 1 else int(v) for v in box), line, conf)
+            for t, box, conf, line in rows if t and conf >= 0]
 
 
-def ocr_surface(surface):
-    """Executa o Tesseract (TSV) e devolve as palavras em coordenadas da imagem.
+def ocr_surface(surface, job=None):
+    """Reconhece o texto de uma superfície cairo e devolve as palavras em coordenadas da imagem.
 
-    Modo 4 (colunas de texto, imagem ampliada se pequena) segue os parágrafos como o Windows; o modo 11 (esparso, tamanho
-    original) lê célula por célula: se ele revelar uma tabela alinhada, é o resultado usado."""
-    pb = services.surface_to_pixbuf(surface)
+    Mantém os modos, a escala e a seleção de tabela da versão publicada. A otimização
+    fica no transporte, no carregamento persistente e no controle das threads."""
+    return ocr_pixbuf_words(services.surface_to_pixbuf(surface), job)
+
+
+def ocr_pixbuf_words(pb, job=None):
+    langs = services.ocr_language_spec()
+    job = ocr_engine.new_job() if job is None else job
+    try:
+        if ocr_engine.available():
+            try:
+                sparse_rows, plain_rows, _scale = ocr_engine.recognize_pair(pb, langs, job)
+            except ocr_engine.WorkerError:
+                job.check()                  # cancelado durante a falha do worker: não inicia a CLI
+            else:
+                sparse = _words_from_rows(sparse_rows)
+                if sparse and detect_table(sparse) is not None:
+                    return sparse
+                return _words_from_rows(plain_rows)
+        return _ocr_cli(pb, langs, job)      # plano B: mesmo token, cancelável até o fim
+    finally:
+        ocr_engine.end_job(job)
+
+
+def warm_up():
+    """Prepara o OCR e consulta os idiomas fora da thread da interface."""
+    def prepare():
+        if services.ocr_available():
+            ocr_engine.warm_up(services.ocr_language_spec())
+    threading.Thread(target=prepare, daemon=True).start()
+
+
+def new_ocr_job(owner=None):
+    """Token de uma leitura. Criado ANTES da thread: um cancelamento que chega antes da leitura já vale."""
+    return ocr_engine.new_job(owner)
+
+
+def cancel_ocr(job=None):
+    """Interrompe a leitura de `job` (ou todas, sem token): libera os núcleos na hora."""
+    ocr_engine.cancel(job)
+
+
+def ocr_text(pb):
+    return words_text(ocr_pixbuf_words(pb))
+
+
+CLI_TIMEOUT = 300          # segundos, prazo absoluto de cada chamada à CLI
+
+
+def _tesseract(path, psm, langs, job):
+    """Uma execução da CLI presa ao token: cancelável em ~0,1 s, com prazo; sempre morta, recolhida e fechada."""
+    env = dict(os.environ, OMP_THREAD_LIMIT="1", LC_ALL="C")          # sem isto o OpenMP do Tesseract fica ~5x mais lento por núcleo
+    cmd = ["tesseract", path, "stdout", "--psm", str(psm)] + (["-l", langs] if langs else []) + ["tsv"]
+    try:
+        proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, env=env)
+    except OSError as exc:
+        raise ocr_engine.WorkerError("tesseract-indisponivel: %s" % exc) from exc
+    try:
+        job.attach(proc)
+        deadline = time.monotonic() + CLI_TIMEOUT
+        while True:
+            try:
+                out, err = proc.communicate(timeout=.1)
+                break
+            except subprocess.TimeoutExpired:
+                job.check()
+                if time.monotonic() >= deadline:
+                    raise ocr_engine.WorkerError("ocr-cli-timeout")
+        job.check()                          # um cancelamento mata o processo: sua saída não conta como resultado
+        if proc.returncode != 0:
+            raise ocr_engine.WorkerError("ocr-cli-exit %d: %s"
+                                         % (proc.returncode, (err or "").strip()[:200] or "no-stderr"))
+        if not (out or "").startswith("level\t"):
+            raise ocr_engine.WorkerError("ocr-cli-invalid-tsv")
+        return out
+    finally:
+        if proc.poll() is None:
+            proc.kill()
+        try:
+            proc.wait(timeout=2)             # recolhe o processo (sem zumbi)
+        except subprocess.TimeoutExpired:
+            pass
+        for stream in (proc.stdout, proc.stderr):
+            if stream:
+                stream.close()
+        job.detach(proc)
+
+
+def _ocr_cli(pb, langs, job):
+    """Plano B: os mesmos modos, escala e seleção de tabela da versão publicada."""
     from gi.repository import GdkPixbuf
-    langs = services.ocr_languages()
-    want = [l for l in ("por", "eng") if l in langs] or langs[:1]
+    job.check()
     w, h = pb.get_width(), pb.get_height()
     with tempfile.TemporaryDirectory() as d:
         orig = os.path.join(d, "orig.png")
@@ -131,14 +218,10 @@ def ocr_surface(surface):
             scale = 2
             src = os.path.join(d, "x2.png")
             pb.scale_simple(w * 2, h * 2, GdkPixbuf.InterpType.BILINEAR).savev(src, "png", [], [])
-        # os dois modos rodam em paralelo (processos independentes): o tempo total cai de ~soma para ~máximo
-        with ThreadPoolExecutor(2) as ex:
-            f_sparse = ex.submit(_tesseract, orig, 11, want)
-            f_plain = ex.submit(_tesseract, src, 4, want)
-            sparse = parse_tsv(f_sparse.result(), 1)
-            plain = parse_tsv(f_plain.result(), scale)
-    if sparse and detect_table(sparse) is not None:
-        return sparse
+        sparse = parse_tsv(_tesseract(orig, 11, langs, job), 1)
+        if sparse and detect_table(sparse) is not None:
+            return sparse
+        plain = parse_tsv(_tesseract(src, 4, langs, job), scale)
     return plain
 
 
@@ -231,10 +314,8 @@ def select_between(words, p0, p1):
 
 
 # ------------------------------------------------------------------ tabelas
-def detect_table(words):
-    """Linhas de células alinhadas em colunas -> [[texto, ...], ...] (>= 2 linhas e 2 colunas) ou None."""
-    if not words:
-        return None
+def _table_rows(words):
+    """Palavras agrupadas em linhas visuais (centros a menos de ~6 px): [[Word, ...], ...] de cima para baixo."""
     rows = {}
     for w in words:
         rows.setdefault(round((w.box[1] + w.box[3]) / 2 / 6), []).append(w)
@@ -244,8 +325,15 @@ def detect_table(words):
             merged[-1][1].extend(rows[key])
         else:
             merged.append([key, list(rows[key])])
+    return [ws for _k, ws in merged]
+
+
+def detect_table(words):
+    """Linhas de células alinhadas em colunas -> [[texto, ...], ...] (>= 2 linhas e 2 colunas) ou None."""
+    if not words:
+        return None
     table = []
-    for _k, ws in merged:
+    for ws in _table_rows(words):
         segs = _segments(ws)
         table.append([(" ".join(w.text for w in s), min(w.box[0] for w in s)) for s in segs])
     table = [r for r in table if r]
