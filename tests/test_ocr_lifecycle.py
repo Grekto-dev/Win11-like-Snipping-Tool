@@ -100,7 +100,7 @@ class CancelBeforeRunTests(PoolCase):
     def test_cancel_during_worker_failure_does_not_start_the_cli(self):
         job = textlayer.new_ocr_job("A")
 
-        def fail(pb, langs, job):
+        def fail(pb, langs, job, **_options):
             textlayer.cancel_ocr(job)
             raise E.WorkerError("worker-down")
 

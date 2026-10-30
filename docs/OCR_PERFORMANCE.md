@@ -1,5 +1,10 @@
 # OCR performance and recognition compatibility
 
+> This documents the first persistent-worker optimization, committed as
+> `215d514`. The subsequent one-CPU short-circuit, its paired measurements and
+> expanded recognition check are documented in
+> [OCR_SINGLE_CPU_FOLLOWUP.md](OCR_SINGLE_CPU_FOLLOWUP.md).
+
 ## Scope
 
 The requirement is faster recognition **without reducing recognition quality**.

@@ -1,0 +1,140 @@
+{
+  "previous_commit": "215d5146b3df7d44be937d361efb05d63e384e91",
+  "affinity": [
+    6
+  ],
+  "repeat": 3,
+  "cache": false,
+  "warmup_seconds": {
+    "previous": 0.4157483070011949,
+    "current": 0.41403831299976446
+  },
+  "cases": [
+    {
+      "name": "sel300",
+      "input_sha256": "3d406e0f4c8192194f5fd8f0a729aa9afd74c341c281b0ce1d689e0f2a83d878",
+      "samples_seconds": {
+        "previous": [
+          0.1539565230050357,
+          0.13909448799677193,
+          0.14078459500160534
+        ],
+        "current": [
+          0.13512250999337994,
+          0.1316766270028893,
+          0.14113776400336064
+        ]
+      },
+      "median_seconds": {
+        "previous": 0.14078459500160534,
+        "current": 0.13512250999337994
+      },
+      "ordered_words_boxes_lines_text_table_equal": true,
+      "repeats_identical": true
+    },
+    {
+      "name": "ocr-input",
+      "input_sha256": "fbd74d83d7e512a9616ca2cfcdfeff479ae695e8148435a529d62c167f530a8d",
+      "samples_seconds": {
+        "previous": [
+          0.34408685100788716,
+          0.34527182900637854,
+          0.3462014949909644
+        ],
+        "current": [
+          0.3452287179970881,
+          0.3394184009957826,
+          0.33983084699139
+        ]
+      },
+      "median_seconds": {
+        "previous": 0.34527182900637854,
+        "current": 0.33983084699139
+      },
+      "ordered_words_boxes_lines_text_table_equal": true,
+      "repeats_identical": true
+    },
+    {
+      "name": "sel600",
+      "input_sha256": "29739feb60274086c6565319adaed57c6e742645c798bd99b0629240f8ee5a6b",
+      "samples_seconds": {
+        "previous": [
+          0.9889469140034635,
+          0.9624082869995618,
+          0.9544274170038989
+        ],
+        "current": [
+          0.9527926840091823,
+          0.9602226150018396,
+          0.954503218003083
+        ]
+      },
+      "median_seconds": {
+        "previous": 0.9624082869995618,
+        "current": 0.954503218003083
+      },
+      "ordered_words_boxes_lines_text_table_equal": true,
+      "repeats_identical": true
+    },
+    {
+      "name": "doc900",
+      "input_sha256": "ffe480083e21ef1afabcf5d20ce389ae3590ece76a2a7a552918754c4b020f01",
+      "samples_seconds": {
+        "previous": [
+          4.2059909620002145,
+          4.495184896004503,
+          4.346280322002713
+        ],
+        "current": [
+          4.284899263991974,
+          4.320767364988569,
+          4.270522035003523
+        ]
+      },
+      "median_seconds": {
+        "previous": 4.346280322002713,
+        "current": 4.284899263991974
+      },
+      "ordered_words_boxes_lines_text_table_equal": true,
+      "repeats_identical": true
+    },
+    {
+      "name": "web1080",
+      "input_sha256": "c34bf94ed1e73d4a18ac1da76130b410a1f4df95073b1bd521fd6e70c4a14e21",
+      "samples_seconds": {
+        "previous": [
+          8.779630240009283,
+          8.630929327991907,
+          8.756735579008819
+        ],
+        "current": [
+          4.301997675996972,
+          4.204037048999453,
+          4.230570667001302
+        ]
+      },
+      "median_seconds": {
+        "previous": 8.756735579008819,
+        "current": 4.230570667001302
+      },
+      "ordered_words_boxes_lines_text_table_equal": true,
+      "repeats_identical": true
+    }
+  ],
+  "worker_affinities": {
+    "previous": [
+      [
+        6
+      ]
+    ],
+    "current": [
+      [
+        6
+      ]
+    ]
+  },
+  "sum_of_medians": {
+    "previous": 14.551480612019077,
+    "current": 9.94492650598113
+  }
+}

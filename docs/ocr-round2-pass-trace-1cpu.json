@@ -1,0 +1,57 @@
+{
+  "affinity": [
+    6
+  ],
+  "cache": false,
+  "cases": [
+    {
+      "name": "sel300",
+      "input_sha256": "3d406e0f4c8192194f5fd8f0a729aa9afd74c341c281b0ce1d689e0f2a83d878",
+      "native_psm_calls": [
+        11,
+        4
+      ],
+      "dense_pass_omitted": false
+    },
+    {
+      "name": "ocr-input",
+      "input_sha256": "fbd74d83d7e512a9616ca2cfcdfeff479ae695e8148435a529d62c167f530a8d",
+      "native_psm_calls": [
+        11,
+        4
+      ],
+      "dense_pass_omitted": false
+    },
+    {
+      "name": "sel600",
+      "input_sha256": "29739feb60274086c6565319adaed57c6e742645c798bd99b0629240f8ee5a6b",
+      "native_psm_calls": [
+        11,
+        4
+      ],
+      "dense_pass_omitted": false
+    },
+    {
+      "name": "doc900",
+      "input_sha256": "ffe480083e21ef1afabcf5d20ce389ae3590ece76a2a7a552918754c4b020f01",
+      "native_psm_calls": [
+        11,
+        4
+      ],
+      "dense_pass_omitted": false
+    },
+    {
+      "name": "web1080",
+      "input_sha256": "c34bf94ed1e73d4a18ac1da76130b410a1f4df95073b1bd521fd6e70c4a14e21",
+      "native_psm_calls": [
+        11
+      ],
+      "dense_pass_omitted": true
+    }
+  ],
+  "worker_affinities": [
+    [
+      6
+    ]
+  ]
+}

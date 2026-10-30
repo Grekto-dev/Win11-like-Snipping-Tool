@@ -122,13 +122,19 @@ def ocr_surface(surface, job=None):
     return ocr_pixbuf_words(services.surface_to_pixbuf(surface), job)
 
 
+def _prefer_sparse(rows):
+    # Same decision as the published pipeline, on a fully recognized original
+    # image. No layout heuristic, confidence shortcut or approximate table test.
+    return bool(rows) and detect_table(_words_from_rows(rows)) is not None
+
+
 def ocr_pixbuf_words(pb, job=None):
     langs = services.ocr_language_spec()
     job = ocr_engine.new_job() if job is None else job
     try:
         if ocr_engine.available():
             try:
-                sparse_rows, plain_rows, _scale = ocr_engine.recognize_pair(pb, langs, job)
+                sparse_rows, plain_rows, _scale = ocr_engine.recognize_pair(pb, langs, job, accept_sparse=_prefer_sparse)
             except ocr_engine.WorkerError:
                 job.check()                  # cancelado durante a falha do worker: não inicia a CLI
             else:

@@ -354,12 +354,14 @@ def _token(job):
     return job
 
 
-def _execute(pb, langs, mode, job=None):
+def _execute(pb, langs, mode, job=None, accept_sparse=None):
     owned = job is None
     job = POOL.new_job() if owned else _token(job)
     try:
         job.check()
-        key = image_key(pb, langs, mode)
+        # A selected result can omit dense rows; never confuse it with a full
+        # pair or with another selector's policy. Keep the callable alive in key.
+        key = (image_key(pb, langs, mode), accept_sparse)
         hit = POOL.cached(key)
         if hit is not None:
             job.check()
@@ -367,7 +369,7 @@ def _execute(pb, langs, mode, job=None):
         with POOL.run_lock:
             try:
                 job.check()
-                count = pool_size() if mode == "pair" else 1
+                count = pool_size() if mode in ("pair", "select") else 1
                 procs = POOL.ensure(langs, count, job)
                 dense_pb, scale = _dense_image(pb) if mode != "sparse" else (pb, 1)
                 result, errors = {}, []
@@ -381,15 +383,21 @@ def _execute(pb, langs, mode, job=None):
                     except Exception as exc:     # carried to this thread and re-raised below, never dropped
                         errors.append(exc)
 
-                if mode == "pair" and len(procs) == 2:
+                if mode in ("pair", "select") and len(procs) == 2:
                     sparse = threading.Thread(target=read, args=("sparse", procs[1], pb, 11, 1), daemon=True)
                     sparse.start()
                     read("plain", procs[0], dense_pb, 4, scale)
                     sparse.join()
                 else:
-                    if mode in ("pair", "sparse"):
+                    if mode in ("pair", "select", "sparse"):
                         read("sparse", procs[0], pb, 11, 1)
-                    if mode in ("pair", "page") and not errors:
+                    if mode == "select" and not errors and accept_sparse(result["sparse"]):
+                        job.check()
+                        # Exactly the original winner: no dense output is used.
+                        value = (result["sparse"], [], 1)
+                        POOL.remember(key, value)
+                        return value
+                    if mode in ("pair", "select", "page") and not errors:
                         read("plain", procs[0], dense_pb, 4, scale)
                 job.check()
                 if errors:
@@ -397,7 +405,7 @@ def _execute(pb, langs, mode, job=None):
                     if isinstance(exc, (WorkerError, OSError)):
                         raise WorkerError(str(exc) or "ocr-worker-failed") from exc
                     raise exc                    # programming error: surfaces as itself
-                value = (result["sparse"], result["plain"], scale) if mode == "pair" else (
+                value = (result["sparse"], result["plain"], scale) if mode in ("pair", "select") else (
                     (result["plain"], scale) if mode == "page" else result["sparse"])
                 POOL.remember(key, value)
                 return value
@@ -415,8 +423,17 @@ def _execute(pb, langs, mode, job=None):
             end_job(job)
 
 
-def recognize_pair(pb, langs, job=None):
-    return _execute(pb, langs, "pair", job)
+def recognize_pair(pb, langs, job=None, *, accept_sparse=None):
+    """Original two passes; on one CPU an exact sparse winner can skip the unused dense pass.
+
+    On a cache miss without a selector, both passes run. With a selector and
+    one worker, an accepted sparse result returns (sparse_rows, [], 1): the empty
+    dense rows mean "not computed", and 1 is the original sparse coordinate scale.
+    The selector must be a stable, pure policy for a given input. With two workers
+    the original parallel pair remains unchanged on a cache miss.
+    """
+    mode = "select" if accept_sparse is not None else "pair"
+    return _execute(pb, langs, mode, job, accept_sparse)
 
 
 def recognize_page(pb, langs, job=None):
