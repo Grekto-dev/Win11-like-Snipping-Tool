@@ -17,11 +17,11 @@ An independent re-creation of the **Windows 11 Snipping Tool** for Linux (GTK 3,
 - **Capture**: rectangle, window, full-screen and freeform snips, with a 3, 5 or 10 second delay.
 - **Editor**: pen, highlighter, eraser, shapes, crop, ruler, emoji, undo/redo, zoom, and light and dark themes.
 - **Text actions (OCR)**: powered by Tesseract. Select words or lines, copy all text, copy as a table, redact email addresses and phone numbers, read QR codes. The text extractor also runs directly inside the capture overlay and closes the app after copying when started with `--capture`.
-- **Optimized OCR**: persistent Tesseract workers and bounded CPU threads reduce recognition overhead while retaining the published recognition settings. See measurements and compatibility checks in [`docs/OCR_PERFORMANCE.md`](docs/OCR_PERFORMANCE.md); real old-PC validation is still needed.
+- **Optimized OCR**: persistent Tesseract workers and bounded CPU threads reduce recognition overhead while retaining the published recognition settings. The single-CPU path also skips a discarded recognition pass without changing the selection rule. See [`docs/OCR_PERFORMANCE.md`](docs/OCR_PERFORMANCE.md) and [`docs/OCR_SINGLE_CPU_FOLLOWUP.md`](docs/OCR_SINGLE_CPU_FOLLOWUP.md) for measurements and compatibility checks; real old-PC validation is still needed.
 - **Screen recording**: FFmpeg-based region recording with pause/resume, microphone and system audio.
 - **After capture** (*Settings → Preferences*): show a notification **and** copy to the clipboard (default), show a notification only, only copy to the clipboard, or open the editor.
 - **Languages**: English (default), Portuguese (Brazil), Chinese, Japanese, Spanish, French and Italian. Switching the language applies immediately.
-- **Settings** modelled on the original page: capture, recording, preferences, appearance and about, with the app version (1.0.1).
+- **Settings** modelled on the original page: capture, recording, preferences, appearance and about, with the app version (1.0.2).
 
 <p align="center">
   <img src="docs/img/settings.png" alt="Settings page" width="49%">
@@ -35,10 +35,10 @@ An independent re-creation of the **Windows 11 Snipping Tool** for Linux (GTK 3,
 Download `captura_<version>_all.deb` from the [latest release](https://github.com/Grekto-dev/Win11-like-Snipping-Tool/releases/latest) and install it:
 
 ```bash
-sudo apt install ./captura_1.0.1_all.deb
+sudo apt install ./captura_1.0.2_all.deb
 ```
 
-Verify the download with `sha256sum -c captura_1.0.1_all.deb.sha256`. The package installs the `captura` command and a desktop entry named *Snipping Tool*.
+Verify the download with `sha256sum -c captura_1.0.2_all.deb.sha256`. The package installs the `captura` command and a desktop entry named *Snipping Tool*.
 
 The package recommends `tesseract-ocr` (text extraction), `ffmpeg` (recording), `libzbar0` (QR codes) and `pulseaudio-utils` (audio device detection). For OCR in other languages, install the matching `tesseract-ocr-*` language packs.
 

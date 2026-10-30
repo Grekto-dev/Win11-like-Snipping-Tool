@@ -1,7 +1,7 @@
 """Ferramenta de Captura — recriação, para o Linux Mint (Cinnamon/X11), da Ferramenta de Captura do Windows 11."""
 APP_ID = "org.captura.App"
 APP_NAME = "Ferramenta de Captura"      # ID da mensagem (texto-fonte em pt-BR); o nome exibido sai de app_name()
-__version__ = "1.0.1"
+__version__ = "1.0.2"
 
 
 def app_name():

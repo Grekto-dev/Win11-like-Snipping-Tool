@@ -234,9 +234,9 @@ class AfterCaptureTests(unittest.TestCase):
         order = [src.index('"%s"' % k) for k in ("notify_copy", "notify", "copy", "editor")]
         self.assertEqual(order, sorted(order))
 
-    def test_about_shows_version_1_0_1(self):
+    def test_about_shows_version_1_0_2(self):
         import captura
-        self.assertEqual(captura.__version__, "1.0.1")
+        self.assertEqual(captura.__version__, "1.0.2")
 
     def test_editor_mode_opens_the_editor_without_a_notification(self):
         settings["shot_after"] = "editor"
