@@ -111,7 +111,7 @@ class Overlay(Gtk.Window):
                         tool=self._tool_clicked, close=lambda: self.finish("cancel", None), start=self._start_clicked)
         self.bar = bar = SnipBar(handlers)
         bar.add_events(Gdk.EventMask.ENTER_NOTIFY_MASK | Gdk.EventMask.LEAVE_NOTIFY_MASK)
-        bar.connect("enter-notify-event", lambda *a: self.get_window().set_cursor(self.cur_arrow))
+        bar.connect("enter-notify-event", lambda *a: self.update_cursor())      # sobre a barra o ponteiro é sempre a seta
         bar.connect("leave-notify-event", lambda *a: self.update_cursor())
         self.toolbar_ev = bar
         self.btn_photo, self.btn_video, self.shape_btn = bar.btn_photo, bar.btn_video, bar.shape_btn
@@ -225,7 +225,28 @@ class Overlay(Gtk.Window):
         if self.get_window() is None:
             return
         self._cursor_kind = None
-        self._refresh_cursor()
+        self._refresh_cursor(*self._pointer_now())
+
+    def _pointer_now(self):
+        """Posição real do ponteiro em coordenadas do overlay (a posição guardada só muda com o movimento sobre a tela)."""
+        window = self.get_window()
+        if window is not None:
+            try:
+                _w, x, y, _mask = window.get_device_position(self.display.get_default_seat().get_pointer())
+                return int(x), int(y)
+            except Exception:
+                pass
+        return self.pointer
+
+    def _over_bar(self, x, y):
+        """O ponto está sobre uma barra visível do overlay (principal, do extrator de texto ou mini barra)?"""
+        for bar in (self.bar, getattr(self, "bar_ocr", None), getattr(self, "mini", None)):
+            if bar is None or not bar.get_visible() or not bar.get_mapped():
+                continue
+            origin = bar.translate_coordinates(self, 0, 0)
+            if origin and origin[0] <= x < origin[0] + bar.get_allocated_width() and origin[1] <= y < origin[1] + bar.get_allocated_height():
+                return True
+        return False
 
     # -------------------------------------------------------------- desenho
     def hole(self):
@@ -642,21 +663,25 @@ class Overlay(Gtk.Window):
         self.get_window().set_cursor(self._cursors[kind])
 
     def _wanted_cursor(self, x, y):
+        if self._over_bar(x, y):
+            return "arrow"                                # sobre as barras de ferramentas é sempre a seta
         if self.tool == "color":
             return "blank"
         ts = self.ts
         if self.tool == "ocr" and ts.phase == "scan":
             return "arrow"
+        # a cruz só serve para desenhar a região: retângulo e forma livre (e o extrator de texto); janela e tela inteira ficam com a seta
+        rest = "cross" if self.tool != "snip" or self.shape in ("rectangle", "freeform") else "arrow"
         if self.anchor is not None:                       # arrastando uma seleção (ou redimensionando)
-            return "arrow" if self._moved else "cross"
+            return "arrow" if self._moved else rest
         if self.tool == "ocr" and ts.phase == "ready":
             if ts.dragging:
                 return "text" if self._moved else "arrow"
             return self.handle_at(x, y) or "arrow"
-        return "cross"
+        return rest
 
     def _refresh_cursor(self, x=None, y=None):
-        px, py = self.pointer if x is None else (x, y)
+        px, py = self._pointer_now() if x is None else (x, y)
         self._set_cursor_kind(self._wanted_cursor(px, py))
 
     def handle_at(self, x, y):
