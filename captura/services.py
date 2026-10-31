@@ -51,9 +51,11 @@ def unique_path(directory, name):
     return os.path.join(directory, f"{stem} ({i}){ext}")
 
 
-def autosave(surface):
-    """Salva a captura original na pasta configurada. Devolve o caminho ou None."""
-    if not settings["shot_autosave"]:
+def autosave(surface, force=False):
+    """Salva a captura original na pasta configurada. Devolve o caminho ou None.
+
+    `force` salva mesmo com o salvamento automático desligado (opção "Apenas salvar"); aí None significa falha."""
+    if not (force or settings["shot_autosave"]):
         return None
     try:
         p = unique_path(settings.shot_directory, timestamp_name())
@@ -75,19 +77,42 @@ def copy_surface(surface):
     _clipboard_keep[:] = [pb]
 
 
+_selection_owner = None
+
+
+def _offer_on_clipboard(formats):
+    """Torna-se dono da área de transferência oferecendo `formats` = [(alvo, tipo, bytes)] enquanto nada mais for copiado.
+
+    Gtk.Clipboard.set_with_data não existe no PyGObject: um Gtk.Invisible faz o papel de dono da seleção."""
+    global _selection_owner
+    if _selection_owner is None:
+        owner = Gtk.Invisible()
+        owner.realize()
+
+        def selection_get(widget, data, info, _time):
+            _target, kind, payload = widget.offered[info]
+            data.set(Gdk.Atom.intern(kind, False), 8, payload)
+        owner.connect("selection-get", selection_get)
+        _selection_owner = owner
+    _selection_owner.offered = list(formats)
+    Gtk.selection_clear_targets(_selection_owner, Gdk.SELECTION_CLIPBOARD)
+    for info, (target, _kind, _payload) in enumerate(formats):
+        Gtk.selection_add_target(_selection_owner, Gdk.SELECTION_CLIPBOARD, Gdk.Atom.intern(target, False), info)
+    return Gtk.selection_owner_set(_selection_owner, Gdk.SELECTION_CLIPBOARD, Gdk.CURRENT_TIME)
+
+
+def copy_file(path):
+    """Coloca o arquivo (não o conteúdo) na área de transferência, como o gerenciador de arquivos faz ao copiar."""
+    uri = GLib.filename_to_uri(os.path.abspath(path))
+    _offer_on_clipboard([("x-special/gnome-copied-files", "x-special/gnome-copied-files", ("copy\n" + uri).encode("utf-8")),
+                         ("text/uri-list", "text/uri-list", (uri + "\r\n").encode("utf-8"))])
+
+
 def copy_html_table(html, text):
     """Coloca a tabela como text/html + texto simples (colar em planilhas/editores)."""
-    cb = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
-    targets = [Gtk.TargetEntry.new("text/html", 0, 0), Gtk.TargetEntry.new("UTF8_STRING", 0, 1),
-               Gtk.TargetEntry.new("text/plain;charset=utf-8", 0, 1), Gtk.TargetEntry.new("TEXT", 0, 1)]
-
-    def get(_cb, sel, info, _data):
-        if info == 0:
-            sel.set(Gdk.Atom.intern("text/html", False), 8, html.encode("utf-8"))
-        else:
-            sel.set_text(text, -1)
-    cb.set_with_data(targets, get, lambda *_: None, None)
-    cb.store()
+    plain = text.encode("utf-8")
+    _offer_on_clipboard([("text/html", "text/html", html.encode("utf-8")), ("UTF8_STRING", "UTF8_STRING", plain),
+                         ("text/plain;charset=utf-8", "text/plain;charset=utf-8", plain), ("TEXT", "UTF8_STRING", plain)])
 
 
 BING_UPLOAD = "https://www.bing.com/images/search?view=detailv2&iss=sbiupload&FORM=SBIHMP&sbisrc=ImgDropper&idpbck=1"

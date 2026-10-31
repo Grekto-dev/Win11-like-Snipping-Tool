@@ -126,11 +126,11 @@ class SettingsPage(Gtk.Box):
         self.section("Preferências")
         self.dropdown_row("Idioma", "Troca o idioma do aplicativo na hora", [(c, n) for c, n in i18n.LANGS], "language",
                           native=True, on_change=i18n.set_language)
-        self.dropdown_row("Após a captura", "O que acontece logo depois de uma captura de tela",
-                          [("notify_copy", "Mostrar uma notificação e copiar para a área de transferência"),
-                           ("notify", "Mostrar apenas uma notificação"),
-                           ("copy", "Apenas copiar para a área de transferência"),
-                           ("editor", "Abrir a captura no editor")], "shot_after", width=450)
+        self.after_capture_button = self.dropdown_row("Após a captura", "O que acontece logo depois de uma captura",
+                          [("notify", "Mostrar notificação", "Copia a captura para a área de transferência e avisa com uma notificação."),
+                           ("editor", "Abrir editor", "Abre a captura no editor. Gravações abrem no reprodutor padrão."),
+                           ("copy", "Apenas copiar", "Copia para a área de transferência, sem notificação."),
+                           ("save", "Apenas salvar", "Salva na pasta de capturas, sem notificação e sem copiar.")], "shot_after")
 
         self.section("Sobre este app", about=True)
         about = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
@@ -235,7 +235,7 @@ class SettingsPage(Gtk.Box):
         inner.pack_end(icons.image("chevron_down", 12, theme.icon_color()), False, False, 0)
         btn.add(inner)
         row.pack_end(btn, False, False, 0)
-        names = dict(options)
+        names = {o[0]: o[1] for o in options}
 
         def show():
             cur = settings[key]
@@ -249,8 +249,9 @@ class SettingsPage(Gtk.Box):
             show()
 
         def open_menu(_b):
-            items = [("checksm" if settings[key] == c else None, n, None, (lambda c=c: pick(c))) for c, n in options]
-            m = menus.Menu(items, dict(menus.DROPDOWN, width=width))
+            items = [("checksm" if settings[key] == c else None, n, None, (lambda c=c: pick(c)), True, False, False,
+                      (tip[0] if tip else None)) for c, n, *tip in options]      # a 3ª posição, se houver, é a dica do item
+            m = btn.menu = menus.Menu(items, dict(menus.DROPDOWN, width=width))
             ox, oy = menus.anchor_origin(btn)
             a = btn.get_allocation()
             m.open_at(ox + a.width - width, oy + a.height + 2)

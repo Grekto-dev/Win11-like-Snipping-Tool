@@ -386,6 +386,7 @@ class CapturaApp(Gtk.Application):
                 self._release(60000)       # mantém o processo vivo p/ ações das notificações
 
     def _on_overlay_inner(self, kind, payload, surf):
+        shape = getattr(self.overlay, "shape", None)          # tela inteira, janela, retângulo ou forma livre: nomeia a captura no aviso
         self.capturing = False
         self.overlay = None
         if kind == "cancel":
@@ -410,14 +411,18 @@ class CapturaApp(Gtk.Application):
             self._rec_hidden, self._hidden = list(self._hidden), []      # reaparecem quando a gravação terminar
             self.start_recording(payload)
             return
-        self.handle_image(payload)
+        self.handle_image(payload, shape)
 
     def _restore_windows_if_app(self, show=True):
         if show and self._hidden:
             self._restore_windows()
         self._hidden = []
 
-    def handle_image(self, pb):
+    CAPTURED_TITLES = {"fullscreen": "Tela capturada", "window": "Janela capturada",
+                       "rectangle": "Região capturada", "freeform": "Região capturada"}
+
+    def handle_image(self, pb, shape=None):
+        """Faz o que a opção "Após a captura" manda: notify (copia e avisa), editor, copy ou save."""
         surf = cairo.ImageSurface(cairo.FORMAT_ARGB32, pb.get_width(), pb.get_height())
         cr = cairo.Context(surf)
         Gdk.cairo_set_source_pixbuf(cr, pb, 0, 0)
@@ -428,26 +433,26 @@ class CapturaApp(Gtk.Application):
             from . import annot
             out = annot.render(surf, [], border)
         after = settings["shot_after"]
-        if after != "notify":                      # "só notificação" não mexe na área de transferência; as demais opções copiam
+        if after in ("notify", "copy"):
             services.copy_surface(out)
-        path = services.autosave(out)
+        # "Apenas salvar" grava na pasta de capturas mesmo com o salvamento automático desligado; nas outras o interruptor manda
+        path = services.autosave(out, force=(after == "save"))
+        save_failed = after == "save" and path is None
         # "Novo" na janela, marcação rápida ou janela do app aberta sempre voltam ao editor; senão vale a escolha em Configurações
-        open_editor = self._from_app or settings["quick_markup"] or bool(self._hidden) or after == "editor"
+        open_editor = self._from_app or settings["quick_markup"] or bool(self._hidden) or after == "editor" or save_failed
         self._hidden = []
+        if save_failed:                                # sem copiar nem notificar, a captura se perderia: abre no editor para salvar à mão
+            services.notify("Não foi possível salvar a captura", "A captura foi aberta no editor para que você possa salvá-la.", "dialog-error")
         if open_editor:
             w = self.get_window(new=settings["shot_multi_window"] and bool(self.windows) and self.windows[-1].canvas.base is not None)
-            w.load_surface(surf if not border else surf, new_capture=True, path=path)
+            w.load_surface(surf, new_capture=True, path=path)
             return
-        if after == "copy":
-            return                                 # só copiar: a imagem já está na área de transferência (e salva, se o salvamento automático estiver ligado)
-        if path:
-            body = "Salvo automaticamente na pasta de capturas de tela."
-        else:
-            body = "Copiado para a área de transferência." if after != "notify" else "Captura de tela feita."
+        if after != "notify":
+            return                                     # copy: já está na área de transferência; save: já está na pasta
         def open_it():
             w = self.get_window(new=settings["shot_multi_window"] and bool(self.windows) and self.windows[-1].canvas.base is not None)
             w.load_surface(surf, new_capture=True, path=path)
-        services.notify("Captura de tela salva", i18n.tr(body) + "\n" + i18n.tr("Selecione para marcar e compartilhar."), path or "camera-photo",
+        services.notify(self.CAPTURED_TITLES.get(shape, "Captura feita"), "Copiada para a área de transferência.", path or "camera-photo",
                         [("default", "Marcar e compartilhar", open_it)])
 
     # ------------------------------------------------------------ OCR
@@ -683,8 +688,23 @@ class CapturaApp(Gtk.Application):
                 self.msg(None, "Não foi possível salvar a gravação", i18n.trf("{erro}\n\nO arquivo foi mantido em:\n{caminho}", erro=e, caminho=dest))
                 return
             dest = final
-        services.notify("Gravação de tela salva", os.path.basename(dest) + "\n" + i18n.tr("Selecione para abrir."), "video-x-generic",
-                        [("default", "Abrir", lambda: subprocess.Popen(["xdg-open", dest]))])
+        self._after_recording(dest)
+
+    def _after_recording(self, dest):
+        """"Após a captura" também vale para gravações, que já estão salvas: copiar o arquivo, avisar ou abrir no reprodutor padrão
+        (o app não tem editor de vídeo)."""
+        after = settings["shot_after"]
+        if after in ("notify", "copy"):
+            try:
+                services.copy_file(dest)
+            except Exception as error:
+                print("não foi possível copiar a gravação:", error)
+        opener = lambda: subprocess.Popen(["xdg-open", dest])
+        if after == "editor":
+            opener()
+        elif after == "notify":
+            services.notify("Gravação de tela salva", os.path.basename(dest) + "\n" + i18n.tr("Selecione para abrir."), "video-x-generic",
+                            [("default", "Abrir", opener)])
 
     def toast_in_window(self, text):
         for w in self.windows:

@@ -193,7 +193,7 @@ class Popup(Gtk.Window):
 
 
 class Menu(Popup):
-    """items: (ícone|None, rótulo, atalho|None, callback, ativo=True, seta=False, selecionado=False) | None."""
+    """items: (ícone|None, rótulo, atalho|None, callback, ativo=True, seta=False, selecionado=False, dica=None) | None."""
 
     def __init__(self, items, style):
         self.style = style
@@ -216,10 +216,12 @@ class Menu(Popup):
             box.pack_start(self._row(*it), False, False, 0)
         super().__init__(box, "wmenu")
 
-    def _row(self, icon, label, accel, cb, enabled=True, arrow=False, selected=False):
+    def _row(self, icon, label, accel, cb, enabled=True, arrow=False, selected=False, tip=None):
         s = self.style
         b = Gtk.Button()
         b.set_can_focus(False)
+        if tip:
+            b.set_tooltip_text(tip)
         ctx = b.get_style_context()
         ctx.add_class("wmi")
         if selected:

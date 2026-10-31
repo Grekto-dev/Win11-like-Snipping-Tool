@@ -69,7 +69,7 @@ class CatalogTests(unittest.TestCase):
     def test_default_language_is_english_and_options_cover_the_seven_languages(self):
         from captura import config
         self.assertEqual(config.DEFAULTS["language"], "en")
-        self.assertEqual(config.DEFAULTS["shot_after"], "notify_copy")
+        self.assertEqual(config.DEFAULTS["shot_after"], "notify")
         self.assertEqual([c for c, _ in i18n.LANGS], ["pt-BR", "en", "zh", "ja", "es", "fr", "it"])
 
     def test_tr_falls_back_to_english_then_source(self):
@@ -200,61 +200,87 @@ class AfterCaptureTests(unittest.TestCase):
         p2 = patch.object(capp.services, "notify", side_effect=lambda *a, **k: self.notified.append(a))
         p3 = patch.object(capp.services, "autosave", return_value=None)
         for p in (p1, p2, p3):
-            p.start(); self.addCleanup(p.stop)
+            mock = p.start(); self.addCleanup(p.stop)
+        self.autosave = mock
         from gi.repository import GdkPixbuf
         self.pb = GdkPixbuf.Pixbuf.new(GdkPixbuf.Colorspace.RGB, True, 8, 40, 30)
         self.pb.fill(0x336699ff)
 
-    def test_clipboard_is_used_by_every_mode_except_notification_only(self):
-        for mode, expected in (("notify_copy", 1), ("editor", 1), ("copy", 1), ("notify", 0)):
-            settings["shot_after"] = mode
-            self.copied.clear()
-            self.app.handle_image(self.pb)
-            self.assertEqual(len(self.copied), expected, mode)
+    def test_default_mode_is_notify(self):
+        from captura import config
+        self.assertEqual(config.DEFAULTS["shot_after"], "notify")
 
-    def test_notify_and_copy_mode_shows_a_notification_copies_and_does_not_open_the_editor(self):
-        settings["shot_after"] = "notify_copy"
-        self.app.handle_image(self.pb)
-        self.assertEqual(len(self.notified), 1)
-        self.assertEqual(len(self.copied), 1)
-        self.assertEqual(self.opened, [])
-        self.assertIn("Copiado para a área de transferência", self.notified[0][1])
-
-    def test_notify_only_mode_shows_a_notification_without_touching_the_clipboard(self):
+    def test_notify_mode_copies_and_shows_one_notification_naming_what_was_captured(self):
         settings["shot_after"] = "notify"
-        self.app.handle_image(self.pb)
-        self.assertEqual(len(self.notified), 1)
-        self.assertEqual((self.copied, self.opened), ([], []))
-        self.assertNotIn("Copiado", self.notified[0][1])
+        for shape, title in (("fullscreen", "Tela capturada"), ("window", "Janela capturada"),
+                             ("rectangle", "Região capturada"), ("freeform", "Região capturada"), (None, "Captura feita")):
+            self.notified.clear(); self.copied.clear(); self.opened.clear()
+            self.app.handle_image(self.pb, shape)
+            self.assertEqual([n[0] for n in self.notified], [title], shape)
+            self.assertEqual((len(self.copied), self.opened), (1, []), shape)
+            self.assertIn("Copiada para a área de transferência", self.notified[0][1])
+            self.assertNotIn("salv", self.notified[0][1].lower())
 
-    def test_dropdown_lists_the_four_options_with_notify_and_copy_first(self):
+    def test_clicking_the_notification_opens_the_capture_in_the_editor(self):
+        settings["shot_after"] = "notify"
+        self.app.handle_image(self.pb, "window")
+        (_id, _label, open_it), = self.notified[0][3]
+        open_it()
+        self.assertEqual(len(self.opened), 1)
+
+    def test_editor_mode_only_opens_the_editor(self):
+        settings["shot_after"] = "editor"
+        self.app.handle_image(self.pb, "window")
+        self.assertEqual(len(self.opened), 1)
+        self.assertEqual((self.notified, self.copied), ([], []))
+        self.autosave.assert_called_once()
+        self.assertFalse(self.autosave.call_args.kwargs.get("force"))
+
+    def test_copy_mode_only_copies(self):
+        settings["shot_after"] = "copy"
+        self.app.handle_image(self.pb, "window")
+        self.assertEqual((self.opened, self.notified), ([], []))
+        self.assertEqual(len(self.copied), 1)
+        self.assertFalse(self.autosave.call_args.kwargs.get("force"))
+
+    def test_save_mode_saves_to_the_captures_folder_even_with_automatic_saving_off(self):
+        settings["shot_after"] = "save"
+        self.autosave.return_value = "/tmp/Captura.png"
+        self.app.handle_image(self.pb, "window")
+        self.autosave.assert_called_once()
+        self.assertTrue(self.autosave.call_args.kwargs.get("force"))
+        self.assertEqual((self.copied, self.notified, self.opened), ([], [], []))
+
+    def test_a_failed_save_never_loses_the_capture(self):
+        settings["shot_after"] = "save"
+        self.autosave.return_value = None
+        self.app.handle_image(self.pb, "window")
+        self.assertEqual([n[0] for n in self.notified], ["Não foi possível salvar a captura"])
+        self.assertEqual((len(self.opened), self.copied), (1, []))
+
+    def test_dropdown_lists_the_four_options_in_the_requested_order(self):
         import inspect
         from captura import settings_page
         src = inspect.getsource(settings_page.SettingsPage.__init__)
-        order = [src.index('"%s"' % k) for k in ("notify_copy", "notify", "copy", "editor")]
+        order = [src.index('("%s"' % k) for k in ("notify", "editor", "copy", "save")]
         self.assertEqual(order, sorted(order))
 
     def test_about_shows_version_1_0_2(self):
         import captura
         self.assertEqual(captura.__version__, "1.0.2")
 
-    def test_editor_mode_opens_the_editor_without_a_notification(self):
-        settings["shot_after"] = "editor"
-        self.app.handle_image(self.pb)
-        self.assertEqual(len(self.opened), 1)
-        self.assertEqual(self.notified, [])
-
-    def test_copy_mode_only_copies_no_editor_no_notification(self):
-        settings["shot_after"] = "copy"
-        self.app.handle_image(self.pb)
-        self.assertEqual((self.opened, self.notified), ([], []))
-        self.assertEqual(len(self.copied), 1)
-
-    def test_new_button_from_the_window_still_returns_to_the_editor(self):
-        settings["shot_after"] = "copy"
-        self.app._from_app = True
-        self.app.handle_image(self.pb)
-        self.assertEqual(len(self.opened), 1)
+    def test_contexts_that_always_return_to_the_editor_keep_the_mode_side_effects_but_no_notification(self):
+        for setup in (lambda: setattr(self.app, "_from_app", True), lambda: settings.__setitem__("quick_markup", True),
+                      lambda: setattr(self.app, "_hidden", ["window"])):
+            for mode, copies, saves in (("notify", 1, False), ("copy", 1, False), ("save", 0, True), ("editor", 0, False)):
+                self.app._from_app, self.app._hidden, settings["quick_markup"] = False, [], False
+                self.notified.clear(); self.copied.clear(); self.opened.clear(); self.autosave.reset_mock()
+                self.autosave.return_value = "/tmp/Captura.png"
+                setup()
+                settings["shot_after"] = mode
+                self.app.handle_image(self.pb, "window")
+                self.assertEqual((len(self.opened), len(self.copied), self.notified), (1, copies, []), mode)
+                self.assertEqual(bool(self.autosave.call_args.kwargs.get("force")), saves, mode)
 
 
 class RealClipboardTests(unittest.TestCase):

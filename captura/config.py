@@ -25,7 +25,7 @@ DEFAULTS = {
     # Ações de texto
     "redact_emails": True,
     "language": "en",                   # pt-BR | en | zh | ja | es | fr | it
-    "shot_after": "notify_copy",        # notify | notify_copy | copy | editor: o que acontece logo após a captura
+    "shot_after": "notify",             # notify | editor | copy | save: o que acontece logo após a captura (foto e vídeo)
     "ocr_auto_copy": False,
     "ocr_remove_breaks": False,
     "redact_phones": True,
@@ -61,14 +61,28 @@ DEFAULTS = {
 }
 
 
+AFTER_CAPTURE = ("notify", "editor", "copy", "save")
+_AFTER_CAPTURE_RENAMED = {"notify_copy": "notify"}      # antes: "notificar e copiar"; hoje "notify" já copia
+
+
+def normalize_after_capture(value):
+    """Aceita as escolhas de versões anteriores e descarta valores inválidos (a escolha volta ao padrão)."""
+    if isinstance(value, str):
+        value = _AFTER_CAPTURE_RENAMED.get(value, value)
+        if value in AFTER_CAPTURE:
+            return value
+    return DEFAULTS["shot_after"]
+
+
 class Settings:
     def __init__(self):
         self.data = dict(DEFAULTS)
         try:
             with open(CONFIG_FILE, encoding="utf-8") as f:
                 self.data.update({k: v for k, v in json.load(f).items() if k in DEFAULTS})
-        except (OSError, ValueError):
+        except (OSError, ValueError, AttributeError):
             pass
+        self.data["shot_after"] = normalize_after_capture(self.data["shot_after"])
 
     def __getitem__(self, k):
         return self.data[k]

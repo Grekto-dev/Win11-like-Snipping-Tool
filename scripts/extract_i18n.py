@@ -17,7 +17,7 @@ DATA = os.path.join(ROOT, "captura", "data", "i18n")
 PT = re.compile(r"[À-ÿ]|\b(de|da|do|para|com|em|as|os|uma?|que|não|Abrir|Copiar|Salvar|Fechar|Ativado|Desativado|tela|captura|texto|janela|imagem|arquivo|pasta)\b", re.I)
 # textos que parecem mensagens mas não são interface (nomes de pasta, comandos, fontes, mensagens de log, fragmentos já migrados)
 NOT_UI = {"Capturas de Tela", "Gravações de Tela", "captura --snip", "Noto Color Emoji ", "Selawik ", "atalho global não configurado:",
-          "falha ao salvar automaticamente:", "notificação indisponível:", "falha ao configurar a tecla Imprimir tela:",
+          "falha ao salvar automaticamente:", "não foi possível copiar a gravação:", "notificação indisponível:", "falha ao configurar a tecla Imprimir tela:",
           "ToolFlyout supports pen and hl; shapes use shape_bar.ShapeConfig"}
 IGNORE_WORDS = {"Pango", "Gtk", "Gdk", "Wnck", "Sans", "Selawik", "Semibold", "Print", "Notify", "Pinta", "Krita", "Drawing", "Noto Color Emoji",
                 "PNG", "JPEG", "BMP", "Emoji"}
