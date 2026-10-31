@@ -1,42 +1,34 @@
-# Win11-like Snipping Tool for Linux 1.0.2
+# Win11-like Snipping Tool for Linux 1.1.0
 
-OCR performance and reliability release. Recognition remains local and CPU-only.
+"After capture" options and capture-overlay cursor fixes.
 
 ## Changed
 
-- **Persistent Tesseract workers** retain installed language models between captures instead of repeatedly starting the recognizer. At most two workers run, with one native CPU thread per worker.
-- **One-CPU shortcut** omits the dense recognition pass only when the unchanged selection rule has already chosen the sparse result. Otherwise, the original dense pass still runs. With two workers, the original independent passes remain concurrent.
-- **Lower transport overhead** sends pixels in memory. Images with transparency retain the PNG/Leptonica alpha-handling path; recognition models, languages, segmentation modes and image scaling are not replaced.
-- **Responsive lifecycle** warms up models and discovers languages outside the GTK thread, reuses a bounded result cache, and shuts down idle workers without interrupting a busy request.
-- **Safer cancellation and cleanup** keep editor and overlay requests independent, discard stale UI results, and carry cancellation through the CLI fallback. Recognition failures are reported as errors rather than silently treated as an image with no text.
-- **Native binding hardening** improves OCR/QR buffer validation and process/resource cleanup.
+- **After capture** (Settings) now has four separate options, with short names and a tooltip for each:
+  - **Show notification** (new default): copies the capture to the clipboard and shows one system notification naming what was captured (screen, window or region). It no longer opens the editor.
+  - **Open editor**: opens only the editor. Previously this was tied to the old notification behaviour.
+  - **Copy only**: copies to the clipboard, with no notification.
+  - **Save only**: saves to the captures folder, with no notification and no clipboard copy. If the save fails, the editor opens so the capture is not lost.
+  Quick markup, when turned on in the capture bar, still opens the editor. An open app window or the *New* button no longer override the chosen option. The old "notify and copy" value migrates to *Show notification*. Recordings follow the same choice: the file is copied (*Show notification*, *Copy only*), opened in the default video player (*Open editor*, since there is no video editor) or left silently saved (*Save only*).
+- **Capture overlay cursor**: the toolbars always show the normal arrow. The crosshair appears only outside the toolbars in rectangle and free-form modes (and the text extractor); window and full-screen modes keep the arrow. The cursor is recomputed from the real pointer position after a mode change.
 
-No experimental RapidOCR models or additional runtime dependencies are included.
+## Fixed
 
-## Measurements and compatibility
+- **Copy as table** never reached the clipboard: the call it used does not exist in this PyGObject version, and only mocked tests hid it. Clipboard writes now use a real selection owner and are covered by round-trip tests.
 
-After the initial persistent-worker change, an interleaved follow-up comparison on one logical CPU, with warm models and result caching disabled, reduced the **sum of five image medians from 14.55 s to 9.94 s**. The `web1080` case fell from **8.76 s to 4.23 s**. Each median uses three recognitions.
+## Notes
 
-These are measured cases, not a five-second guarantee: the five-image total is not a single capture, the five-second aggregate target was not reached, and restricting a modern CPU's affinity does not emulate an old computer.
-
-The successful output matched the archived previous pipeline across **61 PNG files (60 distinct images)** for ordered words, bounding boxes, block/paragraph/line identifiers, copied plain text and table cells. This is evidence for the tested corpus, not a universal accuracy guarantee.
-
-See [`docs/OCR_PERFORMANCE.md`](docs/OCR_PERFORMANCE.md) for the initial optimization and [`docs/OCR_SINGLE_CPU_FOLLOWUP.md`](docs/OCR_SINGLE_CPU_FOLLOWUP.md) for paired measurements, raw results, compatibility checks and verification limits.
-
-## Unchanged limitations
-
-X11 is required. Recording timing/first-frame delays, hard-killed MP4 recovery and the recording-editing options remain outside this OCR update; see the README. No recording reliability fix is claimed here.
+- System notifications are placed by the desktop (Cinnamon shows them at the top right); the app cannot choose their position.
+- Limitations in the README remain, including X11 only and the recording options without a video editor.
 
 ## Install or update
 
 ```bash
-sudo apt install ./captura_1.0.2_all.deb
+sudo apt install ./captura_1.1.0_all.deb
 ```
 
 Verify the download with:
 
 ```bash
-sha256sum -c captura_1.0.2_all.deb.sha256
+sha256sum -c captura_1.1.0_all.deb.sha256
 ```
-
-This project is not affiliated with or endorsed by Microsoft. See `THIRD_PARTY_NOTICES.md` for the bundled Fluent UI System Icons (MIT) and Selawik font (SIL OFL 1.1). Translations were produced with the help of a language model and have not had human review.
