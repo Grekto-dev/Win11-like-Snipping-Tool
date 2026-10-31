@@ -438,8 +438,11 @@ class CapturaApp(Gtk.Application):
         # "Apenas salvar" grava na pasta de capturas mesmo com o salvamento automático desligado; nas outras o interruptor manda
         path = services.autosave(out, force=(after == "save"))
         save_failed = after == "save" and path is None
-        # "Novo" na janela, marcação rápida ou janela do app aberta sempre voltam ao editor; senão vale a escolha em Configurações
-        open_editor = self._from_app or settings["quick_markup"] or bool(self._hidden) or after == "editor" or save_failed
+        # Só a escolha em Configurações manda (inclusive com "Novo" ou com a janela do app aberta); a marcação rápida, que o usuário
+        # liga de propósito na barra de captura, e a falha ao salvar também abrem o editor
+        open_editor = settings["quick_markup"] or after == "editor" or save_failed
+        if not open_editor:
+            self._restore_windows()                    # as janelas escondidas para capturar voltam sem virar editor
         self._hidden = []
         if save_failed:                                # sem copiar nem notificar, a captura se perderia: abre no editor para salvar à mão
             services.notify("Não foi possível salvar a captura", "A captura foi aberta no editor para que você possa salvá-la.", "dialog-error")

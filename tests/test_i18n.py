@@ -269,18 +269,31 @@ class AfterCaptureTests(unittest.TestCase):
         import captura
         self.assertEqual(captura.__version__, "1.0.2")
 
-    def test_contexts_that_always_return_to_the_editor_keep_the_mode_side_effects_but_no_notification(self):
-        for setup in (lambda: setattr(self.app, "_from_app", True), lambda: settings.__setitem__("quick_markup", True),
-                      lambda: setattr(self.app, "_hidden", ["window"])):
-            for mode, copies, saves in (("notify", 1, False), ("copy", 1, False), ("save", 0, True), ("editor", 0, False)):
-                self.app._from_app, self.app._hidden, settings["quick_markup"] = False, [], False
+    def test_an_open_app_window_or_the_new_button_never_overrides_the_chosen_option(self):
+        from unittest.mock import Mock
+        expectations = {"notify": (1, 1, 0), "copy": (1, 0, 0), "save": (0, 0, 0), "editor": (0, 0, 1)}   # copiadas, avisos, editores
+        for from_app in (False, True):
+            for mode, (copies, notices, editors) in expectations.items():
+                window = Mock(name="janela-do-app")
+                self.app._from_app, self.app._hidden = from_app, [window]
                 self.notified.clear(); self.copied.clear(); self.opened.clear(); self.autosave.reset_mock()
                 self.autosave.return_value = "/tmp/Captura.png"
-                setup()
                 settings["shot_after"] = mode
                 self.app.handle_image(self.pb, "window")
-                self.assertEqual((len(self.opened), len(self.copied), self.notified), (1, copies, []), mode)
-                self.assertEqual(bool(self.autosave.call_args.kwargs.get("force")), saves, mode)
+                self.assertEqual((len(self.copied), len(self.notified), len(self.opened)), (copies, notices, editors), (mode, from_app))
+                self.assertEqual(self.app._hidden, [])
+                if mode != "editor":
+                    window.show.assert_called_once()             # a janela escondida para capturar volta, sem abrir o editor
+
+    def test_quick_markup_still_opens_the_editor_and_keeps_the_copy_or_save_effects_without_a_notification(self):
+        for mode, copies, saves in (("notify", 1, False), ("copy", 1, False), ("save", 0, True), ("editor", 0, False)):
+            settings["quick_markup"] = True
+            self.notified.clear(); self.copied.clear(); self.opened.clear(); self.autosave.reset_mock()
+            self.autosave.return_value = "/tmp/Captura.png"
+            settings["shot_after"] = mode
+            self.app.handle_image(self.pb, "window")
+            self.assertEqual((len(self.opened), len(self.copied), self.notified), (1, copies, []), mode)
+            self.assertEqual(bool(self.autosave.call_args.kwargs.get("force")), saves, mode)
 
 
 class RealClipboardTests(unittest.TestCase):
