@@ -71,9 +71,17 @@ _clipboard_keep = []
 
 def copy_surface(surface):
     pb = surface_to_pixbuf(surface)
+    ok, png = pb.save_to_bufferv("png", [], [])
+    if not ok:
+        raise RuntimeError(i18n.tr("Falha ao codificar a imagem."))
+    # A lista vazia contém zero arquivos: evita que leitores que consultam URI antes
+    # da imagem falhem diante de uma resposta inválida do gerenciador do Cinnamon.
+    if not _offer_on_clipboard([("image/png", "image/png", bytes(png)),
+                                ("text/uri-list", "text/uri-list", b"")]):
+        raise RuntimeError(i18n.tr("Não foi possível copiar a captura para a área de transferência."))
     cb = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
-    cb.set_image(pb)
-    cb.store()
+    cb.set_can_store(None)
+    cb.store()  # transfere os dois formatos ao gerenciador para sobreviver ao fechamento
     _clipboard_keep[:] = [pb]
 
 

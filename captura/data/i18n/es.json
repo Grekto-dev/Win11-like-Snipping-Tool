@@ -246,5 +246,6 @@
 "Captura feita": "Captura realizada",
 "Copiada para a área de transferência.": "Copiada al portapapeles.",
 "Não foi possível salvar a captura": "No se pudo guardar la captura",
-"A captura foi aberta no editor para que você possa salvá-la.": "La captura se abrió en el editor para que puedas guardarla."
+"A captura foi aberta no editor para que você possa salvá-la.": "La captura se abrió en el editor para que puedas guardarla.",
+"Não foi possível copiar a captura para a área de transferência.": "No se pudo copiar la captura al portapapeles."
 }

@@ -246,5 +246,6 @@
 "Captura feita": "已完成截图",
 "Copiada para a área de transferência.": "已复制到剪贴板。",
 "Não foi possível salvar a captura": "无法保存截图",
-"A captura foi aberta no editor para que você possa salvá-la.": "截图已在编辑器中打开，您可以手动保存。"
+"A captura foi aberta no editor para que você possa salvá-la.": "截图已在编辑器中打开，您可以手动保存。",
+"Não foi possível copiar a captura para a área de transferência.": "无法将截图复制到剪贴板。"
 }

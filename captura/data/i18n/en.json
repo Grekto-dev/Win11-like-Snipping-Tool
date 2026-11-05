@@ -246,5 +246,6 @@
 "Captura feita": "Capture taken",
 "Copiada para a área de transferência.": "Copied to the clipboard.",
 "Não foi possível salvar a captura": "Couldn’t save the capture",
-"A captura foi aberta no editor para que você possa salvá-la.": "The capture was opened in the editor so you can save it."
+"A captura foi aberta no editor para que você possa salvá-la.": "The capture was opened in the editor so you can save it.",
+"Não foi possível copiar a captura para a área de transferência.": "Could not copy the capture to the clipboard."
 }

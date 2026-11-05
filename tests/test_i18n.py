@@ -297,6 +297,17 @@ class AfterCaptureTests(unittest.TestCase):
 
 
 class RealClipboardTests(unittest.TestCase):
+    def test_image_copy_offers_an_empty_uri_list_without_claiming_any_file(self):
+        s = cairo.ImageSurface(cairo.FORMAT_ARGB32, 50, 40)
+        services.copy_surface(s)
+        pump(.3)
+        clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
+        uri = clipboard.wait_for_contents(Gdk.Atom.intern('text/uri-list', False))
+        self.assertIsNotNone(uri)
+        self.assertEqual(uri.get_data_type().name(), 'text/uri-list')
+        self.assertEqual(uri.get_data(), b'')
+        self.assertIsNotNone(clipboard.wait_for_image())
+
     def test_a_real_copy_is_readable_back_from_the_clipboard(self):
         s = cairo.ImageSurface(cairo.FORMAT_ARGB32, 50, 40)
         cr = cairo.Context(s); cr.set_source_rgb(1, 0, 0); cr.paint()

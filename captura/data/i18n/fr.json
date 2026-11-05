@@ -246,5 +246,6 @@
 "Captura feita": "Capture effectuée",
 "Copiada para a área de transferência.": "Copiée dans le presse-papiers.",
 "Não foi possível salvar a captura": "Impossible d’enregistrer la capture",
-"A captura foi aberta no editor para que você possa salvá-la.": "La capture a été ouverte dans l’éditeur pour que vous puissiez l’enregistrer."
+"A captura foi aberta no editor para que você possa salvá-la.": "La capture a été ouverte dans l’éditeur pour que vous puissiez l’enregistrer.",
+"Não foi possível copiar a captura para a área de transferência.": "Impossible de copier la capture dans le presse-papiers."
 }
