@@ -267,7 +267,7 @@ class AfterCaptureTests(unittest.TestCase):
 
     def test_about_shows_version_1_1_0(self):
         import captura
-        self.assertEqual(captura.__version__, "1.1.0")
+        self.assertEqual(captura.__version__, "1.1.1")
 
     def test_an_open_app_window_or_the_new_button_never_overrides_the_chosen_option(self):
         from unittest.mock import Mock
