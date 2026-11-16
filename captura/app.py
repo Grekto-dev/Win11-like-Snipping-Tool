@@ -433,10 +433,10 @@ class CapturaApp(Gtk.Application):
             from . import annot
             out = annot.render(surf, [], border)
         after = settings["shot_after"]
-        if after in ("notify", "copy"):
-            services.copy_surface(out)
         # "Apenas salvar" grava na pasta de capturas mesmo com o salvamento automático desligado; nas outras o interruptor manda
         path = services.autosave(out, force=(after == "save"))
+        if after in ("notify", "copy"):
+            services.copy_surface(out, path)           # com o arquivo salvo, a cópia também serve a quem lê arquivos primeiro
         save_failed = after == "save" and path is None
         # Só a escolha em Configurações manda (inclusive com "Novo" ou com a janela do app aberta); a marcação rápida, que o usuário
         # liga de propósito na barra de captura, e a falha ao salvar também abrem o editor

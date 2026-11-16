@@ -193,10 +193,10 @@ class AfterCaptureTests(unittest.TestCase):
         self.addCleanup(lambda: [settings.__setitem__(k, v) for k, v in self.saved.items()])
         self.app = capp.CapturaApp.__new__(capp.CapturaApp)
         self.app.windows, self.app._hidden, self.app._from_app = [], [], False
-        self.opened, self.notified, self.copied = [], [], []
+        self.opened, self.notified, self.copied, self.copy_paths = [], [], [], []
         self.app.get_window = lambda new=False: type("W", (), {"load_surface": lambda s, *a, **k: self_opened.append(a)})()
         self_opened = self.opened
-        p1 = patch.object(capp.services, "copy_surface", side_effect=lambda s: self.copied.append(s))
+        p1 = patch.object(capp.services, "copy_surface", side_effect=lambda s, path=None: (self.copied.append(s), self.copy_paths.append(path)))
         p2 = patch.object(capp.services, "notify", side_effect=lambda *a, **k: self.notified.append(a))
         p3 = patch.object(capp.services, "autosave", return_value=None)
         for p in (p1, p2, p3):
@@ -220,6 +220,18 @@ class AfterCaptureTests(unittest.TestCase):
             self.assertEqual((len(self.copied), self.opened), (1, []), shape)
             self.assertIn("Copiada para a área de transferência", self.notified[0][1])
             self.assertNotIn("salv", self.notified[0][1].lower())
+
+    def test_the_copy_carries_the_saved_file_so_apps_that_read_files_first_can_paste_it(self):
+        for mode in ("notify", "copy"):
+            settings["shot_after"] = mode
+            self.copy_paths.clear()
+            self.autosave.return_value = "/tmp/Captura.png"
+            self.app.handle_image(self.pb, "window")
+            self.assertEqual(self.copy_paths, ["/tmp/Captura.png"], mode)
+            self.copy_paths.clear()
+            self.autosave.return_value = None                 # salvamento automático desligado: só a imagem
+            self.app.handle_image(self.pb, "window")
+            self.assertEqual(self.copy_paths, [None], mode)
 
     def test_clicking_the_notification_opens_the_capture_in_the_editor(self):
         settings["shot_after"] = "notify"
@@ -297,25 +309,57 @@ class AfterCaptureTests(unittest.TestCase):
 
 
 class RealClipboardTests(unittest.TestCase):
-    def test_image_copy_offers_an_empty_uri_list_without_claiming_any_file(self):
-        s = cairo.ImageSurface(cairo.FORMAT_ARGB32, 50, 40)
-        services.copy_surface(s)
-        pump(.3)
-        clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
-        uri = clipboard.wait_for_contents(Gdk.Atom.intern('text/uri-list', False))
-        self.assertIsNotNone(uri)
-        self.assertEqual(uri.get_data_type().name(), 'text/uri-list')
-        self.assertEqual(uri.get_data(), b'')
-        self.assertIsNotNone(clipboard.wait_for_image())
+    URI = Gdk.Atom.intern("text/uri-list", False)
 
-    def test_a_real_copy_is_readable_back_from_the_clipboard(self):
+    def surface(self):
         s = cairo.ImageSurface(cairo.FORMAT_ARGB32, 50, 40)
         cr = cairo.Context(s); cr.set_source_rgb(1, 0, 0); cr.paint()
-        services.copy_surface(s)
+        return s
+
+    def saved(self, name="Captura de tela é.png"):
+        import tempfile
+        folder = tempfile.mkdtemp(prefix="captura-clip-")
+        self.addCleanup(lambda: __import__("shutil").rmtree(folder, ignore_errors=True))
+        path = os.path.join(folder, name)
+        services.save_surface(self.surface(), path)
+        return path
+
+    def test_a_copy_without_a_saved_file_offers_the_image_and_no_file_list(self):
+        """Uma lista de arquivos vazia fazia os navegadores entregarem texto, e não a imagem, aos sites."""
+        services.copy_surface(self.surface())
         pump(.3)
-        pb = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD).wait_for_image()
-        self.assertIsNotNone(pb)
+        clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
+        self.assertIsNone(clipboard.wait_for_contents(self.URI))
+        ok, targets = clipboard.wait_for_targets()
+        self.assertNotIn("text/uri-list", [t.name() for t in targets])
+        pb = clipboard.wait_for_image()
         self.assertEqual((pb.get_width(), pb.get_height()), (50, 40))
+
+    def test_a_copy_with_the_saved_file_offers_that_file_and_the_image(self):
+        path = self.saved()
+        services.copy_surface(self.surface(), path)
+        pump(.3)
+        clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
+        uri = clipboard.wait_for_contents(self.URI)
+        self.assertIsNotNone(uri)
+        self.assertEqual(uri.get_data_type().name(), "text/uri-list")
+        self.assertEqual(uri.get_data(), (GLib.filename_to_uri(path) + "\r\n").encode())
+        self.assertEqual(GLib.filename_from_uri(uri.get_data().decode().strip())[0], path)
+        png = clipboard.wait_for_contents(Gdk.Atom.intern("image/png", False))
+        self.assertEqual(png.get_data(), open(path, "rb").read())       # os mesmos bytes do arquivo salvo
+        pb = clipboard.wait_for_image()
+        self.assertEqual((pb.get_width(), pb.get_height()), (50, 40))
+
+    def test_a_saved_file_that_is_gone_or_is_not_a_png_is_never_offered_as_a_file(self):
+        gone = self.saved()
+        os.remove(gone)
+        jpeg = self.saved("Captura.jpg")
+        for path in (gone, jpeg, ""):
+            services.copy_surface(self.surface(), path)
+            pump(.3)
+            clipboard = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
+            self.assertIsNone(clipboard.wait_for_contents(self.URI), path)
+            self.assertIsNotNone(clipboard.wait_for_image(), path)
 
 
 class LinkCursorTests(unittest.TestCase):

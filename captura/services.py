@@ -69,19 +69,42 @@ def autosave(surface, force=False):
 _clipboard_keep = []
 
 
-def copy_surface(surface):
+PNG_MAGIC = b"\x89PNG\r\n\x1a\n"
+
+
+def _saved_png(path):
+    """Bytes da captura já salva, se `path` for um PNG que ainda existe; senão None."""
+    if not path:
+        return None
+    try:
+        with open(path, "rb") as f:
+            data = f.read()
+    except OSError:
+        return None
+    return data if data.startswith(PNG_MAGIC) else None
+
+
+def copy_surface(surface, path=None):
+    """Copia a imagem para a área de transferência.
+
+    `path` é a captura já salva em PNG com este mesmo conteúdo. Com ele, a cópia oferece a imagem e também esse arquivo
+    (text/uri-list): programas que perguntam primeiro por arquivos (PhotoCraft) falham quando o gerenciador do Cinnamon
+    responde por um formato que não guardou. Sem arquivo vai só a imagem: uma lista de arquivos vazia fazia os navegadores
+    entregarem texto, e não a imagem, aos sites."""
     pb = surface_to_pixbuf(surface)
-    ok, png = pb.save_to_bufferv("png", [], [])
-    if not ok:
-        raise RuntimeError(i18n.tr("Falha ao codificar a imagem."))
-    # A lista vazia contém zero arquivos: evita que leitores que consultam URI antes
-    # da imagem falhem diante de uma resposta inválida do gerenciador do Cinnamon.
-    if not _offer_on_clipboard([("image/png", "image/png", bytes(png)),
-                                ("text/uri-list", "text/uri-list", b"")]):
-        raise RuntimeError(i18n.tr("Não foi possível copiar a captura para a área de transferência."))
     cb = Gtk.Clipboard.get(Gdk.SELECTION_CLIPBOARD)
+    png = _saved_png(path)
+    if png is None:
+        cb.set_image(pb)
+        cb.store()
+        _clipboard_keep[:] = [pb]
+        return
+    uri = GLib.filename_to_uri(os.path.abspath(path))
+    if not _offer_on_clipboard([("image/png", "image/png", png),
+                                ("text/uri-list", "text/uri-list", (uri + "\r\n").encode("utf-8"))]):
+        raise RuntimeError(i18n.tr("Não foi possível copiar a captura para a área de transferência."))
     cb.set_can_store(None)
-    cb.store()  # transfere os dois formatos ao gerenciador para sobreviver ao fechamento
+    cb.store()                                    # entrega os dois formatos ao gerenciador: sobrevivem ao fechamento do app
     _clipboard_keep[:] = [pb]
 
 
