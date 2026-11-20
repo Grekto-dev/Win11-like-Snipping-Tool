@@ -53,7 +53,7 @@ class Overlay(Gtk.Window):
         self.W, self.H = surface.get_width(), surface.get_height()
         self.on_result = on_result
         self.tool = tool                       # snip | ocr | color
-        self.shape = settings["shape"]
+        self.shape = self._effective_shape()
         self.mode = settings["mode"]
         self._done = False
         self._grab_tries = 0
@@ -168,8 +168,13 @@ class Overlay(Gtk.Window):
     def _tool_clicked(self, tool):
         self.set_tool("snip" if self.tool == tool else tool)
 
+    def _effective_shape(self):
+        """Modo de seleção em uso. O Extrator de Texto sempre seleciona um retângulo; o modo salvo (janela, tela inteira,
+        forma livre...) pertence só à captura comum e nunca é lido nem alterado por ele."""
+        return "rectangle" if self.tool == "ocr" else settings["shape"]
+
     def _refresh_shape_icon(self):
-        name = [i for k, i, _ in SHAPES if k == self.shape][0]
+        name = [i for k, i, _ in SHAPES if k == settings["shape"]][0]      # a barra principal sempre mostra o modo salvo
         self.shape_img.set_from_pixbuf(icons.pixbuf(name, 20, theme.icon_color()))
 
     def show_shape_menu(self, btn):
@@ -200,6 +205,7 @@ class Overlay(Gtk.Window):
 
     def set_tool(self, tool):
         self.tool = tool
+        self.shape = self._effective_shape()
         if tool == "ocr":
             OT.textlayer.warm_up()
         self.bar.set_tool(tool)
