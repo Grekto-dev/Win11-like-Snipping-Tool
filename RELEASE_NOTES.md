@@ -1,32 +1,27 @@
-# Win11-like Snipping Tool for Linux 1.1.2
+# Win11-like Snipping Tool for Linux 1.1.3
 
-Clipboard fix: captures paste into browsers and PhotoCraft again.
+The text extractor no longer depends on the saved capture mode.
 
-## Fixed
+## Changed
 
-- **Pasting into websites works again.** Version 1.1.1 added an empty file list to the copied capture to satisfy PhotoCraft. Browsers then gave websites that list as text instead of the image, so ChatGPT, Gemini and Google did not accept the paste. The empty list is gone.
-- **PhotoCraft still pastes, when the capture is saved.** PhotoCraft asks for a file list before the image. The copy now offers the image together with the saved capture file (the PNG in the captures folder), so both browsers and PhotoCraft receive a real image file.
-
-## Behaviour to know
-
-- With **automatic saving on** (the default), a copied capture also carries the saved file. A website may show the pasted image with the file name "Captura de tela ....png".
-- With **automatic saving off**, or for copies made from the editor, only the image is copied. Websites work; PhotoCraft does not paste it (same as before 1.1.1).
-- Flatpak browsers only read files inside folders they can access, such as the Pictures folder, where captures are saved by default. A custom captures folder outside those may not paste into a Flatpak browser.
+- **The text extractor always selects a rectangle.** Before, its button used whatever capture mode was saved (window, full screen, free-form), so a click could select a whole window or screen instead of the region you dragged. Now it always uses the rectangle, and it never reads or changes the saved mode.
+- **The two are independent.** After using the text extractor and going back with the arrow, the capture bar still shows your saved mode, and picking a mode in the bar saves it as before. The same holds for the extractor opened from the capture bar button, the start-screen button and `captura --ocr`. It also ignores the photo/video choice without changing it.
 
 ## Verified
 
-- Chrome (Flatpak), Firefox and PhotoCraft 0.20.2 pasted a 1920x1080 capture after the app had exited, using the Cinnamon clipboard manager in an isolated X11 session.
-- Pasting into ChatGPT and Gemini was confirmed by the maintainer on a real desktop.
-- Clipboard round-trip tests for the saved-file and image-only cases, and the full isolated suite.
+- Unit tests for every saved mode, real mouse drags and clicks (XTEST) through the bar button and back with the settings file re-read, and the real launcher (`captura --ocr`) in an isolated X11 session with the saved mode set to window, full screen and free-form.
+- Full isolated suite: 327 tests passed on the final run. In two earlier runs a few real-click tests (and an intermittent recording test) failed once and passed when rerun alone.
+
+Not changed: the color picker still follows the saved capture mode.
 
 ## Install or update
 
 ```bash
-sudo apt install ./captura_1.1.2_all.deb
+sudo apt install ./captura_1.1.3_all.deb
 ```
 
 Verify the download with:
 
 ```bash
-sha256sum -c captura_1.1.2_all.deb.sha256
+sha256sum -c captura_1.1.3_all.deb.sha256
 ```
