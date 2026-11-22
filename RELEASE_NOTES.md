@@ -1,27 +1,19 @@
-# Win11-like Snipping Tool for Linux 1.1.3
+# Win11-like Snipping Tool for Linux 1.2.0
 
-The text extractor no longer depends on the saved capture mode.
+## New: choose one monitor or all screens
 
-## Changed
-
-- **The text extractor always selects a rectangle.** Before, its button used whatever capture mode was saved (window, full screen, free-form), so a click could select a whole window or screen instead of the region you dragged. Now it always uses the rectangle, and it never reads or changes the saved mode.
-- **The two are independent.** After using the text extractor and going back with the arrow, the capture bar still shows your saved mode, and picking a mode in the bar saves it as before. The same holds for the extractor opened from the capture bar button, the start-screen button and `captura --ocr`. It also ignores the photo/video choice without changing it.
-
-## Verified
-
-- Unit tests for every saved mode, real mouse drags and clicks (XTEST) through the bar button and back with the settings file re-read, and the real launcher (`captura --ocr`) in an isolated X11 session with the saved mode set to window, full screen and free-form.
-- Full isolated suite: 327 tests passed on the final run. In two earlier runs a few real-click tests (and an intermittent recording test) failed once and passed when rerun alone.
-
-Not changed: the color picker still follows the saved capture mode.
+- **Full screen** highlights the monitor under the pointer. Click to capture just that monitor, including its taskbar. On a single-monitor setup it still captures the entire screen.
+- **All screens**, immediately after **Full screen** in the capture menu, keeps the previous whole-desktop behavior: one image containing every monitor in its desktop layout.
+- The same choices set the region for screen recording. The text extractor still uses a rectangle independently of the saved capture mode.
 
 ## Install or update
 
 ```bash
-sudo apt install ./captura_1.1.3_all.deb
+sudo apt install ./captura_1.2.0_all.deb
 ```
 
 Verify the download with:
 
 ```bash
-sha256sum -c captura_1.1.3_all.deb.sha256
+sha256sum -c captura_1.2.0_all.deb.sha256
 ```

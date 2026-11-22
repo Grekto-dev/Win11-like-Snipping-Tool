@@ -1,6 +1,8 @@
 """Regression tests for the measured floating menus (real GTK widgets)."""
 import time
 import unittest
+from types import SimpleNamespace
+from unittest.mock import patch
 
 import gi
 gi.require_version('Gtk', '3.0')
@@ -72,6 +74,17 @@ class MenuTests(unittest.TestCase):
         _, x, y = pop.get_window().get_origin()
         self.assertGreaterEqual(x + menus.SHADOW, area.x)
         self.assertGreaterEqual(y + menus.SHADOW, area.y)
+
+    def test_popup_alignment_cannot_move_it_to_the_monitor_above_its_anchor(self):
+        pop = self.popup(lambda: None)
+        def monitor_at(x, y):
+            y = 0 if y < 250 else 250
+            return SimpleNamespace(get_workarea=lambda: SimpleNamespace(x=0, y=y, width=720, height=250))
+        with patch.object(menus.Gdk.Display, 'get_default', return_value=SimpleNamespace(get_monitor_at_point=monitor_at)):
+            pop.open_at(100, 215, anchor=(120, 280))
+        drain()
+        _, _, y = pop.get_window().get_origin()
+        self.assertEqual(y + menus.SHADOW, 250)
 
     def test_eraser_label_is_fully_inside_frame(self):
         pop = menus.Menu([('trash', 'Apagar todas as marcações', None, lambda: None)], menus.SINGLE)

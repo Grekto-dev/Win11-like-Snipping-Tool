@@ -257,7 +257,7 @@ class CapturaApp(Gtk.Application):
         self.add_main_option("record", 0, 0, 0, i18n.tr("Gravação de tela"), None)
         self.add_main_option("settings", 0, 0, 0, i18n.tr("Abre as Configurações"), None)
         self.add_main_option("background", 0, 0, 0, i18n.tr("Fica residente, sem janela"), None)
-        self.add_main_option("fullscreen", 0, 0, 0, i18n.tr("Captura a tela inteira imediatamente"), None)
+        self.add_main_option("fullscreen", 0, 0, 0, i18n.tr("Abre a captura no modo Tela inteira"), None)
 
     # ------------------------------------------------------------ ciclo
     def do_startup(self):
@@ -418,8 +418,8 @@ class CapturaApp(Gtk.Application):
             self._restore_windows()
         self._hidden = []
 
-    CAPTURED_TITLES = {"fullscreen": "Tela capturada", "window": "Janela capturada",
-                       "rectangle": "Região capturada", "freeform": "Região capturada"}
+    CAPTURED_TITLES = {"fullscreen": "Tela capturada", "all_screens": "Todas as telas capturadas",
+                       "window": "Janela capturada", "rectangle": "Região capturada", "freeform": "Região capturada"}
 
     def handle_image(self, pb, shape=None):
         """Faz o que a opção "Após a captura" manda: notify (copia e avisa), editor, copy ou save."""
@@ -505,7 +505,9 @@ class CapturaApp(Gtk.Application):
         d = settings.rec_directory if settings["rec_autosave"] else self._rec_scratch_dir()
         name = services.timestamp_name("Gravação de tela", "mp4")
         self.rec_dest = services.unique_path(d, name)
-        recorder = services.Recorder(rect, settings["rec_mic"], settings["rec_system_audio"], self.rec_dest)
+        scale = grab.root_scale()
+        pixels = tuple(v * scale for v in rect)
+        recorder = services.Recorder(pixels, settings["rec_mic"], settings["rec_system_audio"], self.rec_dest)
         if recorder.region is None:                       # fora da tela ou menor que 2×2: nem abre a barra
             self._restore_rec_windows()
             self._release()
@@ -515,8 +517,9 @@ class CapturaApp(Gtk.Application):
         missing = services.missing_audio(settings["rec_mic"], settings["rec_system_audio"])
         if missing:
             services.notify("Gravação de tela", i18n.trf("Sem acesso a: {itens}. A gravação será só de vídeo.", itens=", ".join(i18n.tr(m) for m in missing)), "video-x-generic")
-        self.rec_outline = OutlineWindow(recorder.region)
-        self.rec_bar = RecordingBar(self.stop_recording, lambda: self.stop_recording(discard=True), recorder.region, on_pause=self._pause_rec)
+        region = recorder.region if scale == 1 else tuple(v // scale for v in recorder.region)
+        self.rec_outline = OutlineWindow(region)
+        self.rec_bar = RecordingBar(self.stop_recording, lambda: self.stop_recording(discard=True), region, on_pause=self._pause_rec)
         self._rec_begin_id = GLib.timeout_add(350, self._begin_rec)
 
     def _begin_rec(self):

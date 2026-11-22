@@ -12,11 +12,11 @@ from . import icons
 # parâmetros medidos (relativos à caixa do menu): largura interna, altura da linha, x do ícone e do texto
 MORE = dict(width=323, row_h=32, icon_x=12, text_x=38, right_pad=16, text_dy=-2)
 CHOICE = dict(width=197, row_h=37, icon_x=18, text_x=42, right_pad=12, text_dy=-1)      # atraso
-SHAPE = dict(width=128, row_h=37, icon_x=18, text_x=43, right_pad=12, text_dy=-1)       # modo de captura
+SHAPE = dict(width=160, row_h=37, icon_x=18, text_x=43, right_pad=12, text_dy=-1)       # modo de captura
 SINGLE = dict(width=226, row_h=42, icon_x=12, text_x=42, right_pad=12, text_dy=-2)      # borracha
 TEXTCHK = dict(width=226, row_h=32, pad=1, sep_m=1, icon_x=12, text_x=43, right_pad=16, text_dy=-1)      # chevron da Redação rápida
 TEXTCTX = dict(width=212, row_h=33, pad=1, sep_m=1, icon_x=12, text_x=43, right_pad=16, text_dy=-1)      # clique direito no texto
-OVSHAPE = dict(width=134, row_h=37, pad=5, sel_m=(1, 2), sel_lite=True, icon_x=18, text_x=43, right_pad=12, text_dy=-1)   # forma do overlay de captura
+OVSHAPE = dict(width=166, row_h=37, pad=5, sel_m=(1, 2), sel_lite=True, icon_x=18, text_x=43, right_pad=12, text_dy=-1)   # forma do overlay de captura
 OVTEXT = dict(width=246, row_h=32, pad=2, icon_x=12, text_x=43, right_pad=16, text_dy=-1)    # menu ⋯ do extrator de texto (overlay)
 DROPDOWN = dict(width=246, row_h=34, pad=2, sep_m=1, icon_x=12, text_x=43, right_pad=16, text_dy=-1)    # listas de Configurações (idioma, após a captura)
 ZOOM = dict(width=182, row_h=32, icon_x=12, text_x=16, right_pad=16, text_dy=-1)    # submenu/menu de zoom (184 px externos)
@@ -131,10 +131,11 @@ class Popup(Gtk.Window):
         cr.set_operator(cairo.OPERATOR_OVER)
         return False
 
-    def open_at(self, x, y):
-        """x,y = canto superior esquerdo da CAIXA (sem a margem da sombra), em coordenadas de tela."""
+    def open_at(self, x, y, *, anchor=None):
+        """Posição desejada da caixa; uma âncora opcional fixa o monitor antes do alinhamento."""
         display = Gdk.Display.get_default()
-        monitor = display.get_monitor_at_point(int(x), int(y))
+        ax, ay = anchor if anchor is not None else (x, y)
+        monitor = display.get_monitor_at_point(int(ax), int(ay))
         area = monitor.get_workarea()
         _, natural_width = self.frame.get_preferred_width()
         _, natural_height = self.frame.get_preferred_height()

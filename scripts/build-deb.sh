@@ -71,7 +71,7 @@ Maintainer: Grekto-dev <176182924+Grekto-dev@users.noreply.github.com>
 Homepage: https://github.com/Grekto-dev/Win11-like-Snipping-Tool
 Description: Screenshot, annotation, OCR and screen-recording tool inspired by Windows 11
  An independent re-creation of the Windows 11 Snipping Tool for Linux (X11):
- rectangle, window, full-screen and freeform captures with a delay, an editor
+ rectangle, window, single-monitor, all-screens and freeform captures with a delay, an editor
  with pen, highlighter, shapes, crop, rulers and emoji, a text extractor (OCR)
  with copy-as-table and QR code reading, screen recording with FFmpeg, light and
  dark themes. The interface is available in English, Portuguese (Brazil),

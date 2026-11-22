@@ -17,6 +17,7 @@ _ICONS = {
     "rect": '<rect x="4" y="4" width="14" height="14" rx="3"/><path d="M17 14v6M14 17h6"/>',
     "window": '<rect x="3.5" y="5" width="17" height="14" rx="2.5"/><path d="M3.5 9.5h17"/>',
     "fullscreen": '<rect x="3" y="4.5" width="18" height="12" rx="2"/><path d="M8.5 20h7M12 16.5V20"/>',
+    "all_screens": '<rect x="2" y="5" width="9" height="9" rx="1.3"/><rect x="13" y="5" width="9" height="9" rx="1.3"/><path d="M6.5 14v4M4 18h5m8.5-4v4M15 18h5"/>',
     "freeform": '<path d="M5 10.5C5 7.4 8.1 5 12 5s7 2.4 7 5.5-3.1 5.5-7 5.5c-.8 0-1.6-.1-2.3-.3"/><path d="M9.6 15.7c-.4 1.7-1.5 3-3.6 3.8 1.5-.2 2.6-1 3-2.3"/>',
     "timer0": '<circle cx="12" cy="13.5" r="6.5"/><path d="M12 10.3v3.4l2 1.4M10 3.5h4M4 4l16 16"/>',
     "timer3": '<circle cx="11" cy="13.5" r="6.5"/><path d="M11 10.3v3.4l2 1.4M9 3.5h4"/><text x="16.5" y="21.5" font-size="8" font-family="sans-serif" fill="currentColor" stroke="none">3</text>',

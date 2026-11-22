@@ -212,7 +212,8 @@ class AfterCaptureTests(unittest.TestCase):
 
     def test_notify_mode_copies_and_shows_one_notification_naming_what_was_captured(self):
         settings["shot_after"] = "notify"
-        for shape, title in (("fullscreen", "Tela capturada"), ("window", "Janela capturada"),
+        for shape, title in (("fullscreen", "Tela capturada"), ("all_screens", "Todas as telas capturadas"),
+                             ("window", "Janela capturada"),
                              ("rectangle", "Região capturada"), ("freeform", "Região capturada"), (None, "Captura feita")):
             self.notified.clear(); self.copied.clear(); self.opened.clear()
             self.app.handle_image(self.pb, shape)
@@ -277,9 +278,9 @@ class AfterCaptureTests(unittest.TestCase):
         order = [src.index('("%s"' % k) for k in ("notify", "editor", "copy", "save")]
         self.assertEqual(order, sorted(order))
 
-    def test_about_shows_version_1_1_3(self):
+    def test_about_shows_version_1_2_0(self):
         import captura
-        self.assertEqual(captura.__version__, "1.1.3")
+        self.assertEqual(captura.__version__, "1.2.0")
 
     def test_an_open_app_window_or_the_new_button_never_overrides_the_chosen_option(self):
         from unittest.mock import Mock

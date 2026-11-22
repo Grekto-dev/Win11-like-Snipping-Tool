@@ -13,14 +13,12 @@ from . import APP_NAME, annot, chrome, cursors, i18n, icons, menus, metrics as M
 from . import text_anim
 from .text_bar import BAR_H, BAR_W, InfoTip, Notice, TextBar
 from .canvas import Canvas
-from .config import settings
+from .config import SHAPES, settings
 from .emoji_picker import EmojiPicker
 from .flyouts import ToolFlyout
 from .shape_bar import ShapeBar, ShapeColorFlyout, BTN_Y
 from .settings_page import SettingsPage
 
-SHAPES = [("rectangle", "rect", "Retângulo"), ("window", "window", "Janela"),
-          ("fullscreen", "fullscreen", "Tela inteira"), ("freeform", "freeform", "Forma livre")]
 DELAYS = [(0, "timer0", "Sem atraso"), (3, "timer3", "3 segundos de atraso"),
           (5, "timer5", "5 segundos de atraso"), (10, "timer10", "10 segundos de atraso")]
 
@@ -513,7 +511,7 @@ class EditorWindow(Gtk.ApplicationWindow):
         self.canvas.queue_draw()
 
     # --------------------------------------------------------------- menus
-    def _menu(self, items, style, left=None, right=None, top=None):
+    def _menu(self, items, style, left=None, right=None, top=None, *, anchor=None):
         """Abre o menu com o canto superior esquerdo da caixa em (left, top) relativos à janela (conteúdo)."""
         old = getattr(self, "_cur_menu", None)
         if old is not None:
@@ -526,7 +524,7 @@ class EditorWindow(Gtk.ApplicationWindow):
             left = right - (style["width"] + 2)
         ox, oy = menus.anchor_origin(self.toolbar)
         # a faixa começa em y=32 da janela; `top` é dado em coordenadas da janela
-        m.open_at(ox + left, oy + (top - M.TB_Y))
+        m.open_at(ox + left, oy + (top - M.TB_Y), anchor=anchor)
         return m
 
     def _menu_at(self, items, style, x, y):
@@ -543,8 +541,10 @@ class EditorWindow(Gtk.ApplicationWindow):
         cur = settings["shape"]
         items = [(i, l, None, (lambda k=k: self.set_shape(k)), True, False, k == cur) for k, i, l in SHAPES]
         idx = [k for k, _, _ in SHAPES].index(cur)
-        left, _ = b.translate_coordinates(self.toolbar, 0, 0)
-        self._menu(items, menus.SHAPE, left=left - 5, top=32 - idx * menus.SHAPE["row_h"])
+        left, btn_y = b.translate_coordinates(self.toolbar, 0, 0)
+        ox, oy = menus.anchor_origin(self.toolbar)
+        anchor = (ox + left + b.get_allocated_width() // 2, oy + btn_y + b.get_allocated_height() // 2)
+        self._menu(items, menus.SHAPE, left=left - 5, top=32 - idx * menus.SHAPE["row_h"], anchor=anchor)
 
     def set_shape(self, k):
         settings["shape"] = k

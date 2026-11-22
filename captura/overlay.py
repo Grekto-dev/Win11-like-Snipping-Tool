@@ -8,7 +8,7 @@ from gi.repository import Gtk, Gdk, GLib
 
 from . import grab, icons, menus, theme
 from .overlay_bar import BTN_Y, MAIN_W, REC_W, SHAPE as _SHAPE, SnipBar, TOP
-from .config import settings
+from .config import SHAPES, settings
 from . import overlay_text as OT
 
 SHAPE_X = _SHAPE[0]
@@ -19,10 +19,6 @@ HANDLE_CURSORS = {"n": "ns-resize", "s": "ns-resize", "e": "ew-resize", "w": "ew
                   "nw": "nwse-resize", "se": "nwse-resize", "ne": "nesw-resize", "sw": "nesw-resize"}
 HANDLE_OUT, HANDLE_IN = 8, 4                 # faixa (px) fora/dentro da borda que responde como alça
 HANDLE_CORNER = 12
-
-SHAPES = [("rectangle", "rect", "Retângulo"), ("window", "window", "Janela"),
-          ("fullscreen", "fullscreen", "Tela inteira"), ("freeform", "freeform", "Forma livre")]
-
 
 def make_crosshair_cursor(display, size=29):
     """Cruz fina branca com contorno escuro (como o cursor do Windows durante a captura)."""
@@ -50,7 +46,7 @@ class Overlay(Gtk.Window):
     def __init__(self, surface, on_result, tool="snip"):
         super().__init__(type=Gtk.WindowType.POPUP)
         self.surface = surface
-        self.W, self.H = surface.get_width(), surface.get_height()
+        self.W, self.H = grab.logical_size(surface)
         self.on_result = on_result
         self.tool = tool                       # snip | ocr | color
         self.shape = self._effective_shape()
@@ -61,8 +57,9 @@ class Overlay(Gtk.Window):
         self.anchor = None
         self.free_pts = []
         self.windows = grab.list_windows()
-        self.hover_rect = None
+        self.monitors = grab.monitors()
         self.pointer = grab.pointer_position()
+        self.update_hover(*self.pointer)
         self.loupe_rect = None
         self.sel_locked = False                # seleção feita no modo vídeo, aguardando "Iniciar"
         self.display = Gdk.Display.get_default()
@@ -185,7 +182,9 @@ class Overlay(Gtk.Window):
         m = menus.Menu(items, menus.OVSHAPE)
         m.on_close = self._menu_closed
         self._cur_menu = m
-        m.open_at(self.get_window().get_origin()[1] + bx - 4, self.get_window().get_origin()[2] + by - 6 - idx * menus.OVSHAPE["row_h"])
+        _, ox, oy = self.get_window().get_origin()
+        ax, ay = btn.translate_coordinates(self, btn.get_allocated_width() // 2, btn.get_allocated_height() // 2)
+        m.open_at(ox + bx - 4, oy + by - 6 - idx * menus.OVSHAPE["row_h"], anchor=(ox + ax, oy + ay))
 
     # ------------------------------------------------------------- estados
     def set_mode(self, mode):
@@ -199,7 +198,7 @@ class Overlay(Gtk.Window):
         settings["shape"] = shape
         self._refresh_shape_icon()
         self.clear_selection()
-        self.update_hover(*self.pointer)
+        self.update_hover(*self._pointer_now())
         self.da.queue_draw()
         self.update_cursor()
 
@@ -212,6 +211,7 @@ class Overlay(Gtk.Window):
         self.ts.reset()
         self._show_bar_for_tool()
         self.clear_selection()
+        self.update_hover(*self._pointer_now())
         self.update_cursor()
         self.da.queue_draw()
 
@@ -263,10 +263,10 @@ class Overlay(Gtk.Window):
             if self.sel:
                 return ("rect", self.sel)
         if self.anchor is None and not self.sel_locked and self.tool != "color":
-            if self.shape == "window" and self.hover_rect:
+            if self.shape in ("window", "fullscreen") and self.hover_rect:
                 x, y, w, h = self.hover_rect
                 return ("rect", (x, y, x + w, y + h))
-            if self.shape == "fullscreen":
+            if self.shape == "all_screens":
                 return ("rect", (0, 0, self.W, self.H))
         return None
 
@@ -433,6 +433,11 @@ class Overlay(Gtk.Window):
                     x0, y0, w, h = grab.clamp_rect(wx, wy, ww, wh, self.W, self.H)
                     self.hover_rect = (x0, y0, w, h)
                     break
+        elif self.shape == "fullscreen":
+            for mx, my, mw, mh in self.monitors:
+                if mx <= x < mx + mw and my <= y < my + mh:
+                    self.hover_rect = grab.clamp_rect(mx, my, mw, mh, self.W, self.H)
+                    break
 
     def on_motion(self, da, ev):
         x, y = int(ev.x), int(ev.y)
@@ -500,12 +505,14 @@ class Overlay(Gtk.Window):
             self.anchor = (x, y)
             self.sel = (x, y, x, y)
             self.free_pts = [(x, y)] if self.shape == "freeform" else []
-        elif self.shape == "window":
+        elif self.shape in ("window", "fullscreen"):
+            if self.shape == "fullscreen":
+                self.update_hover(x, y)  # o clique pode chegar sem um evento de movimento anterior
             if self.hover_rect:
                 hx, hy, hw, hh = self.hover_rect
                 self.sel = (hx, hy, hx + hw, hy + hh)
                 self.commit_rect()
-        elif self.shape == "fullscreen":
+        elif self.shape == "all_screens":
             self.sel = (0, 0, self.W, self.H)
             self.commit_rect()
         return True

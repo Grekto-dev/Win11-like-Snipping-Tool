@@ -82,6 +82,19 @@ class _AppCase(unittest.TestCase):
 class RecordingWindowsTests(_AppCase):
     """Janelas escondidas para a captura precisam voltar em qualquer caminho de falha."""
 
+    def test_scaled_recording_uses_native_pixels_but_keeps_the_chrome_in_logical_coordinates(self):
+        logical = (640, 80, 320, 200)
+        physical = (1280, 160, 640, 400)
+        with patch('captura.grab.root_scale', return_value=2, create=True), \
+             patch('captura.app.services.ffmpeg_path', return_value='/usr/bin/ffmpeg'), \
+             patch('captura.app.services.Recorder', return_value=Mock(region=physical)) as recorder, \
+             patch('captura.app.OutlineWindow') as outline, patch('captura.app.RecordingBar') as bar:
+            self.app.start_recording(logical)
+            self.app._teardown_rec(0)
+        self.assertEqual(recorder.call_args.args[0], physical)
+        outline.assert_called_once_with(logical)
+        self.assertEqual(bar.call_args.args[2], logical)
+
     def test_missing_ffmpeg_restores_hidden_windows(self):
         w = self.window()
         self.app._rec_hidden = [w]

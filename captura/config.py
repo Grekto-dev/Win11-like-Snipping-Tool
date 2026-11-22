@@ -21,6 +21,10 @@ def default_recordings_dir():
     return os.path.join(_xdg("VIDEOS", os.path.expanduser("~/Videos")), "Gravações de Tela")
 
 
+SHAPES = [("rectangle", "rect", "Retângulo"), ("window", "window", "Janela"),
+          ("fullscreen", "fullscreen", "Tela inteira"),
+          ("all_screens", "all_screens", "Todas as telas"), ("freeform", "freeform", "Forma livre")]
+
 DEFAULTS = {
     # Ações de texto
     "redact_emails": True,
@@ -49,7 +53,7 @@ DEFAULTS = {
     "use_print_key": False,
     "theme": "system",                  # system | light | dark
     # Estado da interface
-    "shape": "rectangle",               # rectangle | window | fullscreen | freeform
+    "shape": "rectangle",               # chave em SHAPES
     "delay": 0,                         # 0 | 3 | 5 | 10
     "mode": "photo",                    # photo | video
     "quick_markup": False,              # Marcação rápida (Ctrl+E)

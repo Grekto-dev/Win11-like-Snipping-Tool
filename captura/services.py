@@ -295,7 +295,9 @@ def screen_size():
     """Tamanho do desktop inteiro (todas as telas) em pixels; None sem display."""
     try:
         root = Gdk.get_default_root_window()
-        w, h = root.get_width(), root.get_height()
+        _x, _y, w, h = root.get_geometry()
+        scale = root.get_scale_factor()
+        w, h = w * scale, h * scale
     except Exception:
         return None
     return (w, h) if w > 0 and h > 0 else None

@@ -7,16 +7,28 @@ import cairo
 from gi.repository import Gdk, Wnck
 
 
+def root_scale():
+    return Gdk.get_default_root_window().get_scale_factor()
+
+
 def grab_screen():
     """Congela a área de trabalho inteira (todos os monitores). Devolve uma ImageSurface ARGB32."""
     root = Gdk.get_default_root_window()
-    w, h = root.get_width(), root.get_height()
+    _x, _y, w, h = root.get_geometry()  # consulta o X11; o tamanho em cache pode estar na escala anterior
     pb = Gdk.pixbuf_get_from_window(root, 0, 0, w, h)
-    surf = cairo.ImageSurface(cairo.FORMAT_ARGB32, w, h)
+    surf = cairo.ImageSurface(cairo.FORMAT_ARGB32, pb.get_width(), pb.get_height())
     cr = cairo.Context(surf)
     Gdk.cairo_set_source_pixbuf(cr, pb, 0, 0)
     cr.paint()
+    # A imagem do GDK tem pixels nativos, mas o desenho e os eventos usam coordenadas lógicas.
+    scale = root.get_scale_factor()
+    surf.set_device_scale(scale, scale)
     return surf
+
+
+def logical_size(surface):
+    sx, sy = surface.get_device_scale()
+    return int(surface.get_width() / sx), int(surface.get_height() / sy)
 
 
 def monitors():
@@ -56,6 +68,7 @@ def list_windows():
     scr.force_update()
     ws = scr.get_active_workspace()
     res = []
+    scale = root_scale()
     for win in reversed(scr.get_windows_stacked()):
         try:
             if win.is_minimized() or win.get_window_type() in _SKIP:
@@ -63,8 +76,10 @@ def list_windows():
             if ws is not None and not win.is_on_workspace(ws) and not win.is_pinned():
                 continue
             x, y, w, h = win.get_geometry()
-            if w > 1 and h > 1:
-                res.append((x, y, w, h, win.get_name() or ""))
+            x0, y0 = x // scale, y // scale
+            x1, y1 = (x + w + scale - 1) // scale, (y + h + scale - 1) // scale
+            if x1 - x0 > 1 and y1 - y0 > 1:
+                res.append((x0, y0, x1 - x0, y1 - y0, win.get_name() or ""))
         except Exception:
             continue
     return res
@@ -77,7 +92,9 @@ def clamp_rect(x, y, w, h, sw, sh):
 
 
 def crop_pixbuf(surface, x, y, w, h):
-    x, y, w, h = clamp_rect(int(x), int(y), int(w), int(h), surface.get_width(), surface.get_height())
+    sx, sy = surface.get_device_scale()
+    x, y, w, h = clamp_rect(int(x * sx), int(y * sy), int(w * sx), int(h * sy),
+                           surface.get_width(), surface.get_height())
     if w < 1 or h < 1:
         return None
     return Gdk.pixbuf_get_from_surface(surface, x, y, w, h)
@@ -88,12 +105,15 @@ def crop_freeform(surface, points):
     xs = [p[0] for p in points]
     ys = [p[1] for p in points]
     x0, y0 = max(0, int(min(xs))), max(0, int(min(ys)))
-    x1, y1 = min(surface.get_width(), int(max(xs)) + 1), min(surface.get_height(), int(max(ys)) + 1)
+    sw, sh = logical_size(surface)
+    x1, y1 = min(sw, int(max(xs)) + 1), min(sh, int(max(ys)) + 1)
     w, h = x1 - x0, y1 - y0
     if w < 2 or h < 2:
         return None
-    out = cairo.ImageSurface(cairo.FORMAT_ARGB32, w, h)
+    sx, sy = surface.get_device_scale()
+    out = cairo.ImageSurface(cairo.FORMAT_ARGB32, int(w * sx), int(h * sy))
     cr = cairo.Context(out)
+    cr.scale(sx, sy)
     cr.move_to(points[0][0] - x0, points[0][1] - y0)
     for px, py in points[1:]:
         cr.line_to(px - x0, py - y0)
@@ -101,11 +121,12 @@ def crop_freeform(surface, points):
     cr.clip()
     cr.set_source_surface(surface, -x0, -y0)
     cr.paint()
-    return Gdk.pixbuf_get_from_surface(out, 0, 0, w, h)
+    return Gdk.pixbuf_get_from_surface(out, 0, 0, out.get_width(), out.get_height())
 
 
 def pixel_at(surface, x, y):
-    x, y = int(x), int(y)
+    sx, sy = surface.get_device_scale()
+    x, y = int(x * sx), int(y * sy)
     if not (0 <= x < surface.get_width() and 0 <= y < surface.get_height()):
         return (0, 0, 0)
     surface.flush()
