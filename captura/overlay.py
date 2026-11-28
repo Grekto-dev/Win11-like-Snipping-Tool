@@ -96,6 +96,9 @@ class Overlay(Gtk.Window):
         self.da.connect("button-release-event", self.on_release)
         self.da.connect("motion-notify-event", self.on_motion)
         overlay.add(self.da)
+        self.connect("button-press-event", self._on_grabbed_pointer_event, self.on_press)
+        self.connect("button-release-event", self._on_grabbed_pointer_event, self.on_release)
+        self.connect("motion-notify-event", self._on_grabbed_pointer_event, self.on_motion)
         self.connect("key-press-event", self.on_key)
 
         self.build_toolbar(overlay)
@@ -438,6 +441,14 @@ class Overlay(Gtk.Window):
                 if mx <= x < mx + mw and my <= y < my + mh:
                     self.hover_rect = grab.clamp_rect(mx, my, mw, mh, self.W, self.H)
                     break
+
+    def _on_grabbed_pointer_event(self, _window, event, handler):
+        # Com o grab ativo, uma janela X11 acima do canvas (por exemplo, num canto)
+        # faz o evento chegar à janela do overlay, em vez da área de desenho.
+        # Eventos dos filhos que sobem até aqui continuam pertencendo aos filhos.
+        if Gtk.get_event_widget(event) is self:
+            return handler(self.da, event)
+        return False
 
     def on_motion(self, da, ev):
         x, y = int(ev.x), int(ev.y)

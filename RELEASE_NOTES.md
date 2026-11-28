@@ -1,19 +1,17 @@
-# Win11-like Snipping Tool for Linux 1.2.0
+# Win11-like Snipping Tool for Linux 1.2.1
 
-## New: choose one monitor or all screens
+## Fixed: rectangular captures at screen edges
 
-- **Full screen** highlights the monitor under the pointer. Click to capture just that monitor, including its taskbar. On a single-monitor setup it still captures the entire screen.
-- **All screens**, immediately after **Full screen** in the capture menu, keeps the previous whole-desktop behavior: one image containing every monitor in its desktop layout.
-- The same choices set the region for screen recording. The text extractor still uses a rectangle independently of the saved capture mode.
+Rectangular selections can now start or end at a screen edge or corner. On X11, a desktop edge window could cause mouse events to be delivered to the capture overlay itself rather than its drawing area. The overlay now handles those events without intercepting its own toolbar controls.
 
 ## Install or update
 
 ```bash
-sudo apt install ./captura_1.2.0_all.deb
+sudo apt install ./captura_1.2.1_all.deb
 ```
 
 Verify the download with:
 
 ```bash
-sha256sum -c captura_1.2.0_all.deb.sha256
+sha256sum -c captura_1.2.1_all.deb.sha256
 ```

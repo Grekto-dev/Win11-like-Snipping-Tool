@@ -278,9 +278,9 @@ class AfterCaptureTests(unittest.TestCase):
         order = [src.index('("%s"' % k) for k in ("notify", "editor", "copy", "save")]
         self.assertEqual(order, sorted(order))
 
-    def test_about_shows_version_1_2_0(self):
+    def test_about_shows_version_1_2_1(self):
         import captura
-        self.assertEqual(captura.__version__, "1.2.0")
+        self.assertEqual(captura.__version__, "1.2.1")
 
     def test_an_open_app_window_or_the_new_button_never_overrides_the_chosen_option(self):
         from unittest.mock import Mock
